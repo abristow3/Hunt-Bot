@@ -77,6 +77,13 @@ class GDoc:
         self.dailies_list = dailies_result.get("values", [])
         self.bounties_list = bounties_result.get("values", [])
 
+        # TODO Use Pandas to keep this into a 2D array
+
+
+        print(self.dailies_list)
+
         # Flatten the list of lists (Google API returns data in that structure for some reason
         self.dailies_list = self.flatten_list(self.dailies_list)
         self.bounties_list = self.flatten_list(self.bounties_list)
+
+

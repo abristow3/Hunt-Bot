@@ -7,7 +7,8 @@ from discord import app_commands
 import os
 import logging
 from gdoc import GDoc
-
+import pandas
+from BotState import BotState
 
 # Setup shit
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
@@ -15,41 +16,29 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Load config
-with open('conf.yaml', 'r') as f:
-    data = yaml.safe_load(f)
-
-# Set Constants
-# TODO Configure token ENV on launch
-# TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.G8gCi1.2rgy-ruhqlyBoI7bjYToNa79e2eT59Iw-mvMJM"
-# TOKEN = os.getenv("TOKEN")
-BOUNTY_CHANNEL_ID = data.get("BOUNTY_CHANNEL_ID")
-DAILY_CHANNEL_ID = data.get("DAILY_CHANNEL_ID")
-STAFF_CHANNEL_ID = data.get("STAFF_CHANNEL_ID")
-START_TIME = "16:00"
-
 gdoc = GDoc()
+state = BotState()
 
 
 @bot.tree.command(name="start", description="Starts the hunt bot on the specified date")
 @app_commands.describe(date="The DD/MM/YY format of the hunt start date")
 async def start(interaction: discord.Interaction, date: str):
-    # TODO Fix the output format of this shit pile
-
-    if interaction.channel.id != STAFF_CHANNEL_ID:
+    if interaction.channel.id != state.staff_channel_id:
         await interaction.response.send_message("Silly goon. You can't run that command in this channel.",
                                                 ephemeral=False)
         return
 
     await interaction.response.defer(ephemeral=True)
-    await interaction.followup.send(f"=== The Hunt Bot is scheduled to start running on {date} at {START_TIME} GMT ===")
+    await interaction.followup.send(
+        f"=== The Hunt Bot is scheduled to start running on {date} at {state.start_time} GMT ===")
 
     serve_bounty.start()
     serve_daily.start()
 
-@tasks.loop(hours=6)
+
+@tasks.loop(hours=state.bounty_tick)
 async def serve_bounty():
-    channel = bot.get_channel(BOUNTY_CHANNEL_ID)
+    channel = bot.get_channel(state.bounty_channel_id)
     await bot.wait_until_ready()
     while not bot.is_closed():
         for bounty in gdoc.bounties_list:
@@ -60,7 +49,7 @@ async def serve_bounty():
 
 @tasks.loop(hours=24)
 async def serve_daily():
-    channel = bot.get_channel(DAILY_CHANNEL_ID)
+    channel = bot.get_channel(state.daily_channel_id)
     await bot.wait_until_ready()
     while not bot.is_closed():
         for daily in gdoc.dailies_list:
@@ -71,10 +60,10 @@ async def serve_daily():
 
 @bot.event
 async def on_ready():
-    await bot.tree.sync()  # Sync commands with Discord
-    bounty_channel = bot.get_channel(BOUNTY_CHANNEL_ID)
-    daily_channel = bot.get_channel(DAILY_CHANNEL_ID)
-    staff_channel = bot.get_channel(STAFF_CHANNEL_ID)
+    await bot.tree.sync()
+    bounty_channel = bot.get_channel(state.bounty_channel_id)
+    daily_channel = bot.get_channel(state.daily_channel_id)
+    staff_channel = bot.get_channel(state.staff_channel_id)
 
     if not bounty_channel:
         logging.error("Could not find Bounty Channel")
@@ -87,4 +76,4 @@ async def on_ready():
 
 
 # Run bot
-bot.run(TOKEN)
+bot.run(state.discord_token)
