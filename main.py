@@ -21,7 +21,7 @@ with open('conf.yaml', 'r') as f:
 
 # Set Constants
 # TODO Configure token ENV on launch
-TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.G8gCi1.2rgy-ruhqlyBoI7bjYToNa79e2eT59Iw-mvMJM"
+# TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.G8gCi1.2rgy-ruhqlyBoI7bjYToNa79e2eT59Iw-mvMJM"
 # TOKEN = os.getenv("TOKEN")
 BOUNTY_CHANNEL_ID = data.get("BOUNTY_CHANNEL_ID")
 DAILY_CHANNEL_ID = data.get("DAILY_CHANNEL_ID")
