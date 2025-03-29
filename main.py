@@ -56,6 +56,12 @@ async def start(interaction: discord.Interaction, date: str):
 @bot.event
 async def on_ready():
     await bot.tree.sync()
+    with open("assets/Etsy_Item_Listing_Photo_copy_189_3_1_2.png", "rb") as avatar_file:
+        # Update the bot's avatar
+        image = avatar_file.read()
+        await bot.user.edit(avatar=image)
+        print("FEELS FRANKEN-THURGO MAN")
+
     bounty_channel = bot.get_channel(state.bounty_channel_id)
     daily_channel = bot.get_channel(state.daily_channel_id)
     staff_channel = bot.get_channel(state.staff_channel_id)
