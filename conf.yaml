@@ -10,3 +10,4 @@ BOUNTIES_SHEET_NAME: "Bounties"
 BOUNTIES_CELL_RANGE: "D2:D66"
 BOUNTIES_PER_DAY: 4
 HUNT_START_TIME_GMT: "16:00"
+GMAIL: "hunt-bot@huntbot-454113.iam.gserviceaccount.com"

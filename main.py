@@ -9,6 +9,20 @@ import logging
 from gdoc import GDoc
 import pandas
 from BotState import BotState
+from Plugins.Bounties.Bounties import Bounties
+from Plugins.Dailies.Dailies import Dailies
+
+'''
+TODO LIST:
+- Automate "hunt starts in 24 hours, 12, etc. messages
+- Automate Quick time event (QTE) (anything that doesnt happen on the 6-hour schedule)
+    - on QTE entries, can have field with GMT time for the GMT time QTE should be published
+    - Also have Channel ID for where to publish the message
+- Automate Hunt score update messages to publish 
+- Move config file to GDOC
+- Add command to input GDOC Sheet ID for bot to use for Hunt
+- Dynamically determine cell ranges for bounties and dailies, etc.
+'''
 
 # Setup shit
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
@@ -18,6 +32,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 state = BotState()
+
+
 
 
 @bot.tree.command(name="start", description="Starts the hunt bot on the specified date")
@@ -32,30 +48,9 @@ async def start(interaction: discord.Interaction, date: str):
     await interaction.followup.send(
         f"=== The Hunt Bot is scheduled to start running on {date} at {state.start_time} GMT ===")
 
-    serve_bounty.start()
-    serve_daily.start()
-
-
-@tasks.loop(hours=state.bounty_tick)
-async def serve_bounty():
-    channel = bot.get_channel(state.bounty_channel_id)
-    await bot.wait_until_ready()
-    while not bot.is_closed():
-        for bounty in gdoc.bounties_list:
-            await channel.send("=== BOUNTY SERVED ===")
-            await channel.send(bounty)
-            await asyncio.sleep(5)
-
-
-@tasks.loop(hours=24)
-async def serve_daily():
-    channel = bot.get_channel(state.daily_channel_id)
-    await bot.wait_until_ready()
-    while not bot.is_closed():
-        for daily in gdoc.dailies_list:
-            await channel.send("=== DAILY SERVED ===")
-            await channel.send(daily)
-            await asyncio.sleep(7)
+    # TODO Move these to a startup command that only can be run after initial configuration
+    bounty_task = Bounties(bot=bot, gdoc=gdoc, state=state)
+    daily_task = Dailies(bot=bot, gdoc=gdoc, state=state)
 
 
 @bot.event

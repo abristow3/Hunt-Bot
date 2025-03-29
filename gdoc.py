@@ -1,13 +1,17 @@
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import yaml
+import gspread
+import requests
+import csv
+import io
 
 
 class GDoc:
     def __init__(self):
         self.config = {}
         # Load the configuration file
-        self.setuo()
+        self.setup()
 
         # Set Google Doc variables
         self.credentials = self.config.get("GOOGLE_CREDENTIALS_PATH", "")
@@ -30,7 +34,7 @@ class GDoc:
         # Get the gdoc data
         self.get_google_sheet_data()
 
-    def setuo(self):
+    def setup(self):
         with open("conf.yaml", 'r') as f:
             self.config = yaml.safe_load(f)
 
@@ -68,19 +72,22 @@ class GDoc:
 
         # Call the Sheets API to get the data from the specified ranges
         sheet = service.spreadsheets()
-        print(sheet)
         print("Trying to get sheet data")
+
         dailies_result = sheet.values().get(spreadsheetId=self.sheet_id, range=self.dailies_a1notation).execute()
         bounties_result = sheet.values().get(spreadsheetId=self.sheet_id, range=self.bounties_a1notation).execute()
 
         # Fetch the data
         self.dailies_list = dailies_result.get("values", [])
+
+        # TODO Since this is 2D array need to make sure no to fill empty cells, or parse this into a better DS
+        print(self.dailies_list)
+
         self.bounties_list = bounties_result.get("values", [])
 
         # TODO Use Pandas to keep this into a 2D array
 
-
-        print(self.dailies_list)
+        # print(self.dailies_list)
 
         # Flatten the list of lists (Google API returns data in that structure for some reason
         self.dailies_list = self.flatten_list(self.dailies_list)
