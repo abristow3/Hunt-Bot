@@ -9,7 +9,8 @@ import io
 class GDoc:
     def __init__(self):
         self.config = {}
-        self.sheet = None
+        self.sheets = None
+        self.config_sheet = None
 
         with open("conf.yaml", 'r') as f:
             self.config = yaml.safe_load(f)
@@ -29,10 +30,13 @@ class GDoc:
     def set_sheet_id(self,sheet_id:str):
         self.sheet_id=sheet_id
 
-    def get_sheets(self):
-        dailies_result = self.sheet.values().get(spreadsheetId=self.sheet_id, range=self.dailies_a1notation).execute()
+    def pull_sheets(self):
         # Build the Sheets API client
-        self.sheet = self.service.spreadsheets()
+        self.sheets = self.service.spreadsheets()
+
+    def get_sheet(self, sheet_name: str):
+        sheet = self.sheets.values().get(spreadsheetId=self.sheet_id, range=sheet_name).execute()
+        return sheet
 
 
     #
