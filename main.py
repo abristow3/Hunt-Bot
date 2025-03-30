@@ -7,7 +7,6 @@ from discord import app_commands
 import os
 import logging
 from gdoc import GDoc
-import pandas
 from BotState import BotState
 from Plugins.Bounties.Bounties import Bounties
 from Plugins.Dailies.Dailies import Dailies
@@ -34,6 +33,31 @@ gdoc = GDoc()
 state = BotState()
 
 
+@bot.tree.command(name="sheet-id", description="Updates the GDoc sheet ID that the Hunt Bot refernces")
+@app_commands.describe(sheet_id="The GDoc sheet ID", pull_data="Whether to pull data from the sheet after updating the ID. Defaults to False")
+async def start(interaction: discord.Interaction, sheet_id: str, pull_data: bool = False):
+    if interaction.channel.id != state.staff_channel_id:
+        await interaction.response.send_message("Silly goon. You can't run that command in this channel.",
+                                                ephemeral=False)
+        return
+
+    # TODO should probably try to send a request to pull the sheet data and on a 200 respond with that, otherwise return the error
+
+    gdoc.set_sheet_id(sheet_id=sheet_id)
+
+    if pull_data:
+        success = gdoc.get_sheet()
+
+        if not success:
+            await interaction.response.send_message(f"There was an error retrieving the GDoc sheet with the ID provided: {sheet_id}",
+                                                    ephemeral=False)
+
+    await interaction.response.send_message(f"The Google Sheet ID has been updated to reference id: {sheet_id}", ephemeral=False)
+
+
+    # TODO Move these to a startup command that only can be run after initial configuration
+    bounty_task = Bounties(bot=bot, gdoc=gdoc, state=state)
+    daily_task = Dailies(bot=bot, gdoc=gdoc, state=state)
 
 
 @bot.tree.command(name="start", description="Starts the hunt bot on the specified date")
