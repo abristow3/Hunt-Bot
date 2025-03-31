@@ -33,19 +33,9 @@ gdoc = GDoc()
 state = BotState()
 
 
-@bot.tree.command(name="ping")
-async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message("Pong!")
-
-
-@bot.tree.command(name="hello")
-async def hello(interaction: discord.Interaction):
-    await interaction.response.send_message("Hello there!")
-
-
-@bot.tree.command(name="goodbye")
-async def goodbye(interaction: discord.Interaction):
-    await interaction.response.send_message("Goodbye!")
+@bot.tree.command(name="beep")
+async def beep(interaction: discord.Interaction):
+    await interaction.response.send_message("Boop")
 
 
 @bot.tree.command(name="start", description="Starts the hunt bot on the specified date")
@@ -98,7 +88,10 @@ async def sheet(interaction: discord.Interaction, sheetid: str, pull: bool = Fal
     bounty_task = Bounties(bot=bot, gdoc=gdoc, state=state)
     daily_task = Dailies(bot=bot, gdoc=gdoc, state=state)
 
+
 "https://discord.com/oauth2/authorize?client_id=1351530292061536297&scope=bot+applications.commands&permissions=2147691584"
+
+
 # Sync the commands (for a specific guild)
 async def sync_commands():
     try:
@@ -130,7 +123,6 @@ async def on_ready():
     await list_commands()
 
     print(f"Logged in as {bot.user}")
-
 
     # bounty_channel = bot.get_channel(state.bounty_channel_id)
     # daily_channel = bot.get_channel(state.daily_channel_id)
