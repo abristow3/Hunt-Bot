@@ -4,40 +4,86 @@ import yaml
 import requests
 import csv
 import io
+import pandas as pd
+from tabulate import tabulate
+import pprint
 
 
 class GDoc:
     def __init__(self):
-        self.config = {}
-        self.sheets = None
-        self.config_sheet = None
-
-        with open("conf.yaml", 'r') as f:
-            self.config = yaml.safe_load(f)
-
-        self.sheet_id = ""
-
-        # Load the service account credentials from the JSON file
-        self.creds_path = self.config.get("GOOGLE_CREDENTIALS_PATH", "")
-        self.credentials = service_account.Credentials.from_service_account_file(self.creds_path, scopes=[
-            "https://www.googleapis.com/auth/spreadsheets.readonly"], )
         self.service = None
+        self.sheets = None
+        self.sheet_id = ""
+        self.creds_path = ""
+        self.credentials = ""
+        self.tables = {}
+        self.on_startup()
+
+    def on_startup(self):
         try:
+            with open("conf.yaml", 'r') as f:
+                config = yaml.safe_load(f)
+            # Load the service account credentials from the JSON file
+            self.creds_path = config.get("GOOGLE_CREDENTIALS_PATH", "")
+            print(f"CREDPATH {self.creds_path}")
+
+            self.credentials = service_account.Credentials.from_service_account_file(self.creds_path, scopes=[
+                "https://www.googleapis.com/auth/spreadsheets.readonly"], )
+
+            # Build the Sheets API client
             self.service = build("sheets", "v4", credentials=self.credentials)
-        except Exception:
-            print(Exception)
+            self.sheets = self.service.spreadsheets()
+        except Exception as e:
+            print(e)
 
-    def set_sheet_id(self,sheet_id:str):
-        self.sheet_id=sheet_id
+    def set_sheet_id(self, sheet_id: str):
+        self.sheet_id = sheet_id
 
-    def pull_sheets(self):
-        # Build the Sheets API client
-        self.sheets = self.service.spreadsheets()
+    def get_data_from_sheet(self, sheet_name: str, cell_range: str = None):
+        if not cell_range:
+            data = self.sheets.values().get(spreadsheetId=self.sheet_id, range=sheet_name).execute()
+        else:
+            a1_range = self.a1notation_builder(sheet_name=sheet_name, cell_range=cell_range)
+            data = self.sheets.values().get(spreadsheetId=self.sheet_id, range=a1_range).execute()
 
-    def get_sheet(self, sheet_name: str):
-        sheet = self.sheets.values().get(spreadsheetId=self.sheet_id, range=sheet_name).execute()
-        return sheet
+        data = data.get('values', {})
 
+        return data
+
+    @staticmethod
+    def a1notation_builder(sheet_name: str, cell_range: str) -> str:
+        a1format = f"{sheet_name}!{cell_range}"
+        return a1format
+
+    def build_tables(self):
+        data = gdoc.get_data_from_sheet(sheet_name="BotConfig")
+        df = pd.DataFrame(data)
+        df.iloc[0] = df.iloc[0].replace({"": None})
+
+        start_col = None
+        end_col = None
+        name = ""
+        # Dynamically find the cells that fall under the merged cell table name
+        for col in range(len(df.columns)):
+            header_value = df.iloc[0, col]
+
+            if header_value is not None:
+                name = header_value
+                start_col = col
+
+                self.tables[name] = {"start_col": start_col}
+
+            if header_value is None:
+                end_col = col
+                self.tables.setdefault(name, {})['end_col'] = end_col
+
+
+if __name__ == '__main__':
+    gdoc = GDoc()
+    gdoc.set_sheet_id(sheet_id="1VcBBIxejr0dg87LH4hg_hnznaAcmt8Afq8plTBmD6-k")
+    config_data = gdoc.get_data_from_sheet(sheet_name="BotConfig")
+    gdoc.build_tables()
+    pprint.pprint(gdoc.tables)
 
     #
     #     # Set Google Doc variables
@@ -63,10 +109,7 @@ class GDoc:
     #
 
     #
-    # @staticmethod
-    # def a1notation_builder(sheet_name: str, cell_range: str) -> str:
-    #     a1formatted = f"{sheet_name}!{cell_range}"
-    #     return a1formatted
+
     #
     # @staticmethod
     # def flatten_list(list_to_flatten: list) -> list:
@@ -87,9 +130,6 @@ class GDoc:
     #
     # def get_google_sheet_data(self):
 
-    #     print("Trying to get sheet data")
-    #
-    #     dailies_result = sheet.values().get(spreadsheetId=self.sheet_id, range=self.dailies_a1notation).execute()
     #     bounties_result = sheet.values().get(spreadsheetId=self.sheet_id, range=self.bounties_a1notation).execute()
     #
     #     # Fetch the data

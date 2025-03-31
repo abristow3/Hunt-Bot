@@ -5,6 +5,7 @@ __pycache__/
 huntbot-454113-f9651184f83a.json
 # C extensions
 *.so
+.idea
 
 # Distribution / packaging
 .Python

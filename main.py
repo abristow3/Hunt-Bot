@@ -6,8 +6,8 @@ from discord.ext import commands, tasks
 from discord import app_commands
 import os
 import logging
-from gdoc import GDoc
-from BotState import BotState
+from GDoc import GDoc
+from HuntBot import HuntBot
 from Plugins.Bounties.Bounties import Bounties
 from Plugins.Dailies.Dailies import Dailies
 
@@ -30,7 +30,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
-state = BotState()
+hunt_bot = HuntBot()
 
 
 @bot.tree.command(name="beep")
@@ -41,62 +41,47 @@ async def beep(interaction: discord.Interaction):
 @bot.tree.command(name="start", description="Starts the hunt bot on the specified date")
 @app_commands.describe(date="The DD/MM/YY format of the hunt start date")
 async def start(interaction: discord.Interaction, date: str):
-    if interaction.channel.id != state.staff_channel_id:
-        await interaction.response.send_message("Silly goon. You can't run that command in this channel.",
+    if gdoc.sheet_id == "":
+        await interaction.response.send_message("No GDoc sheet ID set. User the command '/sheet' to set one.",
                                                 ephemeral=False)
         return
 
-    await interaction.response.defer(ephemeral=True)
-    await interaction.followup.send(
-        f"=== The Hunt Bot is scheduled to start running on {date} at {state.start_time} GMT ===")
+    config_data = gdoc.get_data_from_sheet(sheet_name=hunt_bot.config_sheet_name, cell_range=hunt_bot.config_cell_range)
+    config_map = dict(config_data)
+    hunt_bot.setup_config(config_map=config_map)
 
-    # TODO Move these to a startup command that only can be run after initial configuration
-    bounty_task = Bounties(bot=bot, gdoc=gdoc, state=state)
-    daily_task = Dailies(bot=bot, gdoc=gdoc, state=state)
+    # hunt_bot.setup_config()
+
+    # if interaction.channel.id != hunt_bot.staff_channel_id:
+    #     await interaction.response.send_message("Silly goon. You can't run that command in this channel.",
+    #                                             ephemeral=False)
+    #     return
+    #
+    # await interaction.response.defer(ephemeral=True)
+    # await interaction.followup.send(
+    #     f"=== The Hunt Bot is scheduled to start running on {date} at {hunt_bot.start_time} GMT ===")
+    #
+    # # TODO Move these to a startup command that only can be run after initial configuration
+    # bounty_task = Bounties(bot=bot, gdoc=gdoc, state=hunt_bot)
+    # daily_task = Dailies(bot=bot, gdoc=gdoc, state=hunt_bot)
 
 
 @bot.tree.command(name="sheet", description="Updates the GDoc sheet ID that the Hunt Bot refernces")
 @app_commands.describe(sheetid="The GDoc sheet ID",
                        pull="Whether to pull data from the sheet after updating the ID. Defaults to False")
 async def sheet(interaction: discord.Interaction, sheetid: str, pull: bool = False):
-    if interaction.channel.id != state.staff_channel_id:
-        await interaction.response.send_message("Silly goon. You can't run that command in this channel.",
-                                                ephemeral=False)
-        return
-
-    # TODO should probably try to send a request to pull the sheet data and on a 200 respond with that, otherwise return the error
+    # if interaction.channel.id != hunt_bot.staff_channel_id:
+    #     await interaction.response.send_message("Silly goon. You can't run that command in this channel.",
+    #                                             ephemeral=False)
+    #     return
 
     gdoc.set_sheet_id(sheet_id=sheetid)
-
-    if pull:
-        gdoc.pull_sheets()
-        sheet_data = gdoc.get_sheet(sheet_name="Bot Config")
-        if 'values' in sheet_data and sheet_data['values']:
-            for row in sheet_data['values']:
-                print(row)  # Print each row of data from the sheet
-        else:
-            print(f"No data found in sheet")
-
-        # if not success:
-        #     await interaction.response.send_message(f"There was an error retrieving the GDoc sheet with the ID provided: {sheet_id}",
-        #                                             ephemeral=False)
-
-    await interaction.response.send_message(f"The Google Sheet ID has been updated to reference id: {sheet}",
-                                            ephemeral=False)
-
-    # TODO Move these to a startup command that only can be run after initial configuration
-    bounty_task = Bounties(bot=bot, gdoc=gdoc, state=state)
-    daily_task = Dailies(bot=bot, gdoc=gdoc, state=state)
+    await interaction.response.send_message(f"The GDoc ID has been updated to reference id: {sheet}", ephemeral=False)
 
 
-"https://discord.com/oauth2/authorize?client_id=1351530292061536297&scope=bot+applications.commands&permissions=2147691584"
-
-
-# Sync the commands (for a specific guild)
 async def sync_commands():
     try:
-        # This line will sync the commands for a specific guild by passing guild_id
-        await bot.tree.sync()  # Syncing the commands for this guild
+        await bot.tree.sync()
         print("Slash commands have been successfully refreshed!")
     except Exception as e:
         print(f"Error refreshing commands: {e}")
@@ -138,5 +123,7 @@ async def on_ready():
     #     logging.error("Could not find Staff Channel")
 
 
+TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.G8gCi1.2rgy-ruhqlyBoI7bjYToNa79e2eT59Iw-mvMJM"
 # Run bot
-bot.run(state.discord_token)
+bot.run(TOKEN)
+# bot.run(hunt_bot.discord_token)

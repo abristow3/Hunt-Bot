@@ -1,11 +1,11 @@
 from discord.ext import commands, tasks
-from BotState import BotState
-from gdoc import GDoc
+from HuntBot import HuntBot
+from GDoc import GDoc
 import asyncio
 
 
 class Bounties:
-    def __init__(self, bot: commands.Bot, state: BotState, gdoc: GDoc):
+    def __init__(self, bot: commands.Bot, state: HuntBot, gdoc: GDoc):
         self.bot = bot
         self.state = state
         self.interval = state.bounty_tick
