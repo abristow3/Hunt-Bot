@@ -16,6 +16,10 @@ class HuntBot:
         self.config_table_name = ""
         self.command_channel_name = "staff"
         self.command_channel_id = ""
+        self.config_map = {}
+        self.start_date = ""
+        self.start_time = ""
+        self.configured = False
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -63,10 +67,46 @@ class HuntBot:
     def pull_table_data(self, table_name: str):
         # Find table name in table map
         table_metadata = self.table_map.get(table_name, {})
-
         if not table_metadata:
             return []
 
-        # TODO
-        # we found the table in our map
+        print(f"Data located between columns {table_metadata['start_col']} and {table_metadata['end_col']}")
+
         # get the data based on the start and end columns
+        df = self.sheet_data.loc[:, table_metadata['start_col']:table_metadata['end_col']]
+
+        # Clean the data
+        # Drop the first row (table name)
+        df.drop(0, axis=0, inplace=True)
+        df.reset_index(drop=True, inplace=True)
+
+        #Drop the empty columns
+        df.replace("", pd.NA, inplace=True)
+        df_cleaned_col = df.dropna(axis=1, how='all')
+
+        # Drop the empty rows
+        df_cleaned = df_cleaned_col.dropna(how='all')
+
+        # Set column names from table headers (row 1)
+        df_cleaned.columns = df_cleaned.iloc[0]
+        df_cleaned = df_cleaned.drop(0).reset_index(drop=True)
+
+        return df_cleaned
+
+    def load_config(self, df):
+        # Turn config DF into dict
+        self.config_map = dict(zip(df['Key'], df['Value']))
+
+        if not self.config_map:
+            print("Error loading discord config data")
+
+        self.start_date = self.config_map.get("HUNT_START_DATE", "")
+        self.start_time = self.config_map.get("HUNT_START_TIME", "")
+
+        if self.start_date == "":
+            print("Error loading hunt start date")
+        elif self.start_time == "":
+            print("Error loading hunt start time")
+
+        self.configured = True
+

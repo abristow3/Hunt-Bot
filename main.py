@@ -44,6 +44,13 @@ async def start(interaction: discord.Interaction):
         await interaction.response.send_message("Silly goon. You can't run that command in this channel.")
         return
 
+    # TODO remove this lines when done
+    gdoc.set_sheet_id(sheet_id="1VcBBIxejr0dg87LH4hg_hnznaAcmt8Afq8plTBmD6-k")
+    hunt_bot.sheet_name = "BotConfig"
+
+    # TODO best way to handle table name storage?
+    hunt_bot.config_table_name = "Discord Conf"
+
     # Check sheet ID has been populated
     if gdoc.sheet_id == "":
         await interaction.response.send_message("No GDoc sheet ID set. Use the command '/sheet' to set one.")
@@ -72,12 +79,29 @@ async def start(interaction: discord.Interaction):
         return
 
     # Get the HuntBot Configuration variables
-    config_data = hunt_bot.pull_table_data(table_name=hunt_bot.config_table_name)
+    config_df = hunt_bot.pull_table_data(table_name=hunt_bot.config_table_name)
 
-    # Check config data was retrieved
-    if not config_data:
+    # Check config data was found
+    if config_df.empty:
         await interaction.response.send_message("Error retrieving config data.")
         return
+
+    hunt_bot.load_config(df=config_df)
+
+    # Check config data loaded
+    if not hunt_bot.configured:
+        await interaction.response.send_message("Error setting config data.")
+        return
+
+    # If we made it this far then we are ready to start loading the plugins
+    # Call bounties plugin
+    bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
+
+    # Check plugin loaded
+    if not bounties.configured:
+        await interaction.response.send_message("Error loading Bounties plugin.")
+        return
+
 
 
 @bot.tree.command(name="sheet", description="Updates the GDoc sheet ID that the Hunt Bot refernces")
