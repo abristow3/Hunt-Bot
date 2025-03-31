@@ -137,11 +137,11 @@ async def list_commands():
 
 @bot.event
 async def on_ready():
-    with open("assets/Etsy_Item_Listing_Photo_copy_189_3_1_2.png", "rb") as avatar_file:
-        # Update the bot's avatar
-        image = avatar_file.read()
-        await bot.user.edit(avatar=image)
-        print("FEELS FRANKEN-THURGO MAN")
+    # with open("assets/Etsy_Item_Listing_Photo_copy_189_3_1_2.png", "rb") as avatar_file:
+    #     # Update the bot's avatar
+    #     image = avatar_file.read()
+    #     await bot.user.edit(avatar=image)
+    #     print("FEELS FRANKEN-THURGO MAN")
 
     await sync_commands()
 

@@ -3,6 +3,7 @@ from HuntBot import HuntBot
 from GDoc import GDoc
 import asyncio
 import pandas as pd
+from string import Template
 
 
 class TableDataImportException(Exception):
@@ -37,6 +38,25 @@ class ConfigurationException(Exception):
         return self.args[0]
 
 
+single_bounty_template = Template("""
+$bounty
+
+Password: $password
+""")
+
+double_bounty_template = Template("""
+$b1_bounty
+
+Password: $b1_password
+
+@@@ DOUBLE BOUNTY @@@
+
+$b2_bounty
+
+Password: $b2_password
+""")
+
+
 class Bounties:
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
         self.discord_bot = discord_bot
@@ -47,6 +67,7 @@ class Bounties:
         self.double_bounties_df = pd.DataFrame()
         self.single_bounties_table_name = "Single Bounties"
         self.double_bounties_table_name = "Double Bounties"
+        self.message = ""
         self.configured = False
 
         try:
@@ -62,6 +83,8 @@ class Bounties:
         self.get_bounty_channel()
         self.get_single_bounties()
         self.get_double_bounties()
+
+        self.process_bounties()
 
         self.configured = True
 
@@ -89,20 +112,35 @@ class Bounties:
         if self.single_bounties_df.empty:
             raise TableDataImportException(table_name=self.double_bounties_table_name)
 
-
     def process_bounties(self):
-        # Iterate over the single bounties table
-            # check if the bounty has a double tag
-                # if it does, set double flag to True
-        # Get bounty password
-        # inject bounty post template
+        print("PROICESSING BOUNTIES")
+        for index, row in self.single_bounties_df.iterrows():
+            single_bounty = row["Task"]
+            single_password = row["Password"]
+            double = not pd.isna(row["Double"])
+
+            # IF not a double return the single trmplate
+            if not double:
+                self.message = single_bounty_template.substitute(bounty=single_bounty, password=single_password)
+            else:
+                # If it is a double then grab a double
+                data = self.double_bounties_df.iloc[0]
+                double_bounty = data["Task"]
+                double_password = data["Password"]
+
+                self.message = double_bounty_template.substitute(b1_bounty=single_bounty, b1_password=single_password,
+                                                                 b2_bounty=double_bounty,b2_password=double_password)
+                self.double_bounties_df.drop(0, axis=0, inplace=True)
+                self.double_bounties_df.reset_index(drop=True, inplace=True)
+
+                print(self.message)
 
         # if double is true
-            # grab a bounty from the double bounty list
-            # Get bounty password
-            # remove from list
+        # grab a bounty from the double bounty list
+        # Get bounty password
+        # remove from list
         # inject bounty post template
-
+        ...
 
     # def start_bounties(self):
     #     # @tasks.loop(hours=self.interval)

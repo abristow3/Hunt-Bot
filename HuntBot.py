@@ -101,7 +101,7 @@ class HuntBot:
             print("Error loading discord config data")
 
         self.start_date = self.config_map.get("HUNT_START_DATE", "")
-        self.start_time = self.config_map.get("HUNT_START_TIME", "")
+        self.start_time = self.config_map.get("HUNT_START_TIME_GMT", "")
 
         if self.start_date == "":
             print("Error loading hunt start date")
