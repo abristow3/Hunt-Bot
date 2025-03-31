@@ -39,19 +39,19 @@ class ConfigurationException(Exception):
 
 
 single_bounty_template = Template("""
-$bounty
+$task
 
 Password: $password
 """)
 
 double_bounty_template = Template("""
-$b1_bounty
+$b1_task
 
 Password: $b1_password
 
 @@@ DOUBLE BOUNTY @@@
 
-$b2_bounty
+$b2_task
 
 Password: $b2_password
 """)
@@ -61,8 +61,8 @@ class Bounties:
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
-        self.bounty_channel_id = ""
-        self.bounty_interval = ""
+        self.bounty_channel_id = 0
+        self.bounty_interval = 0
         self.single_bounties_df = pd.DataFrame()
         self.double_bounties_df = pd.DataFrame()
         self.single_bounties_table_name = "Single Bounties"
@@ -76,7 +76,7 @@ class Bounties:
             print(e)
             print("Error loading Bounties plugin configuration")
 
-        # self.start_bounties()
+        self.start_bounties()
 
     def start_up(self):
         self.get_bounty_interval()
@@ -84,20 +84,18 @@ class Bounties:
         self.get_single_bounties()
         self.get_double_bounties()
 
-        self.process_bounties()
-
         self.configured = True
 
     def get_bounty_interval(self):
-        self.bounty_interval = self.hunt_bot.config_map.get('BOUNTIES_PER_DAY', '')
+        self.bounty_interval = int(self.hunt_bot.config_map.get('BOUNTIES_PER_DAY'), 0)
 
-        if self.bounty_interval == '':
+        if self.bounty_interval == 0:
             raise ConfigurationException(config_key='BOUNTIES_PER_DAY')
 
     def get_bounty_channel(self):
-        self.bounty_channel_id = self.hunt_bot.config_map.get('BOUNTY_CHANNEL_ID', '')
+        self.bounty_channel_id = int(self.hunt_bot.config_map.get('BOUNTY_CHANNEL_ID', 0))
 
-        if self.bounty_channel_id == '':
+        if self.bounty_channel_id == 0:
             raise ConfigurationException(config_key='BOUNTY_CHANNEL_ID')
 
     def get_single_bounties(self):
@@ -112,47 +110,46 @@ class Bounties:
         if self.single_bounties_df.empty:
             raise TableDataImportException(table_name=self.double_bounties_table_name)
 
-    def process_bounties(self):
-        print("PROICESSING BOUNTIES")
-        for index, row in self.single_bounties_df.iterrows():
-            single_bounty = row["Task"]
-            single_password = row["Password"]
-            double = not pd.isna(row["Double"])
+    @staticmethod
+    def yield_next_row(df):
+        # Keep yielding the next index until the end of the list
+        for index, row in df.iterrows():
+            yield row
 
-            # IF not a double return the single trmplate
-            if not double:
-                self.message = single_bounty_template.substitute(bounty=single_bounty, password=single_password)
-            else:
-                # If it is a double then grab a double
-                data = self.double_bounties_df.iloc[0]
-                double_bounty = data["Task"]
-                double_password = data["Password"]
+    def start_bounties(self):
+        single_bounty_generator = self.yield_next_row(df=self.single_bounties_df)
+        double_bounty_generator = self.yield_next_row(df=self.double_bounties_df)
+        channel = self.discord_bot.get_channel(self.bounty_channel_id)
 
-                self.message = double_bounty_template.substitute(b1_bounty=single_bounty, b1_password=single_password,
-                                                                 b2_bounty=double_bounty,b2_password=double_password)
-                self.double_bounties_df.drop(0, axis=0, inplace=True)
-                self.double_bounties_df.reset_index(drop=True, inplace=True)
+        # @tasks.loop(hours=self.interval)
+        @tasks.loop(seconds=self.bounty_interval)
+        async def serve_bounty():
+            await self.discord_bot.wait_until_ready()
 
-                print(self.message)
+            try:
+                single_bounty = next(single_bounty_generator)
+                single_task = single_bounty["Task"]
+                single_password = single_bounty["Password"]
+                double = not pd.isna(single_bounty["Double"])
 
-        # if double is true
-        # grab a bounty from the double bounty list
-        # Get bounty password
-        # remove from list
-        # inject bounty post template
-        ...
+                # IF not a double return the single trmplate
+                if not double:
+                    self.message = single_bounty_template.substitute(task=single_task, password=single_password)
+                else:
+                    double_bounty = next(double_bounty_generator)
+                    double_task = double_bounty["Task"]
+                    double_password = double_bounty["Password"]
 
-    # def start_bounties(self):
-    #     # @tasks.loop(hours=self.interval)
-    #     @tasks.loop(seconds=self.interval)
-    #     async def serve_bounty():
-    #         channel = self.bot.get_channel(self.state.bounty_channel_id)
-    #         await self.bot.wait_until_ready()
-    #         while not self.bot.is_closed():
-    #             for bounty in self.gdoc.bounties_list:
-    #                 await channel.send("=== BOUNTY SERVED ===")
-    #                 await channel.send(bounty)
-    #                 await asyncio.sleep(5)
-    #
-    #     # Start the task
-    #     serve_bounty.start()
+                    self.message = double_bounty_template.substitute(b1_task=single_task,
+                                                                     b1_password=single_password,
+                                                                     b2_task=double_task,
+                                                                     b2_password=double_password)
+                await channel.send(self.message)
+            except StopIteration:
+                # If we run out of bounties, stop the loop
+                print("No more bounties left!")
+                serve_bounty.stop()
+
+
+        # Start the task
+        serve_bounty.start()
