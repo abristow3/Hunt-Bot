@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import pytz
 import yaml
 import pandas as pd
 
@@ -20,6 +23,8 @@ class HuntBot:
         self.start_date = ""
         self.start_time = ""
         self.configured = False
+        self.start = False
+        self.start_datetime = None
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -108,5 +113,27 @@ class HuntBot:
         elif self.start_time == "":
             print("Error loading hunt start time")
 
+        # Combine the date and time strings
+        start_datetime_str = f"{self.start_date} {self.start_time}"
+
+        # Convert to datetime object
+        self.start_datetime = datetime.strptime(start_datetime_str, "%d/%m/%Y %H:%M")
+        self.start_datetime = pytz.timezone('Europe/London').localize(self.start_datetime)
+
         self.configured = True
+
+    @staticmethod
+    def get_current_gmt_time():
+        # Convert local time to GMT
+        gmt_timezone = pytz.timezone('Europe/London')
+        gmt_time = datetime.now(gmt_timezone)
+        return gmt_time
+
+    def check_start(self):
+        ctime = self.get_current_gmt_time()
+
+        if ctime < self.start_datetime:
+            return
+        else:
+            self.start = True
 

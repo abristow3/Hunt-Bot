@@ -10,10 +10,11 @@ from GDoc import GDoc
 from HuntBot import HuntBot
 from Plugins.Bounties.Bounties import Bounties
 from Plugins.Dailies.Dailies import Dailies
+import pytz
 
 '''
 TODO LIST:
-- Automate "hunt starts in 24 hours, 12, etc. messages
+- Automate "hunt starts in 24 hours, 12, 6, 1 etc. messages
 - Automate Quick time event (QTE) (anything that doesnt happen on the 6-hour schedule)
     - on QTE entries, can have field with GMT time for the GMT time QTE should be published
     - Also have Channel ID for where to publish the message
@@ -31,6 +32,39 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
+
+
+@tasks.loop(seconds=5)
+async def check_start_time():
+    if not hunt_bot.start:
+        # Get current time GMT
+        hunt_bot.check_start()
+        if hunt_bot.start:
+            channel = bot.get_channel(hunt_bot.command_channel_id)
+
+            if channel:
+                await channel.send("Start time reached. Starting the hunt!")
+
+            print("Start time reached. Starting the hunt!")
+            # If we made it this far then we are ready to start loading the plugins
+            # Start bounties plugin
+            bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
+
+            # Check plugin loaded
+            if not bounties.configured:
+                await channel.send("Error loading Bounties plugin.")
+                return
+
+            # Start Dailies plugin
+            dailies = Dailies(discord_bot=bot, hunt_bot=hunt_bot)
+
+            # Check plugin loaded
+            if not dailies.configured:
+                await channel.send("Error loading Dailies plugin.")
+                return
+
+        else:
+            print("Waiting for the start time...")
 
 
 @bot.tree.command(name="beep")
@@ -93,15 +127,12 @@ async def start(interaction: discord.Interaction):
         await interaction.response.send_message("Error setting config data.")
         return
 
-    # If we made it this far then we are ready to start loading the plugins
-    # Call bounties plugin
-    bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
+    await interaction.response.send_message(
+        f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}")
 
-    # Check plugin loaded
-    if not bounties.configured:
-        await interaction.response.send_message("Error loading Bounties plugin.")
-        return
-
+    if not check_start_time.is_running():
+        # Start the periodic check if not already running
+        check_start_time.start()
 
 
 @bot.tree.command(name="sheet", description="Updates the GDoc sheet ID that the Hunt Bot refernces")

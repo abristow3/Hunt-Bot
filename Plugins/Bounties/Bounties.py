@@ -1,7 +1,5 @@
 from discord.ext import commands, tasks
 from HuntBot import HuntBot
-from GDoc import GDoc
-import asyncio
 import pandas as pd
 from string import Template
 
@@ -39,13 +37,13 @@ class ConfigurationException(Exception):
 
 
 single_bounty_template = Template("""
-$task
+@everyone $task
 
 Password: $password
 """)
 
 double_bounty_template = Template("""
-$b1_task
+@everyone $b1_task
 
 Password: $b1_password
 
@@ -61,6 +59,7 @@ class Bounties:
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
+        self.bounties_per_day = 0
         self.bounty_channel_id = 0
         self.bounty_interval = 0
         self.single_bounties_df = pd.DataFrame()
@@ -79,21 +78,25 @@ class Bounties:
         self.start_bounties()
 
     def start_up(self):
-        self.get_bounty_interval()
+        self.get_bounties_per_day()
+        self.set_bounty_interval()
         self.get_bounty_channel()
         self.get_single_bounties()
         self.get_double_bounties()
 
         self.configured = True
 
-    def get_bounty_interval(self):
-        self.bounty_interval = int(self.hunt_bot.config_map.get('BOUNTIES_PER_DAY'), 0)
+    def get_bounties_per_day(self):
+        self.bounties_per_day = int(self.hunt_bot.config_map.get('BOUNTIES_PER_DAY', "0"))
 
-        if self.bounty_interval == 0:
+        if self.bounties_per_day == 0:
             raise ConfigurationException(config_key='BOUNTIES_PER_DAY')
 
+    def set_bounty_interval(self):
+        self.bounty_interval = 24/self.bounties_per_day
+
     def get_bounty_channel(self):
-        self.bounty_channel_id = int(self.hunt_bot.config_map.get('BOUNTY_CHANNEL_ID', 0))
+        self.bounty_channel_id = int(self.hunt_bot.config_map.get('BOUNTY_CHANNEL_ID', "0"))
 
         if self.bounty_channel_id == 0:
             raise ConfigurationException(config_key='BOUNTY_CHANNEL_ID')
@@ -122,7 +125,7 @@ class Bounties:
         channel = self.discord_bot.get_channel(self.bounty_channel_id)
 
         # @tasks.loop(hours=self.interval)
-        @tasks.loop(seconds=self.bounty_interval)
+        @tasks.loop(hours=self.bounty_interval)
         async def serve_bounty():
             await self.discord_bot.wait_until_ready()
 
