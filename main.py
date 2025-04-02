@@ -36,6 +36,8 @@ hunt_bot = HuntBot()
 
 @tasks.loop(seconds=5)
 async def check_start_time():
+    # If
+
     if not hunt_bot.start:
         # Get current time GMT
         hunt_bot.check_start()
