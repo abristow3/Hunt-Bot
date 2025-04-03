@@ -10,6 +10,7 @@ from GDoc import GDoc
 from HuntBot import HuntBot
 from Plugins.Bounties.Bounties import Bounties
 from Plugins.Dailies.Dailies import Dailies
+from Plugins.Countdown.Countdown import Countdown
 import pytz
 
 '''
@@ -32,16 +33,22 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
+countdown = None
 
 
 @tasks.loop(seconds=5)
 async def check_start_time():
-    # If
+    global countdown
+    if hunt_bot.configured and countdown is None:  # Initialize Countdown only once when configured
+        countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
 
-    if not hunt_bot.start:
-        # Get current time GMT
+    if not countdown.countdown_task_started:
+        countdown.start_countdown()
+
+    if not hunt_bot.started:
+        # Check if we need to start the hunt or not
         hunt_bot.check_start()
-        if hunt_bot.start:
+        if hunt_bot.started:
             channel = bot.get_channel(hunt_bot.command_channel_id)
 
             if channel:

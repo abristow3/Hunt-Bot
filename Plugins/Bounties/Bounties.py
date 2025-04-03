@@ -124,7 +124,6 @@ class Bounties:
         double_bounty_generator = self.yield_next_row(df=self.double_bounties_df)
         channel = self.discord_bot.get_channel(self.bounty_channel_id)
 
-        # @tasks.loop(hours=self.interval)
         @tasks.loop(hours=self.bounty_interval)
         async def serve_bounty():
             await self.discord_bot.wait_until_ready()

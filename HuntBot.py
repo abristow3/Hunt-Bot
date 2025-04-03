@@ -23,7 +23,7 @@ class HuntBot:
         self.start_date = ""
         self.start_time = ""
         self.configured = False
-        self.start = False
+        self.started = False
         self.start_datetime = None
 
     def set_config_table_name(self, table_name: str):
@@ -135,5 +135,5 @@ class HuntBot:
         if ctime < self.start_datetime:
             return
         else:
-            self.start = True
+            self.started = True
 
