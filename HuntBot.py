@@ -1,7 +1,5 @@
 from datetime import datetime
-
 import pytz
-import yaml
 import pandas as pd
 
 
@@ -85,7 +83,7 @@ class HuntBot:
         df.drop(0, axis=0, inplace=True)
         df.reset_index(drop=True, inplace=True)
 
-        #Drop the empty columns
+        # Drop the empty columns
         df.replace("", pd.NA, inplace=True)
         df_cleaned_col = df.dropna(axis=1, how='all')
 

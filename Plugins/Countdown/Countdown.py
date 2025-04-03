@@ -13,6 +13,7 @@ ends_template = Template("""
 The Hunt ends in $num_hours hours!
 """)
 
+
 class ConfigurationException(Exception):
     """Exception raised for errors in the configuration."""
 
@@ -29,6 +30,7 @@ class ConfigurationException(Exception):
             return f'{self.args[0]} (Config key: {self.config_key})'
         return self.args[0]
 
+
 class Countdown:
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
         # Todo as we publish the message, divide these by 2
@@ -40,7 +42,7 @@ class Countdown:
         # self.countdown_start_date = self.hunt_bot.start_datetime - timedelta(days=1)
         london_tz = pytz.timezone('Europe/London')
 
-        self.countdown_start_date =london_tz.localize(datetime(2025, 4, 3, 12, 0, 0))
+        self.countdown_start_date = london_tz.localize(datetime(2025, 4, 3, 12, 0, 0))
         self.countdown_end_date = self.countdown_start_date + timedelta(days=10)
 
         self.start_completed = False
@@ -93,9 +95,7 @@ class Countdown:
 
             ctime = self.check_time()
 
-            if self.hunt_bot.started:
-                self.start = False
-            elif not self.start_completed and ctime >= self.countdown_start_date:
+            if not self.start_completed and ctime >= self.countdown_start_date:
                 self.start = True
             elif not self.end_completed and ctime >= self.countdown_end_date:
                 self.end = True

@@ -1,28 +1,20 @@
-import asyncio
-import datetime
 import discord
-import yaml
 from discord.ext import commands, tasks
 from discord import app_commands
-import os
 import logging
 from GDoc import GDoc
 from HuntBot import HuntBot
 from Plugins.Bounties.Bounties import Bounties
 from Plugins.Dailies.Dailies import Dailies
 from Plugins.Countdown.Countdown import Countdown
-import pytz
+
 
 '''
 TODO LIST:
-- Automate "hunt starts in 24 hours, 12, 6, 1 etc. messages
 - Automate Quick time event (QTE) (anything that doesnt happen on the 6-hour schedule)
     - on QTE entries, can have field with GMT time for the GMT time QTE should be published
     - Also have Channel ID for where to publish the message
 - Automate Hunt score update messages to publish 
-- Move config file to GDOC
-- Add command to input GDOC Sheet ID for bot to use for Hunt
-- Dynamically determine cell ranges for bounties and dailies, etc.
 '''
 
 # Setup shit
@@ -39,9 +31,9 @@ countdown = None
 @tasks.loop(seconds=5)
 async def check_start_time():
     global countdown
-    if hunt_bot.configured and countdown is None:  # Initialize Countdown only once when configured
+    # Initialize Countdown only once when configured
+    if hunt_bot.configured and countdown is None:
         countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
-
     if not countdown.countdown_task_started:
         countdown.start_countdown()
 
