@@ -1,12 +1,5 @@
 from discord.ext import commands, tasks
 from HuntBot import HuntBot
-from GDoc import GDoc
-import asyncio
-
-from discord.ext import commands, tasks
-from HuntBot import HuntBot
-from GDoc import GDoc
-import asyncio
 import pandas as pd
 from string import Template
 

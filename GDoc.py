@@ -1,12 +1,7 @@
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import yaml
-import requests
-import csv
-import io
-import pandas as pd
-from tabulate import tabulate
-import pprint
+import os
 
 
 class GDoc:
@@ -23,8 +18,7 @@ class GDoc:
             with open("conf.yaml", 'r') as f:
                 config = yaml.safe_load(f)
             # Load the service account credentials from the JSON file
-            self.creds_path = config.get("GOOGLE_CREDENTIALS_PATH", "")
-            print(f"CREDPATH {self.creds_path}")
+            self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
 
             self.credentials = service_account.Credentials.from_service_account_file(self.creds_path, scopes=[
                 "https://www.googleapis.com/auth/spreadsheets.readonly"], )
@@ -58,11 +52,3 @@ class GDoc:
     def a1notation_builder(sheet_name: str, cell_range: str) -> str:
         a1format = f"{sheet_name}!{cell_range}"
         return a1format
-
-# if __name__ == '__main__':
-#     gdoc = GDoc()
-#     gdoc.set_sheet_id(sheet_id="1VcBBIxejr0dg87LH4hg_hnznaAcmt8Afq8plTBmD6-k")
-#     config_data = gdoc.get_data_from_sheet(sheet_name="BotConfig")
-#     print(config_data)
-#     tmap = gdoc.build_table_map(sheet_data=config_data)
-#     pprint.pprint(tmap)

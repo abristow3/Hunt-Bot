@@ -7,6 +7,7 @@ from HuntBot import HuntBot
 from Plugins.Bounties.Bounties import Bounties
 from Plugins.Dailies.Dailies import Dailies
 from Plugins.Countdown.Countdown import Countdown
+import os
 
 
 '''
@@ -15,7 +16,12 @@ TODO LIST:
     - on QTE entries, can have field with GMT time for the GMT time QTE should be published
     - Also have Channel ID for where to publish the message
 - Automate Hunt score update messages to publish 
+
+If drop has specific emoji, paste in star-board, if emoji removed, remove it
+    white list by drop screenshot channels for both teams (only certain users can emoji ni these channels)
 '''
+TOKEN = os.getenv("DISCORD_TOKEN")
+
 
 # Setup shit
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
@@ -169,11 +175,11 @@ async def list_commands():
 
 @bot.event
 async def on_ready():
-    # with open("assets/Etsy_Item_Listing_Photo_copy_189_3_1_2.png", "rb") as avatar_file:
-    #     # Update the bot's avatar
-    #     image = avatar_file.read()
-    #     await bot.user.edit(avatar=image)
-    #     print("FEELS FRANKEN-THURGO MAN")
+    with open("assets/Etsy_Item_Listing_Photo_copy_189_3_1_2.png", "rb") as avatar_file:
+        # Update the bot's avatar
+        image = avatar_file.read()
+        await bot.user.edit(avatar=image)
+        print("FEELS FRANKEN-THURGO MAN")
 
     await sync_commands()
 
@@ -191,8 +197,8 @@ async def on_ready():
     if hunt_bot.command_channel_id == "":
         print("NO COMMAND CHANNEL FOUND")
 
+# TOKEN="MTM1MTUzMDI5MjA2MTUzNjI5Nw.G8gCi1.2rgy-ruhqlyBoI7bjYToNa79e2eT59Iw-mvMJM"
 
-TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.G8gCi1.2rgy-ruhqlyBoI7bjYToNa79e2eT59Iw-mvMJM"
 # Run bot
 bot.run(TOKEN)
 # bot.run(hunt_bot.discord_token)
