@@ -22,6 +22,10 @@ If drop has specific emoji, paste in star-board, if emoji removed, remove it
 '''
 TOKEN = os.getenv("DISCORD_TOKEN")
 
+if not TOKEN:
+    print("NO TOKEN CONFIGURED")
+    exit()
+
 
 # Setup shit
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
