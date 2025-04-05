@@ -197,7 +197,6 @@ async def on_ready():
     if hunt_bot.command_channel_id == "":
         print("NO COMMAND CHANNEL FOUND")
 
-# TOKEN="MTM1MTUzMDI5MjA2MTUzNjI5Nw.G8gCi1.2rgy-ruhqlyBoI7bjYToNa79e2eT59Iw-mvMJM"
 
 # Run bot
 bot.run(TOKEN)
