@@ -4,9 +4,9 @@ from discord import app_commands
 import logging
 from GDoc import GDoc
 from HuntBot import HuntBot
-from Plugins.Bounties.Bounties import Bounties
-from Plugins.Dailies.Dailies import Dailies
-from Plugins.Countdown.Countdown import Countdown
+from plugins.Bounties.Bounties import Bounties
+from plugins.Dailies.Dailies import Dailies
+from plugins.Countdown.Countdown import Countdown
 import os
 
 
