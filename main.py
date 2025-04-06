@@ -47,6 +47,9 @@ async def check_start_time():
     if not countdown.countdown_task_started:
         countdown.start_countdown()
 
+    # Update the HuntBot GDoc data each loop RATE LIMIT IS 300/PER MINUTE
+    hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
+
     if not hunt_bot.started:
         # Check if we need to start the hunt or not
         hunt_bot.check_start()

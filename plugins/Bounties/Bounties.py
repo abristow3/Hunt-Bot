@@ -134,7 +134,7 @@ class Bounties:
                 single_password = single_bounty["Password"]
                 double = not pd.isna(single_bounty["Double"])
 
-                # IF not a double return the single trmplate
+                # IF not a double return the single template
                 if not double:
                     self.message = single_bounty_template.substitute(task=single_task, password=single_password)
                 else:
