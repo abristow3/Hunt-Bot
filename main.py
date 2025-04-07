@@ -45,6 +45,10 @@ async def on_raw_reaction_remove(payload):
 @tasks.loop(seconds=5)
 async def check_start_time():
     global countdown
+    global starboard
+
+    # Start Starboard plugin
+    starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
     # Initialize Countdown only once when configured
     if hunt_bot.configured and countdown is None:
         countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
