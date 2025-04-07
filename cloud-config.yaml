@@ -1,0 +1,32 @@
+#cloud-config
+write_files:
+  - path: /usr/local/bin/huntbot-454113-f9651184f83a.json
+    owner: root:root
+    permissions: '0644'
+    content: |
+      {
+        <enter google auth json contents>
+      }
+
+  - path: /etc/environment
+    content: |
+      DISCORD_TOKEN="discord token"
+      GOOGLE_CREDENTIALS_PATH="path to google creds json file"
+runcmd:
+  - source /etc/environment
+  - export DISCORD_TOKEN
+  - export GOOGLE_CREDENTIALS_PATH
+  - echo "Secrets injected successfully"
+  - apt-get update -y
+  - apt-get install git -y
+  - apt-get install python3-pip -y
+  - apt install python3.12-venv -y
+  - mkdir -p /opt/bots
+  - cd /opt/bots
+  - echo "Cloning Hunt-Bot Repository"
+  - git clone https://github.com/abristow3/Hunt-Bot.git
+  - cd Hunt-Bot
+  - python3 -m venv .venv
+  - source .venv/bin/activate
+  - pip install -r requirements.txt
+  - python3 main.py
