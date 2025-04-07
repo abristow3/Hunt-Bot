@@ -149,7 +149,7 @@ class HuntBot:
         else:
             return
 
-    def check_sheet_updates(self):
-        # Used to get the latest sheet data for updating dynamic plugins like Score
-        # Import the sheet data
-        self.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
+    # def check_sheet_updates(self):
+    #     # Used to get the latest sheet data for updating dynamic plugins like Score
+    #     # Import the sheet data
+    #     self.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))

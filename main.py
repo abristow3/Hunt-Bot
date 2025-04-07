@@ -7,7 +7,7 @@ from HuntBot import HuntBot
 from plugins.Bounties.Bounties import Bounties
 from plugins.Dailies.Dailies import Dailies
 from plugins.Countdown.Countdown import Countdown
-from plugis.StarBoard.StarBoard import StarBoard
+from plugins.StarBoard.StarBoard import StarBoard
 import os
 
 '''
@@ -33,30 +33,39 @@ hunt_bot = HuntBot()
 countdown = None
 starboard = None
 
+
 # Register the events from the ReactionHandler class
 @bot.event
 async def on_raw_reaction_add(payload):
+    print("heard reaction added")
     await starboard.on_raw_reaction_add(payload)
+
 
 @bot.event
 async def on_raw_reaction_remove(payload):
+    print("heard reaction removed")
     await starboard.on_raw_reaction_remove(payload)
+
 
 @tasks.loop(seconds=5)
 async def check_start_time():
     global countdown
     global starboard
 
-    # Start Starboard plugin
-    starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
+
+    print("starboard listening")
     # Initialize Countdown only once when configured
     if hunt_bot.configured and countdown is None:
         countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
     if not countdown.countdown_task_started:
         countdown.start_countdown()
 
+    if hunt_bot.configured and starboard is None:
+        # Start Starboard plugin
+        starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
+
     # Update the HuntBot GDoc data each loop RATE LIMIT IS 300/PER MINUTE
-    hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
+    # hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
 
     if not hunt_bot.started:
         # Check if we need to start the hunt or not

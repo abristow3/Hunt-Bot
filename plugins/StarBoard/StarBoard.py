@@ -72,16 +72,19 @@ class StarBoard:
     async def on_raw_reaction_add(self, payload):
         # Check if the reaction is from one of the two channels we're monitoring
         if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
+            print("PAYLOAD IN CORRECT CHANNEL ID")
             # Check if the emoji is the star emoji
             if str(payload.emoji) == "⭐":
-                channel = self.bot.get_channel(payload.channel_id)
+                print("FOUND STAR EMOJI")
+                channel = self.discord_bot.get_channel(payload.channel_id)
                 message = await channel.fetch_message(payload.message_id)
 
                 # Get the star channel
                 star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
 
                 # Copy the message to the star channel
-                await star_channel.send(f"Starred message from {channel.mention}: {message.content} (original message: {message.jump_url})")
+                await star_channel.send(
+                    f"Starred message from {channel.mention}: {message.content} (original message: {message.jump_url})")
 
     async def on_raw_reaction_remove(self, payload):
         # Check if the reaction was removed from one of the two channels we're monitoring
