@@ -9,7 +9,6 @@ from plugins.Dailies.Dailies import Dailies
 from plugins.Countdown.Countdown import Countdown
 import os
 
-
 '''
 TODO LIST:
 - Automate Quick time event (QTE) (anything that doesnt happen on the 6-hour schedule)
@@ -25,7 +24,6 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
     print("NO TOKEN CONFIGURED")
     exit()
-
 
 # Setup shit
 logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
@@ -57,7 +55,14 @@ async def check_start_time():
             channel = bot.get_channel(hunt_bot.command_channel_id)
 
             if channel:
-                await channel.send("Start time reached. Starting the hunt!")
+                await channel.send(f"@everyone the 13th Flux Hunt has officially begun!\n"
+                                   f"The password is: {hunt_bot.master_password}")
+
+            # Check if we need to end the hunt
+            hunt_bot.check_end()
+            if hunt_bot.ended:
+                await channel.send(f"@everyone The 13th Hunt has officially concluded...results coming soon!")
+                exit()
 
             print("Start time reached. Starting the hunt!")
             # If we made it this far then we are ready to start loading the plugins
@@ -76,7 +81,6 @@ async def check_start_time():
             if not dailies.configured:
                 await channel.send("Error loading Dailies plugin.")
                 return
-
         else:
             print("Waiting for the start time...")
 

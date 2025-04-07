@@ -43,7 +43,7 @@ class Countdown:
         london_tz = pytz.timezone('Europe/London')
 
         self.countdown_start_date = london_tz.localize(datetime(2025, 4, 3, 12, 0, 0))
-        self.countdown_end_date = self.countdown_start_date + timedelta(days=10)
+        self.countdown_end_date = self.countdown_start_date + timedelta(days=9)
 
         self.start_completed = False
         self.end_completed = False

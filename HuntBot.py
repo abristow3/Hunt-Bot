@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import pandas as pd
 
@@ -23,6 +23,9 @@ class HuntBot:
         self.configured = False
         self.started = False
         self.start_datetime = None
+        self.end_datetime = None
+        self.master_password = ""
+        self.ended = False
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -105,11 +108,14 @@ class HuntBot:
 
         self.start_date = self.config_map.get("HUNT_START_DATE", "")
         self.start_time = self.config_map.get("HUNT_START_TIME_GMT", "")
+        self.master_password = self.config_map.get("MASTER_PASSWORD", "")
 
         if self.start_date == "":
             print("Error loading hunt start date")
         elif self.start_time == "":
             print("Error loading hunt start time")
+        elif self.master_password == "":
+            print("Error loading master password")
 
         # Combine the date and time strings
         start_datetime_str = f"{self.start_date} {self.start_time}"
@@ -117,6 +123,7 @@ class HuntBot:
         # Convert to datetime object
         self.start_datetime = datetime.strptime(start_datetime_str, "%d/%m/%Y %H:%M")
         self.start_datetime = pytz.timezone('Europe/London').localize(self.start_datetime)
+        self.end_datetime = self.start_datetime + timedelta(days=9)
 
         self.configured = True
 
@@ -134,6 +141,15 @@ class HuntBot:
             return
         else:
             self.started = True
+
+
+    def check_end(self):
+        ctime = self.get_current_gmt_time()
+        if ctime >= self.end_datetime:
+            self.ended = True
+        else:
+            return
+
 
 
     def check_sheet_updates(self):
