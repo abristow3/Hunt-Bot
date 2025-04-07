@@ -7,16 +7,11 @@ from HuntBot import HuntBot
 from plugins.Bounties.Bounties import Bounties
 from plugins.Dailies.Dailies import Dailies
 from plugins.Countdown.Countdown import Countdown
+from plugis.StarBoard.StarBoard import StarBoard
 import os
 
 '''
-TODO LIST:
-- Automate Quick time event (QTE) (anything that doesnt happen on the 6-hour schedule)
-    - on QTE entries, can have field with GMT time for the GMT time QTE should be published
-    - Also have Channel ID for where to publish the message
 - Automate Hunt score update messages to publish 
-
-PIN bounties and dailies, then unpin when they are done
 
 If drop has specific emoji, paste in star-board, if emoji removed, remove it
     white list by drop screenshot channels for both teams (only certain users can emoji ni these channels)
@@ -36,7 +31,16 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 gdoc = GDoc()
 hunt_bot = HuntBot()
 countdown = None
+starboard = None
 
+# Register the events from the ReactionHandler class
+@bot.event
+async def on_raw_reaction_add(payload):
+    await starboard.on_raw_reaction_add(payload)
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    await starboard.on_raw_reaction_remove(payload)
 
 @tasks.loop(seconds=5)
 async def check_start_time():
@@ -83,6 +87,16 @@ async def check_start_time():
             if not dailies.configured:
                 await channel.send("Error loading Dailies plugin.")
                 return
+
+            # Start Starboard plugin
+            starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
+
+            # Check plugin loaded
+            if not starboard.configured:
+                await channel.send("Error loading StarBoard plugin.")
+                return
+
+
         else:
             print("Waiting for the start time...")
 

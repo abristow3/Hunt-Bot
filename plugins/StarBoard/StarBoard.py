@@ -39,9 +39,59 @@ class StarBoard:
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
         self.starboard_channel_id = 0
+        self.team1_drop_channel_id = 0
+        self.team2_drop_channel_id = 0
+        self.configured = False
 
-    def get_channel_id(self):
+        self.startup()
+
+    def startup(self):
+        self.get_starboard_channel_id()
+        self.get_team1_drop_channel_id()
+        self.get_team2_drop_channel_id()
+        self.configured = True
+
+    def get_starboard_channel_id(self):
         self.starboard_channel_id = int(self.hunt_bot.config_map.get('STARBOARD_CHANNEL_ID', "0"))
 
         if self.starboard_channel_id == 0:
             raise ConfigurationException(config_key='STARBOARD_CHANNEL_ID')
+
+    def get_team1_drop_channel_id(self):
+        self.team1_drop_channel_id = int(self.hunt_bot.config_map.get('TEAM_1_DROP_CHANNEL_ID', "0"))
+
+        if self.team1_drop_channel_id == 0:
+            raise ConfigurationException(config_key='TEAM_1_DROP_CHANNEL_ID')
+
+    def get_team2_drop_channel_id(self):
+        self.team2_drop_channel_id = int(self.hunt_bot.config_map.get('TEAM_2_DROP_CHANNEL_ID', "0"))
+
+        if self.team2_drop_channel_id == 0:
+            raise ConfigurationException(config_key='TEAM_2_DROP_CHANNEL_ID')
+
+    async def on_raw_reaction_add(self, payload):
+        # Check if the reaction is from one of the two channels we're monitoring
+        if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
+            # Check if the emoji is the star emoji
+            if str(payload.emoji) == "⭐":
+                channel = self.bot.get_channel(payload.channel_id)
+                message = await channel.fetch_message(payload.message_id)
+
+                # Get the star channel
+                star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
+
+                # Copy the message to the star channel
+                await star_channel.send(f"Starred message from {channel.mention}: {message.content} (original message: {message.jump_url})")
+
+    async def on_raw_reaction_remove(self, payload):
+        # Check if the reaction was removed from one of the two channels we're monitoring
+        if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
+            # Check if the emoji is the star emoji
+            if str(payload.emoji) == "⭐":
+                star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
+
+                # Try to find the message in the star channel that corresponds to the original one
+                async for msg in star_channel.history(limit=1000):
+                    if msg.content.endswith(str(payload.message_id)):  # match the original message ID
+                        await msg.delete()  # Delete the starred message from the star channel
+                        break
