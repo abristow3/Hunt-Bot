@@ -16,6 +16,8 @@ TODO LIST:
     - Also have Channel ID for where to publish the message
 - Automate Hunt score update messages to publish 
 
+PIN bounties and dailies, then unpin when they are done
+
 If drop has specific emoji, paste in star-board, if emoji removed, remove it
     white list by drop screenshot channels for both teams (only certain users can emoji ni these channels)
 '''

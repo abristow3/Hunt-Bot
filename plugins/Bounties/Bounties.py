@@ -68,6 +68,7 @@ class Bounties:
         self.double_bounties_table_name = "Double Bounties"
         self.message = ""
         self.configured = False
+        self.message_id = 0
 
         try:
             self.start_up()
@@ -146,7 +147,16 @@ class Bounties:
                                                                      b1_password=single_password,
                                                                      b2_task=double_task,
                                                                      b2_password=double_password)
-                await channel.send(self.message)
+
+                # if message ID not 0, then there is an old message and we need to unpin it
+                if self.message_id != 0:
+                    old_message = await channel.fetch_message(self.message_id)
+                    await old_message.unpin()
+
+                # send message, capture ID in memory, pin message
+                sent_message = await channel.send(self.message)
+                self.message_id = sent_message.id
+                await sent_message.pin()
             except StopIteration:
                 # If we run out of bounties, stop the loop
                 print("No more bounties left!")

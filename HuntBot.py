@@ -142,15 +142,12 @@ class HuntBot:
         else:
             self.started = True
 
-
     def check_end(self):
         ctime = self.get_current_gmt_time()
         if ctime >= self.end_datetime:
             self.ended = True
         else:
             return
-
-
 
     def check_sheet_updates(self):
         # Used to get the latest sheet data for updating dynamic plugins like Score
