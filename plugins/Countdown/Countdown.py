@@ -96,9 +96,6 @@ class Countdown:
             remaining_hours_start = round(remaining_hours_start)
             remaining_hours_end = round(remaining_hours_end)
 
-            print(f"REMAINING HOURS: {remaining_hours_start}")
-            print(f"REMAINING END: {remaining_hours_end}")
-
             # Check if remaining time is within the specified intervals for the start time
             if not self.start_completed and remaining_hours_start in self.countdown_intervals:
                 self.message = begins_template.substitute(num_hours=remaining_hours_start)
@@ -108,19 +105,25 @@ class Countdown:
             # If all start intervals are sent, reset countdown intervals for end time
             if not self.start_completed and not self.countdown_intervals:
                 self.start_completed = True
-                self.countdown_intervals = [24, 12, 6, 2, 1]  # Reset intervals for the end time
+                countdown_intervals = [24, 12, 6, 2, 1]  # Reset intervals for the end time
 
-            # Check if remaining time is within the specified intervals for the end time
-            if not self.end_completed and remaining_hours_end in self.countdown_intervals:
-                self.message = ends_template.substitute(num_hours=remaining_hours_end)
-                await channel.send(self.message)
-                self.countdown_intervals.remove(remaining_hours_end)  # Remove the interval to prevent re-sending
+            # If start time is complete, start sending end time countdown messages
+            if self.start_completed and not self.end_completed:
+                # Check if remaining time is within the specified intervals for the end time
+                if remaining_hours_end in self.countdown_intervals:
+                    self.message = ends_template.substitute(num_hours=remaining_hours_end)
+                    await channel.send(self.message)
+                    self.countdown_intervals.remove(remaining_hours_end)  # Remove the interval to prevent re-sending
 
-            # If the event has started, no more messages will be sent
+                # If all end intervals are sent, mark the end as completed
+                if not self.countdown_intervals:
+                    self.end_completed = True
+
+            # If the event has started, no more messages will be sent for start
             if not self.start_completed and ctime >= self.countdown_start_date:
                 self.start_completed = True
 
-            # If the event has ended, no more messages will be sent
+            # If the event has ended, no more messages will be sent for end
             if not self.end_completed and ctime >= self.countdown_end_date:
                 self.end_completed = True
 
