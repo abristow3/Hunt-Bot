@@ -3,6 +3,7 @@ from HuntBot import HuntBot
 import pandas as pd
 from string import Template
 
+
 class TableDataImportException(Exception):
     def __init__(self, message="Configuration error occurred", table_name=None):
         # Call the base class constructor with the message
@@ -16,6 +17,7 @@ class TableDataImportException(Exception):
         if self.config_key:
             return f'{self.args[0]} (Config key: {self.config_key})'
         return self.args[0]
+
 
 class ConfigurationException(Exception):
     """Exception raised for errors in the configuration."""

@@ -1,6 +1,5 @@
-from discord.ext import commands, tasks
+from discord.ext import commands
 from HuntBot import HuntBot
-import discord
 
 class TableDataImportException(Exception):
     def __init__(self, message="Configuration error occurred", table_name=None):
@@ -34,7 +33,7 @@ class ConfigurationException(Exception):
         return self.args[0]
 
 
-class StarBoard:
+class StarBoard(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
@@ -70,12 +69,12 @@ class StarBoard:
         if self.team2_drop_channel_id == 0:
             raise ConfigurationException(config_key='TEAM_2_DROP_CHANNEL_ID')
 
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # Check if the reaction is from one of the two channels we're monitoring
         if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
             # Check if the emoji is the star emoji
             if str(payload.emoji) == "⭐":
-                print("FOUND STAR EMOJI ADDED")
                 channel = self.discord_bot.get_channel(payload.channel_id)
                 message = await channel.fetch_message(payload.message_id)
 
@@ -98,10 +97,10 @@ class StarBoard:
                 # Store the relationship between the original message and the copied message in the star channel
                 self.starred_messages[message.id] = sent_message.id
 
+    @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
             if str(payload.emoji) == "⭐":
-                print("FOUND STAR EMOJI REMOVED")
                 # Check if the message is in the starred_messages dictionary
                 original_message_id = payload.message_id
                 if original_message_id in self.starred_messages:
