@@ -1,6 +1,6 @@
 from discord.ext import commands, tasks
 from HuntBot import HuntBot
-
+import discord
 
 class TableDataImportException(Exception):
     def __init__(self, message="Configuration error occurred", table_name=None):
@@ -82,6 +82,10 @@ class StarBoard:
                 # Get the star channel
                 star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
 
+                # Create an embed to send the message in the star channel
+                embed = discord.Embed(description=message.content)
+                embed.set_footer(text=f"Original message ID: {payload.message_id}")
+
                 # Copy the message to the star channel
                 await star_channel.send(
                     f"Starred message from {channel.mention}: {message.content} (original message: {message.jump_url})")
@@ -95,6 +99,9 @@ class StarBoard:
 
                 # Try to find the message in the star channel that corresponds to the original one
                 async for msg in star_channel.history(limit=1000):
-                    if msg.content.endswith(str(payload.message_id)):  # match the original message ID
-                        await msg.delete()  # Delete the starred message from the star channel
-                        break
+                    # Match the message ID stored in the embed footer
+                    if msg.embeds:
+                        embed = msg.embeds[0]
+                        if embed.footer and embed.footer.text == f"Original message ID: {payload.message_id}":
+                            await msg.delete()  # Delete the starred message from the star channel
+                            break
