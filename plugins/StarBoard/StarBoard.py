@@ -42,6 +42,7 @@ class StarBoard(commands.Cog):
         self.team2_drop_channel_id = 0
         self.configured = False
         self.starred_messages = {}
+        self.roles = ["Green Team Leader", "Orange Team Leader", "Staff"]
 
         self.startup()
 
@@ -77,6 +78,28 @@ class StarBoard(commands.Cog):
             if str(payload.emoji) == "⭐":
                 channel = self.discord_bot.get_channel(payload.channel_id)
                 message = await channel.fetch_message(payload.message_id)
+
+                user = await self.discord_bot.fetch_user(payload.user_id)  # Fetch the user
+                guild = self.discord_bot.get_guild(payload.guild_id)
+
+                if guild is None:
+                    print(f"Guild not found for user {user.name}.")
+                    return
+
+                # Get the member object from the guild (which contains role information)
+                member = guild.get_member(user.id)
+
+                if member is None:
+                    print(f"Member {user.name} not found in guild {guild.name}.")
+                    return
+
+                has_required_role = any(role.name in self.roles for role in member.roles)
+
+                if not has_required_role:
+                    reaction = payload.emoji
+                    message = await guild.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await message.remove_reaction(reaction, user)
+                    return
 
                 # Check if the message already has a star reaction
                 existing_star_reactions = [reaction for reaction in message.reactions if str(reaction.emoji) == "⭐"]
