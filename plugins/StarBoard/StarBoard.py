@@ -117,9 +117,7 @@ class StarBoard(commands.Cog):
                 # Check the total count of `⭐` reactions on the original message
                 star_reactions = [reaction for reaction in original_message.reactions if str(reaction.emoji) == "⭐"]
 
-                total_star_reactions = star_reactions[0].count  # Get the total count of `⭐` reactions
-                print(f"STAR REACTS: {total_star_reactions}")
-                if total_star_reactions == 0:  # If there are no `⭐` reactions left
+                if not star_reactions:  # If there are no `⭐` reactions left
                     # If no star reactions are left, delete the message from the starboard
                     if original_message.id in self.starred_messages:
                         starboard_message_id = self.starred_messages[original_message.id]
