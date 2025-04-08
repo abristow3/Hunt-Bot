@@ -49,6 +49,7 @@ class Score:
         self.team1_points = 0
         self.team2_points = 0
         self.score_table_name = "Current Score"
+        self.message = None
 
     def get_score_channel(self):
         self.score_channel_id = int(self.hunt_bot.config_map.get('SCORE_CHANNEL_ID', "0"))
@@ -65,3 +66,19 @@ class Score:
 
         if score_df.empty:
             raise TableDataImportException(table_name=self.score_table_name)
+
+        score_dict = pd.Series(score_df['Total Points'].values, index=score_df['Team Name']).to_dict()
+        self.team1_points = score_dict.get("Team Orange", "")
+        self.team2_points = score_dict.get("Team Green", "")
+
+    async def post_message(self):
+        channel = self.discord_bot.get_channel(self.score_channel_id)
+
+        message = (f"The current score is\n"
+                   f"Team Orange: {self.team1_points}\n"
+                   f"Team Green: {self.team2_points}")
+
+        if self.message:
+            await self.message.edit(content=message)
+        else:
+            self.message = await channel.send(self.message)

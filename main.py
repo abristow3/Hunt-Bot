@@ -8,6 +8,7 @@ from plugins.Bounties.Bounties import Bounties
 from plugins.Dailies.Dailies import Dailies
 from plugins.Countdown.Countdown import Countdown
 from plugins.StarBoard.StarBoard import StarBoard
+from plugins.Score.Score import Score
 import os
 
 '''
@@ -32,11 +33,13 @@ gdoc = GDoc()
 hunt_bot = HuntBot()
 countdown = None
 starboard = None
+score = None
 
 @tasks.loop(seconds=5)
 async def check_start_time():
     global countdown
     global starboard
+    global score
 
     # Initialize Countdown only once when configured
     if hunt_bot.configured and countdown is None:
@@ -48,6 +51,9 @@ async def check_start_time():
         # Start Starboard plugin
         starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
         await bot.add_cog(starboard)
+
+    if hunt_bot.configured and score is None:
+        score = Score(discord_bot=bot, hunt_bot=hunt_bot)
 
     # Update the HuntBot GDoc data each loop RATE LIMIT IS 300/PER MINUTE
     # hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
@@ -69,6 +75,13 @@ async def check_start_time():
                 exit()
 
             print("Start time reached. Starting the hunt!")
+
+            # Get updated gdoc data rate is 300 reads /per minute
+            hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
+
+            score.get_score()
+            await score.post_message()
+
             # If we made it this far then we are ready to start loading the plugins
             # Start bounties plugin
             bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
@@ -85,9 +98,6 @@ async def check_start_time():
             if not dailies.configured:
                 await channel.send("Error loading Dailies plugin.")
                 return
-
-            # Start Starboard plugin
-            starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
 
             # Check plugin loaded
             if not starboard.configured:
