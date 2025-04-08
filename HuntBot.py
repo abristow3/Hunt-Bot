@@ -123,7 +123,8 @@ class HuntBot:
         # Convert to datetime object
         self.start_datetime = datetime.strptime(start_datetime_str, "%d/%m/%Y %H:%M")
         self.start_datetime = pytz.timezone('Europe/London').localize(self.start_datetime)
-        self.end_datetime = self.start_datetime + timedelta(days=9)
+        # TODO cvhange back to time delt of 9 days
+        self.end_datetime = self.start_datetime + timedelta(minutes=90)
 
         self.configured = True
 
