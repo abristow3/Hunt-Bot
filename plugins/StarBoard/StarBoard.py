@@ -117,22 +117,22 @@ class StarBoard(commands.Cog):
                 # Check the total count of `⭐` reactions on the original message
                 star_reactions = [reaction for reaction in original_message.reactions if str(reaction.emoji) == "⭐"]
 
-                if star_reactions:
-                    total_star_reactions = star_reactions[0].count  # Get the total count of `⭐` reactions
-                    if total_star_reactions == 0:  # If there are no `⭐` reactions left
-                        # If no star reactions are left, delete the message from the starboard
-                        if original_message.id in self.starred_messages:
-                            starboard_message_id = self.starred_messages[original_message.id]
-                            starboard_channel = self.discord_bot.get_channel(self.starboard_channel_id)
-                            starboard_message = await starboard_channel.fetch_message(starboard_message_id)
+                total_star_reactions = star_reactions[0].count  # Get the total count of `⭐` reactions
+                print(f"STAR REACTS: {total_star_reactions}")
+                if total_star_reactions == 0:  # If there are no `⭐` reactions left
+                    # If no star reactions are left, delete the message from the starboard
+                    if original_message.id in self.starred_messages:
+                        starboard_message_id = self.starred_messages[original_message.id]
+                        starboard_channel = self.discord_bot.get_channel(self.starboard_channel_id)
+                        starboard_message = await starboard_channel.fetch_message(starboard_message_id)
 
-                            # Delete the starboard message
-                            await starboard_message.delete()
+                        # Delete the starboard message
+                        await starboard_message.delete()
 
-                            # Remove the mapping from the dictionary
-                            del self.starred_messages[original_message.id]
+                        # Remove the mapping from the dictionary
+                        del self.starred_messages[original_message.id]
 
-                            print(
-                                f"Deleted starred message with ID {starboard_message_id} for original message ID {original_message.id}")
+                        print(
+                            f"Deleted starred message with ID {starboard_message_id} for original message ID {original_message.id}")
 
 
