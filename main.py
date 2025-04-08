@@ -35,6 +35,7 @@ countdown = None
 starboard = None
 score = None
 
+
 @tasks.loop(seconds=5)
 async def check_start_time():
     global countdown
@@ -50,19 +51,22 @@ async def check_start_time():
     if not countdown.countdown_task_started:
         countdown.start_countdown()
 
+    channel = bot.get_channel(countdown.announcements_channel_id)
+
     if hunt_bot.configured and starboard is None:
         # Start Starboard plugin
         starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
-        await bot.add_cog(starboard)
-
-    if hunt_bot.configured and score is None:
-        score = Score(discord_bot=bot, hunt_bot=hunt_bot)
+        # Check plugin loaded
+        if not starboard.configured:
+            await channel.send("Error loading StarBoard plugin.")
+            return
+        else:
+            await bot.add_cog(starboard)
 
     if not hunt_bot.started:
         # Check if we need to start the hunt or not
         hunt_bot.check_start()
         if hunt_bot.started:
-            channel = bot.get_channel(countdown.announcements_channel_id)
 
             if channel:
                 await channel.send(f"@everyone the 13th Flux Hunt has officially begun!\n"
@@ -93,9 +97,10 @@ async def check_start_time():
                 await channel.send("Error loading Dailies plugin.")
                 return
 
-            # Check plugin loaded
-            if not starboard.configured:
-                await channel.send("Error loading StarBoard plugin.")
+            score = Score(discord_bot=bot, hunt_bot=hunt_bot)
+
+            if not score.configured:
+                await channel.send("Error loading Score plugin.")
                 return
         else:
             print("Waiting for the start time...")
