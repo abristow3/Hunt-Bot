@@ -70,8 +70,6 @@ class Score:
         # pull data
         score_df = self.hunt_bot.pull_table_data(table_name=self.score_table_name)
 
-        print(score_df)
-
         if score_df.empty:
             raise TableDataImportException(table_name=self.score_table_name)
 
