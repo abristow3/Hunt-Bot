@@ -2,7 +2,6 @@ from discord.ext import commands, tasks
 from HuntBot import HuntBot
 import pandas as pd
 from string import Template
-from GDoc import GDoc
 
 
 class TableDataImportException(Exception):

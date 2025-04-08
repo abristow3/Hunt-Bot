@@ -1,6 +1,6 @@
 from discord.ext import commands
 from HuntBot import HuntBot
-import re
+
 
 class TableDataImportException(Exception):
     def __init__(self, message="Configuration error occurred", table_name=None):
