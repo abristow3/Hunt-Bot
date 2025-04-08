@@ -87,9 +87,11 @@ class Countdown:
 
             # Calculate remaining time until the start and the end of the event
             remaining_time_start = self.countdown_start_date - ctime
+            print(f"remaining tiem start: {remaining_time_start}")
             remaining_hours_start = remaining_time_start.total_seconds() / 3600  # Convert to hours
 
             remaining_time_end = self.countdown_end_date - ctime
+            print(f"remaining tiem end: {remaining_time_end}")
             remaining_hours_end = remaining_time_end.total_seconds() / 3600  # Convert to hours
 
             # Round the remaining hours to the nearest whole number
