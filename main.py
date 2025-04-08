@@ -78,8 +78,6 @@ async def check_start_time():
                 await channel.send(f"@everyone The 13th Hunt has officially concluded...results coming soon!")
                 return
 
-            print("Start time reached. Starting the hunt!")
-
             # If we made it this far then we are ready to start loading the plugins
             # Start bounties plugin
             bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
@@ -116,13 +114,6 @@ async def start(interaction: discord.Interaction):
     if interaction.channel.id != hunt_bot.command_channel_id:
         await interaction.response.send_message("Silly goon. You can't run that command in this channel.")
         return
-
-    # TODO remove this lines when done
-    gdoc.set_sheet_id(sheet_id="1VcBBIxejr0dg87LH4hg_hnznaAcmt8Afq8plTBmD6-k")
-    hunt_bot.sheet_name = "BotConfig"
-
-    # TODO best way to handle table name storage?
-    hunt_bot.config_table_name = "Discord Conf"
 
     # Check sheet ID has been populated
     if gdoc.sheet_id == "":
@@ -211,7 +202,13 @@ async def on_ready():
         # Update the bot's avatar
         image = avatar_file.read()
         await bot.user.edit(avatar=image)
-        print("FEELS FRANKEN-THURGO MAN")
+
+    try:
+        channel = bot.get_channel(844644283394031678)
+        await channel.send("I'M ALIVEEEEE!!!!!!!\n"
+                           "FEELS FRANKEN-THURGO MAN")
+    except Exception as e:
+        pass
 
     await sync_commands()
 

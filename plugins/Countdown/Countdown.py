@@ -1,6 +1,5 @@
 from datetime import timedelta, datetime
 from string import Template
-import math
 import pytz
 from discord.ext import commands, tasks
 from HuntBot import HuntBot
@@ -33,7 +32,6 @@ class ConfigurationException(Exception):
 
 class Countdown:
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
-        # Todo as we publish the message, divide these by 2
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
         self.announcements_channel_id = 0
