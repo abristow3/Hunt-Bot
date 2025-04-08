@@ -2,6 +2,7 @@ from discord.ext import commands, tasks
 from HuntBot import HuntBot
 import pandas as pd
 from string import Template
+from GDoc import GDoc
 
 
 class TableDataImportException(Exception):
@@ -50,12 +51,20 @@ class Score:
         self.team2_points = 0
         self.score_table_name = "Current Score"
         self.message = None
+        self.configured = False
+
+        self.setup()
+        self.start_scores()
+
+    def setup(self):
+        self.get_score_channel()
+        self.configured = True
 
     def get_score_channel(self):
-        self.score_channel_id = int(self.hunt_bot.config_map.get('SCORE_CHANNEL_ID', "0"))
+        self.score_channel_id = int(self.hunt_bot.config_map.get('POINTS_CHANNEL_ID', "0"))
 
         if self.score_channel_id == 0:
-            raise ConfigurationException(config_key='SCORE_CHANNEL_ID')
+            raise ConfigurationException(config_key='POINTS_CHANNEL_ID')
 
     def get_score(self):
         # use table map to find score table
@@ -71,14 +80,19 @@ class Score:
         self.team1_points = score_dict.get("Team Orange", "")
         self.team2_points = score_dict.get("Team Green", "")
 
-    async def post_message(self):
+    def start_scores(self):
         channel = self.discord_bot.get_channel(self.score_channel_id)
 
-        message = (f"The current score is\n"
-                   f"Team Orange: {self.team1_points}\n"
-                   f"Team Green: {self.team2_points}")
+        @tasks.loop(seconds=10)
+        async def update_scores():
+            self.get_score()
+            message = (f"The current score is\n"
+                       f"Team Orange: {self.team1_points}\n"
+                       f"Team Green: {self.team2_points}")
 
-        if self.message:
-            await self.message.edit(content=message)
-        else:
-            self.message = await channel.send(self.message)
+            if self.message:
+                await self.message.edit(content=message)
+            else:
+                self.message = await channel.send(message)
+
+        update_scores.start()

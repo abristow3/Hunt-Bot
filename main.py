@@ -41,6 +41,9 @@ async def check_start_time():
     global starboard
     global score
 
+    # Get updated gdoc data rate is 300 reads /per minute
+    hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
+
     # Initialize Countdown only once when configured
     if hunt_bot.configured and countdown is None:
         countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
@@ -55,14 +58,11 @@ async def check_start_time():
     if hunt_bot.configured and score is None:
         score = Score(discord_bot=bot, hunt_bot=hunt_bot)
 
-    # Update the HuntBot GDoc data each loop RATE LIMIT IS 300/PER MINUTE
-    # hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
-
     if not hunt_bot.started:
         # Check if we need to start the hunt or not
         hunt_bot.check_start()
         if hunt_bot.started:
-            channel = bot.get_channel(hunt_bot.command_channel_id)
+            channel = bot.get_channel(countdown.announcements_channel_id)
 
             if channel:
                 await channel.send(f"@everyone the 13th Flux Hunt has officially begun!\n"
@@ -72,15 +72,9 @@ async def check_start_time():
             hunt_bot.check_end()
             if hunt_bot.ended:
                 await channel.send(f"@everyone The 13th Hunt has officially concluded...results coming soon!")
-                exit()
+                return
 
             print("Start time reached. Starting the hunt!")
-
-            # Get updated gdoc data rate is 300 reads /per minute
-            hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
-
-            score.get_score()
-            await score.post_message()
 
             # If we made it this far then we are ready to start loading the plugins
             # Start bounties plugin
@@ -103,8 +97,6 @@ async def check_start_time():
             if not starboard.configured:
                 await channel.send("Error loading StarBoard plugin.")
                 return
-
-
         else:
             print("Waiting for the start time...")
 
