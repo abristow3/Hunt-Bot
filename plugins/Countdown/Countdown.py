@@ -95,21 +95,84 @@ class Countdown:
 
             ctime = self.check_time()
 
+            # Calculate remaining time until the start and the end of the event
+            remaining_time_start = self.countdown_start_date - ctime
+            remaining_hours_start = remaining_time_start.total_seconds() / 3600  # Convert to hours
+
+            remaining_time_end = self.countdown_end_date - ctime
+            remaining_hours_end = remaining_time_end.total_seconds() / 3600  # Convert to hours
+
+            # Check if remaining time matches the intervals for the start time: 24, 12, 6, 3, 2, 1
+            if not self.start_completed and remaining_hours_start <= 24 and remaining_hours_start > 23:
+                self.message = begins_template.substitute(num_hours=24)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.start_completed and remaining_hours_start <= 12 and remaining_hours_start > 11:
+                self.message = begins_template.substitute(num_hours=12)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.start_completed and remaining_hours_start <= 6 and remaining_hours_start > 5:
+                self.message = begins_template.substitute(num_hours=6)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.start_completed and remaining_hours_start <= 3 and remaining_hours_start > 2:
+                self.message = begins_template.substitute(num_hours=3)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.start_completed and remaining_hours_start <= 2 and remaining_hours_start > 1:
+                self.message = begins_template.substitute(num_hours=2)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.start_completed and remaining_hours_start <= 1 and remaining_hours_start > 0:
+                self.message = begins_template.substitute(num_hours=1)
+                await channel.send(self.message)
+                self.update_interval()
+
+            # Check if remaining time matches the intervals for the end time: 24, 12, 6, 3, 2, 1
+            if not self.end_completed and remaining_hours_end <= 24 and remaining_hours_end > 23:
+                self.message = ends_template.substitute(num_hours=24)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.end_completed and remaining_hours_end <= 12 and remaining_hours_end > 11:
+                self.message = ends_template.substitute(num_hours=12)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.end_completed and remaining_hours_end <= 6 and remaining_hours_end > 5:
+                self.message = ends_template.substitute(num_hours=6)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.end_completed and remaining_hours_end <= 3 and remaining_hours_end > 2:
+                self.message = ends_template.substitute(num_hours=3)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.end_completed and remaining_hours_end <= 2 and remaining_hours_end > 1:
+                self.message = ends_template.substitute(num_hours=2)
+                await channel.send(self.message)
+                self.update_interval()
+            elif not self.end_completed and remaining_hours_end <= 1 and remaining_hours_end > 0:
+                self.message = ends_template.substitute(num_hours=1)
+                await channel.send(self.message)
+                self.update_interval()
+
+            # If the event has started, no more messages will be sent
             if not self.start_completed and ctime >= self.countdown_start_date:
-                self.start = True
-            elif not self.end_completed and ctime >= self.countdown_end_date:
-                self.end = True
+                self.start_completed = True
+                self.start = False
+                print("Countdown started!")
+
+            # If the event has ended, no more messages will be sent
+            if not self.end_completed and ctime >= self.countdown_end_date:
+                self.end_completed = True
+                self.end = False
+                print("Countdown ended!")
 
             if self.end:
                 self.message = ends_template.substitute(num_hours=self.countdown_interval)
                 await channel.send(self.message)
                 self.update_interval()
-            elif self.start:
-                self.message = begins_template.substitute(num_hours=self.countdown_interval)
-                await channel.send(self.message)
-                self.update_interval()
+
             else:
-                print("Not time to start yet")
+                print("Not time to start or end yet")
                 return
 
         begin_countdown.start()
