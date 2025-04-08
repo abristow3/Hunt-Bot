@@ -37,17 +37,12 @@ class Countdown:
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
         self.announcements_channel_id = 0
-        # Set the announcement plugin start time to 24 hours prior to the hunt start datetime
-        # self.countdown_start_date = self.hunt_bot.start_datetime - timedelta(days=1)
-        london_tz = pytz.timezone('Europe/London')
 
-        self.countdown_start_date = london_tz.localize(datetime(2025, 4, 3, 12, 0, 0))
+        self.countdown_start_date = self.hunt_bot.start_datetime - timedelta(days=1)
         self.countdown_end_date = self.countdown_start_date + timedelta(days=9)
 
         self.start_completed = False
         self.end_completed = False
-        self.start = False
-        self.end = False
         self.message = ""
         # Flag to ensure the countdown starts only once
         self.countdown_task_started = False
@@ -76,7 +71,6 @@ class Countdown:
 
         self.countdown_task_started = True
         channel = self.discord_bot.get_channel(self.announcements_channel_id)
-
 
         @tasks.loop(seconds=5)
         async def begin_countdown():
