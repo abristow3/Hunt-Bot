@@ -42,6 +42,7 @@ class StarBoard:
         self.team1_drop_channel_id = 0
         self.team2_drop_channel_id = 0
         self.configured = False
+        self.starred_messages = {}
 
         self.startup()
 
@@ -72,36 +73,49 @@ class StarBoard:
     async def on_raw_reaction_add(self, payload):
         # Check if the reaction is from one of the two channels we're monitoring
         if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
-            print("PAYLOAD IN CORRECT CHANNEL ID")
             # Check if the emoji is the star emoji
             if str(payload.emoji) == "⭐":
-                print("FOUND STAR EMOJI")
+                print("FOUND STAR EMOJI ADDED")
                 channel = self.discord_bot.get_channel(payload.channel_id)
                 message = await channel.fetch_message(payload.message_id)
 
                 # Get the star channel
                 star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
 
-                # Create an embed to send the message in the star channel
-                embed = discord.Embed(description=message.content)
-                embed.set_footer(text=f"Original message ID: {payload.message_id}")
+                # Start constructing the message that will be sent to the star channel
+                message_content = message.content
 
-                # Copy the message to the star channel
-                await star_channel.send(
-                    f"Starred message from {channel.mention}: {message.content} (original message: {message.jump_url})")
+                # Check if there are any attachments (images, files, etc.)
+                if message.attachments:
+                    attachments = [attachment.url for attachment in message.attachments]
+                    message_content += "\n" + "\n".join(attachments)
+
+                # Send the message to the star channel
+                sent_message = await star_channel.send(
+                    f"Starred message from {channel.mention}: {message_content} (original message: {message.jump_url})"
+                )
+
+                # Store the relationship between the original message and the copied message in the star channel
+                self.starred_messages[message.id] = sent_message.id
 
     async def on_raw_reaction_remove(self, payload):
-        # Check if the reaction was removed from one of the two channels we're monitoring
         if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
-            # Check if the emoji is the star emoji
             if str(payload.emoji) == "⭐":
-                star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
+                print("FOUND STAR EMOJI REMOVED")
+                # Check if the message is in the starred_messages dictionary
+                original_message_id = payload.message_id
+                if original_message_id in self.starred_messages:
+                    # Get the ID of the starred message in the star channel
+                    star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
+                    starred_message_id = self.starred_messages[original_message_id]
 
-                # Try to find the message in the star channel that corresponds to the original one
-                async for msg in star_channel.history(limit=1000):
-                    # Match the message ID stored in the embed footer
-                    if msg.embeds:
-                        embed = msg.embeds[0]
-                        if embed.footer and embed.footer.text == f"Original message ID: {payload.message_id}":
-                            await msg.delete()  # Delete the starred message from the star channel
-                            break
+                    # Fetch the starred message and delete it
+                    starred_message = await star_channel.fetch_message(starred_message_id)
+                    await starred_message.delete()
+
+                    # Remove the entry from the dictionary after deleting the message
+                    del self.starred_messages[original_message_id]
+
+                    print(
+                        f"Deleted starred message with ID {starred_message_id} for original message ID {original_message_id}")
+
