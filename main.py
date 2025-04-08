@@ -52,13 +52,11 @@ async def check_start_time():
     global countdown
     global starboard
 
-
-    print("starboard listening")
     # Initialize Countdown only once when configured
-    if hunt_bot.configured and countdown is None:
-        countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
-    if not countdown.countdown_task_started:
-        countdown.start_countdown()
+    # if hunt_bot.configured and countdown is None:
+    #     countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
+    # if not countdown.countdown_task_started:
+    #     countdown.start_countdown()
 
     if hunt_bot.configured and starboard is None:
         # Start Starboard plugin
