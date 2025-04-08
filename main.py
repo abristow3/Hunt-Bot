@@ -47,7 +47,7 @@ async def check_start_time():
     if hunt_bot.configured and starboard is None:
         # Start Starboard plugin
         starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
-        bot.add_cog(starboard)
+        await bot.add_cog(starboard)
 
     # Update the HuntBot GDoc data each loop RATE LIMIT IS 300/PER MINUTE
     # hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))

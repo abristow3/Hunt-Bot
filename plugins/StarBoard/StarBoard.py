@@ -78,6 +78,16 @@ class StarBoard(commands.Cog):
                 channel = self.discord_bot.get_channel(payload.channel_id)
                 message = await channel.fetch_message(payload.message_id)
 
+                # Check if the message already has a star reaction
+                existing_star_reactions = [reaction for reaction in message.reactions if str(reaction.emoji) == "⭐"]
+
+                if existing_star_reactions and existing_star_reactions[0].count > 0:
+                    # If the message already has a star reaction, remove this new reaction
+                    user = await self.discord_bot.get_user(payload.user_id)  # Get the user who reacted
+                    await message.remove_reaction(payload.emoji, user)  # Remove their reaction
+                    print(f"Removed duplicate star reaction from {user} on message {message.id}")
+                    return  # Skip posting to starboard since it's already starred
+
                 # Get the star channel
                 star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
 
