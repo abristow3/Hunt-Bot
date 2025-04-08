@@ -96,6 +96,9 @@ class Countdown:
             remaining_hours_start = round(remaining_hours_start)
             remaining_hours_end = round(remaining_hours_end)
 
+            print(f"TIME TILL START: {remaining_hours_start}")
+            print(f"TIME TILL END: {remaining_hours_end}")
+
             # Check if remaining time is within the specified intervals for the start time
             if not self.start_completed and remaining_hours_start in self.countdown_intervals:
                 self.message = begins_template.substitute(num_hours=remaining_hours_start)
