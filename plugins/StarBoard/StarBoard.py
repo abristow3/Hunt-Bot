@@ -81,10 +81,10 @@ class StarBoard(commands.Cog):
                 # Check if the message already has a star reaction
                 existing_star_reactions = [reaction for reaction in message.reactions if str(reaction.emoji) == "⭐"]
 
-                if existing_star_reactions and existing_star_reactions[0].count > 0:
+                if existing_star_reactions and existing_star_reactions[0].count > 1:
                     # If the message already has a star reaction, remove this new reaction
-                    user = await self.discord_bot.get_user(payload.user_id)  # Get the user who reacted
-                    await message.remove_reaction(payload.emoji, user)  # Remove their reaction
+                    user = await self.discord_bot.fetch_user(payload.user_id)  # Fetch the user
+                    await message.remove_reaction(payload.emoji, user)
                     print(f"Removed duplicate star reaction from {user} on message {message.id}")
                     return  # Skip posting to starboard since it's already starred
 
@@ -110,21 +110,29 @@ class StarBoard(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         if payload.channel_id in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
-            if str(payload.emoji) == "⭐":
-                # Check if the message is in the starred_messages dictionary
-                original_message_id = payload.message_id
-                if original_message_id in self.starred_messages:
-                    # Get the ID of the starred message in the star channel
-                    star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
-                    starred_message_id = self.starred_messages[original_message_id]
+            if str(payload.emoji) == "⭐":  # Only care about the star emoji
+                channel = self.discord_bot.get_channel(payload.channel_id)
+                original_message = await channel.fetch_message(payload.message_id)
 
-                    # Fetch the starred message and delete it
-                    starred_message = await star_channel.fetch_message(starred_message_id)
-                    await starred_message.delete()
+                # Check the total count of `⭐` reactions on the original message
+                star_reactions = [reaction for reaction in original_message.reactions if str(reaction.emoji) == "⭐"]
 
-                    # Remove the entry from the dictionary after deleting the message
-                    del self.starred_messages[original_message_id]
+                if star_reactions:
+                    total_star_reactions = star_reactions[0].count  # Get the total count of `⭐` reactions
+                    if total_star_reactions == 0:  # If there are no `⭐` reactions left
+                        # If no star reactions are left, delete the message from the starboard
+                        if original_message.id in self.starred_messages:
+                            starboard_message_id = self.starred_messages[original_message.id]
+                            starboard_channel = self.discord_bot.get_channel(self.starboard_channel_id)
+                            starboard_message = await starboard_channel.fetch_message(starboard_message_id)
 
-                    print(
-                        f"Deleted starred message with ID {starred_message_id} for original message ID {original_message_id}")
+                            # Delete the starboard message
+                            await starboard_message.delete()
+
+                            # Remove the mapping from the dictionary
+                            del self.starred_messages[original_message.id]
+
+                            print(
+                                f"Deleted starred message with ID {starboard_message_id} for original message ID {original_message.id}")
+
 
