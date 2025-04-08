@@ -108,7 +108,7 @@ class Countdown:
             # If all start intervals are sent, reset countdown intervals for end time
             if not self.start_completed and not self.countdown_intervals:
                 self.start_completed = True
-                countdown_intervals = [24, 12, 6, 2, 1]  # Reset intervals for the end time
+                self.countdown_intervals = [24, 12, 6, 2, 1]  # Reset intervals for the end time
 
             # If start time is complete, start sending end time countdown messages
             if self.start_completed and not self.end_completed:
