@@ -87,7 +87,8 @@ class Countdown:
             remaining_time_end = self.countdown_end_date - ctime
             print(f"remaining tiem end: {remaining_time_end}")
             remaining_hours_end = remaining_time_end.total_seconds() / 3600  # Convert to hours
-
+            print(f"TIME TILL START not roudned: {remaining_hours_start}")
+            print(f"TIME TILL END not rounded: {remaining_hours_end}")
             # Round the remaining hours to the nearest whole number
             remaining_hours_start = round(remaining_hours_start)
             remaining_hours_end = round(remaining_hours_end)
