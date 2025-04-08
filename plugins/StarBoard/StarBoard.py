@@ -93,8 +93,8 @@ class StarBoard(commands.Cog):
                     print(f"Member {user.id} not found in guild {guild.name}.")
                     return
 
-                has_required_role = any(role.name.endswith('team leader') for role in member.roles) or \
-                                    any(role.name == 'staff' for role in member.roles)
+                has_required_role = any(role.name.endswith('Team Leader') for role in member.roles) or \
+                                    any(role.name == 'Staff' for role in member.roles)
 
                 if not has_required_role:
                     reaction = payload.emoji
