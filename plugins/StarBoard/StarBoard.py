@@ -1,5 +1,6 @@
 from discord.ext import commands
 from HuntBot import HuntBot
+import re
 
 class TableDataImportException(Exception):
     def __init__(self, message="Configuration error occurred", table_name=None):
@@ -42,7 +43,6 @@ class StarBoard(commands.Cog):
         self.team2_drop_channel_id = 0
         self.configured = False
         self.starred_messages = {}
-        self.roles = ["Green Team Leader", "Orange Team Leader", "Staff"]
 
         self.startup()
 
@@ -87,13 +87,14 @@ class StarBoard(commands.Cog):
                     return
 
                 # Get the member object from the guild (which contains role information)
-                member = guild.get_member(user.id)
+                member = await guild.fetch_member(user.id)
 
                 if member is None:
-                    print(f"Member {user.name} not found in guild {guild.name}.")
+                    print(f"Member {user.id} not found in guild {guild.name}.")
                     return
 
-                has_required_role = any(role.name in self.roles for role in member.roles)
+                has_required_role = any(role.name.endswith('team leader') for role in member.roles) or \
+                                    any(role.name == 'staff' for role in member.roles)
 
                 if not has_required_role:
                     reaction = payload.emoji
@@ -155,5 +156,3 @@ class StarBoard(commands.Cog):
 
                         print(
                             f"Deleted starred message with ID {starboard_message_id} for original message ID {original_message.id}")
-
-
