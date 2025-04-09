@@ -31,14 +31,14 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
-countdown = None
+# countdown = None
 starboard = None
 score = None
 
 
 @tasks.loop(seconds=5)
 async def check_start_time():
-    global countdown
+    # global countdown
     global starboard
     global score
 
@@ -46,12 +46,12 @@ async def check_start_time():
     hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
 
     # Initialize Countdown only once when configured
-    if hunt_bot.configured and countdown is None:
-        countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
-    if not countdown.countdown_task_started:
-        countdown.start_countdown()
+    # if hunt_bot.configured and countdown is None:
+    #     countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
+    # if not countdown.countdown_task_started:
+    #     countdown.start_countdown()
 
-    channel = bot.get_channel(countdown.announcements_channel_id)
+    channel = bot.get_channel(hunt_bot.announcements_channel_id)
 
     if hunt_bot.configured and starboard is None:
         # Start Starboard plugin
@@ -204,7 +204,7 @@ async def on_ready():
         await bot.user.edit(avatar=image)
 
     try:
-        channel = bot.get_channel(844644283394031678)
+        channel = bot.get_channel(699971574689955853)
         await channel.send("I'M ALIVEEEEE!!!!!!!\n"
                            "FEELS FRANKEN-THURGO MAN")
     except Exception as e:

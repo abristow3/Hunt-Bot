@@ -15,7 +15,7 @@ class HuntBot:
         self.sheet_name = ""
         self.sheet_data = pd.DataFrame()
         self.config_table_name = ""
-        self.command_channel_name = "staff"
+        self.command_channel_name = "staff-chat"
         self.command_channel_id = ""
         self.config_map = {}
         self.start_date = ""
@@ -26,6 +26,7 @@ class HuntBot:
         self.end_datetime = None
         self.master_password = ""
         self.ended = False
+        self.announcements_channel_id = 0
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -109,8 +110,11 @@ class HuntBot:
         self.start_date = self.config_map.get("HUNT_START_DATE", "")
         self.start_time = self.config_map.get("HUNT_START_TIME_GMT", "")
         self.master_password = self.config_map.get("MASTER_PASSWORD", "")
+        self.announcements_channel_id = int(self.config_map.get('ANNOUNCEMENTS_CHANNEL_ID', "0"))
 
-        if self.start_date == "":
+        if self.announcements_channel_id == 0:
+            print("Error loading announcement channel ID date")
+        elif self.start_date == "":
             print("Error loading hunt start date")
         elif self.start_time == "":
             print("Error loading hunt start time")
