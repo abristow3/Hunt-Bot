@@ -106,13 +106,14 @@ async def check_start_time():
 
 @bot.tree.command(name="beep")
 async def beep(interaction: discord.Interaction):
+    if interaction.channel.id != hunt_bot.command_channel_id:
+        return
     await interaction.response.send_message("Boop")
 
 
 @bot.tree.command(name="start-hunt", description="Starts the Hunt Bot on the pre-configured date and time")
 async def start(interaction: discord.Interaction):
     if interaction.channel.id != hunt_bot.command_channel_id:
-        await interaction.response.send_message("Silly goon. You can't run that command in this channel.")
         return
 
     # Check sheet ID has been populated
@@ -171,7 +172,6 @@ async def start(interaction: discord.Interaction):
 async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str = "BotConfig",
                 config_table: str = "Discord Conf"):
     if interaction.channel.id != hunt_bot.command_channel_id:
-        await interaction.response.send_message("Silly goon. You can't run that command in this channel.")
         return
 
     gdoc.set_sheet_id(sheet_id=sheet_id)
