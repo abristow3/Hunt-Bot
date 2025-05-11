@@ -13,7 +13,24 @@ The current score is $team1_name: $team1_points $team2_name: $team2_points
 
 
 class ScoreCog(commands.Cog):
-    def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
+    """
+    A cog that manages and updates the score on Discord.
+
+    This cog includes tasks that retrieve score data from the HuntBot API,
+    update the score message on Discord, and handle failure recovery mechanisms.
+    """
+
+    def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot) -> None:
+        """
+        Initialize the ScoreCog with necessary bot and huntbot instances.
+
+        Args:
+            discord_bot (commands.Bot): The instance of the Discord bot.
+            hunt_bot (HuntBot): The instance of the HuntBot containing game data.
+
+        Returns:
+            None
+        """
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
         self.score_channel_id = 0
@@ -30,26 +47,58 @@ class ScoreCog(commands.Cog):
         self.start_scores.start()
         self.watch_scores.start()
 
-    def setup(self):
+    def setup(self) -> None:
+        """
+        Set up the initial configuration by fetching channels and validating configurations.
+
+        Returns:
+            None
+        """
         self.get_score_channel()
         self.get_alert_channel()
         self.configured = True
 
-    def get_alert_channel(self):
+    def get_alert_channel(self) -> None:
+        """
+        Retrieve the alert channel from the HuntBot configuration.
+
+        Raises:
+            ConfigurationException: If the ALERT_CHANNEL_ID is not set in the configuration.
+
+        Returns:
+            None
+        """
         self.alert_channel_id = int(self.hunt_bot.config_map.get('ALERT_CHANNEL_ID', "0"))
 
         if self.alert_channel_id == 0:
             raise ConfigurationException(config_key='ALERT_CHANNEL_ID')
 
-    def get_score_channel(self):
+    def get_score_channel(self) -> None:
+        """
+        Retrieve the score channel from the HuntBot configuration.
+
+        Raises:
+            ConfigurationException: If the POINTS_CHANNEL_ID is not set in the configuration.
+
+        Returns:
+            None
+        """
         self.score_channel_id = int(self.hunt_bot.config_map.get('POINTS_CHANNEL_ID', "0"))
 
         if self.score_channel_id == 0:
             raise ConfigurationException(config_key='POINTS_CHANNEL_ID')
 
-    def get_score(self):
-        # use table map to find score table
-        # pull data
+    def get_score(self) -> None:
+        """
+        Retrieve and parse the score data from the HuntBot score table.
+
+        Raises:
+            TableDataImportException: If the score table data is empty or unavailable.
+
+        Returns:
+            None
+        """
+        # Use table map to find score table and pull data
         score_df = self.hunt_bot.pull_table_data(table_name=self.score_table_name)
 
         if score_df.empty:
@@ -60,7 +109,15 @@ class ScoreCog(commands.Cog):
         self.team2_points = score_dict.get("Team Green", "")
 
     @tasks.loop(seconds=10)
-    async def start_scores(self):
+    async def start_scores(self) -> None:
+        """
+        Asynchronously update the score on Discord every 10 seconds.
+
+        If an exception occurs, it will attempt to alert the specified channel and prevent spam.
+
+        Returns:
+            None
+        """
         try:
             channel = self.discord_bot.get_channel(self.score_channel_id)
             if not channel:
@@ -89,13 +146,23 @@ class ScoreCog(commands.Cog):
                 self.alert_sent = True
 
     @start_scores.before_loop
-    async def before_start_scores(self):
-        """Runs before the loop starts, useful for async setup."""
+    async def before_start_scores(self) -> None:
+        """
+        Runs before the start_scores loop starts. Ensures the bot is ready before starting.
+
+        Returns:
+            None
+        """
         await self.discord_bot.wait_until_ready()  # Ensures bot is logged in before starting
 
     @tasks.loop(seconds=30)
-    async def watch_scores(self):
-        """Watchdog task that checks if the score loop is still running."""
+    async def watch_scores(self) -> None:
+        """
+        Watchdog task that checks if the score loop is still running and restarts it if not.
+
+        Returns:
+            None
+        """
         if not self.start_scores.is_running():
             logger.error("[ScoreCog] Score loop is not running. Restarting...")
             try:
@@ -105,10 +172,25 @@ class ScoreCog(commands.Cog):
                 pass
 
     @watch_scores.before_loop
-    async def before_watch_scores(self):
+    async def before_watch_scores(self) -> None:
+        """
+        Runs before the watch_scores loop starts. Ensures the bot is ready before starting.
+
+        Returns:
+            None
+        """
         await self.discord_bot.wait_until_ready()
 
-    async def send_crash_alert(self, error_message: str):
+    async def send_crash_alert(self, error_message: str) -> None:
+        """
+        Send an alert to the specified channel when the score loop crashes.
+
+        Args:
+            error_message (str): The error message to send in the alert.
+
+        Returns:
+            None
+        """
         channel = self.discord_bot.get_channel(self.alert_channel_id)
         if channel:
             try:
@@ -118,3 +200,15 @@ class ScoreCog(commands.Cog):
                 )
             except Exception as e:
                 logger.error("Failed to send crash alert to Discord", exc_info=True)
+
+    async def cog_unload(self) -> None:
+        """
+        Stops the tasks when the cog is unloaded.
+
+        Returns:
+            None
+        """
+        if self.start_scores.is_running():
+            self.start_scores.stop()
+        if self.watch_scores.is_running():
+            self.watch_scores.stop()
