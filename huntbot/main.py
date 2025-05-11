@@ -1,14 +1,13 @@
+#!/usr/bin/env python3
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 import logging
-from GDoc import GDoc
-from HuntBot import HuntBot
-from plugins.Bounties.Bounties import Bounties
-from plugins.Dailies.Dailies import Dailies
-from plugins.Countdown.Countdown import Countdown
-from plugins.StarBoard.StarBoard import StarBoard
-from plugins.Score.Score import Score
+from huntbot.GDoc import GDoc
+from huntbot.HuntBot import HuntBot
+from huntbot.plugins.Bounties import Bounties
+from huntbot.plugins import Dailies, Score
+from huntbot.plugins.StarBoard.StarBoard import StarBoard
 import os
 
 '''
@@ -198,7 +197,7 @@ async def list_commands():
 
 @bot.event
 async def on_ready():
-    with open("assets/Etsy_Item_Listing_Photo_copy_189_3_1_2.png", "rb") as avatar_file:
+    with open("../assets/Etsy_Item_Listing_Photo_copy_189_3_1_2.png", "rb") as avatar_file:
         # Update the bot's avatar
         image = avatar_file.read()
         await bot.user.edit(avatar=image)
@@ -227,6 +226,7 @@ async def on_ready():
         print("NO COMMAND CHANNEL FOUND")
 
 
-# Run bot
-bot.run(TOKEN)
-# bot.run(hunt_bot.discord_token)
+def run():
+    # Run bot
+    bot.run(TOKEN)
+    # bot.run(hunt_bot.discord_token)

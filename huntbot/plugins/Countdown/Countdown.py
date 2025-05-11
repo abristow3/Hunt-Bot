@@ -2,7 +2,7 @@ from datetime import timedelta, datetime
 from string import Template
 import pytz
 from discord.ext import commands, tasks
-from HuntBot import HuntBot
+from huntbot.HuntBot import HuntBot
 
 begins_template = Template("""
 The Hunt begins in $num_hours hours!

@@ -1,5 +1,5 @@
 from discord.ext import commands, tasks
-from HuntBot import HuntBot
+from huntbot.HuntBot import HuntBot
 import pandas as pd
 from string import Template
 
