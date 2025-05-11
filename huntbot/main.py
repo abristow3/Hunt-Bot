@@ -11,28 +11,18 @@ from huntbot.cogs.StarBoard.StarBoard import StarBoard
 from huntbot.cogs.Score import ScoreCog
 import os
 
-import logging
-
 logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(levelname)s] %(name)s: %(message)s',
     handlers=[logging.StreamHandler()]
 )
 
-'''
-- Automate Hunt score update messages to publish 
-
-If drop has specific emoji, paste in star-board, if emoji removed, remove it
-    white list by drop screenshot channels for both teams (only certain users can emoji ni these channels)
-'''
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
     print("NO TOKEN CONFIGURED")
     exit()
 
-# Setup shit
-logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)

@@ -3,19 +3,9 @@ from huntbot.HuntBot import HuntBot
 import pandas as pd
 from string import Template
 from huntbot import ConfigurationException, TableDataImportException
-
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # or DEBUG for more detail
-
-# Optional: attach a console handler if not already configured globally
-if not logger.hasHandlers():
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
 
 score_message = Template("""
 The current score is $team1_name: $team1_points $team2_name: $team2_points
