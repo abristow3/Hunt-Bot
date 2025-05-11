@@ -5,10 +5,19 @@ from discord import app_commands
 import logging
 from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
-from huntbot.plugins.Bounties import Bounties
-from huntbot.plugins import Dailies, Score
-from huntbot.plugins.StarBoard.StarBoard import StarBoard
+from huntbot.cogs.Bounties import Bounties
+from huntbot.cogs import Dailies
+from huntbot.cogs.StarBoard.StarBoard import StarBoard
+from huntbot.cogs.Score import ScoreCog
 import os
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 
 '''
 - Automate Hunt score update messages to publish 
@@ -32,14 +41,12 @@ gdoc = GDoc()
 hunt_bot = HuntBot()
 # countdown = None
 starboard = None
-score = None
 
 
 @tasks.loop(seconds=5)
 async def check_start_time():
     # global countdown
     global starboard
-    global score
 
     # Get updated gdoc data rate is 300 reads /per minute
     hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
@@ -77,7 +84,7 @@ async def check_start_time():
                 await channel.send(f"@everyone The 13th Hunt has officially concluded...results coming soon!")
                 return
 
-            # If we made it this far then we are ready to start loading the plugins
+            # If we made it this far then we are ready to start loading the cogs
             # Start bounties plugin
             bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
 
@@ -94,11 +101,8 @@ async def check_start_time():
                 await channel.send("Error loading Dailies plugin.")
                 return
 
-            score = Score(discord_bot=bot, hunt_bot=hunt_bot)
+            await bot.add_cog(ScoreCog(bot, HuntBot()))
 
-            if not score.configured:
-                await channel.send("Error loading Score plugin.")
-                return
         else:
             print("Waiting for the start time...")
 
