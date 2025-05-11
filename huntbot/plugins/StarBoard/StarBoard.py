@@ -1,5 +1,5 @@
 from discord.ext import commands
-from HuntBot import HuntBot
+from huntbot.HuntBot import HuntBot
 
 
 class TableDataImportException(Exception):
