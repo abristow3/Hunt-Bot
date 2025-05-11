@@ -7,7 +7,7 @@ from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
 from huntbot.cogs.Bounties import Bounties
 from huntbot.cogs import Dailies
-from huntbot.cogs.StarBoard.StarBoard import StarBoard
+from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.Score import ScoreCog
 import os
 
@@ -30,13 +30,13 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 gdoc = GDoc()
 hunt_bot = HuntBot()
 # countdown = None
-starboard = None
+
 
 
 @tasks.loop(seconds=5)
 async def check_start_time():
     # global countdown
-    global starboard
+
 
     # Get updated gdoc data rate is 300 reads /per minute
     hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
@@ -49,15 +49,9 @@ async def check_start_time():
 
     channel = bot.get_channel(hunt_bot.announcements_channel_id)
 
-    if hunt_bot.configured and starboard is None:
+    if hunt_bot.configured:
         # Start Starboard plugin
-        starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
-        # Check plugin loaded
-        if not starboard.configured:
-            await channel.send("Error loading StarBoard plugin.")
-            return
-        else:
-            await bot.add_cog(starboard)
+        await bot.add_cog(StarBoardCog(discord_bot=bot, hunt_bot=hunt_bot))
 
     if not hunt_bot.started:
         # Check if we need to start the hunt or not
@@ -91,7 +85,7 @@ async def check_start_time():
                 await channel.send("Error loading Dailies plugin.")
                 return
 
-            await bot.add_cog(ScoreCog(bot, HuntBot()))
+            await bot.add_cog(ScoreCog(discord_bot=bot, hunt_bot=hunt_bot))
 
         else:
             print("Waiting for the start time...")
