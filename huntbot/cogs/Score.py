@@ -12,7 +12,7 @@ The current score is $team1_name: $team1_points $team2_name: $team2_points
 """)
 
 
-class ScoreCog(commands.cog):
+class ScoreCog(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
@@ -62,7 +62,7 @@ class ScoreCog(commands.cog):
     @tasks.loop(seconds=10)
     async def start_scores(self):
         try:
-            channel = self.bot.get_channel(self.score_channel_id)
+            channel = self.discord_bot.get_channel(self.score_channel_id)
             if not channel:
                 logger.warning("Score channel not found.")
                 return
@@ -91,27 +91,30 @@ class ScoreCog(commands.cog):
     @start_scores.before_loop
     async def before_start_scores(self):
         """Runs before the loop starts, useful for async setup."""
-        await self.bot.wait_until_ready()  # Ensures bot is logged in before starting
+        await self.discord_bot.wait_until_ready()  # Ensures bot is logged in before starting
 
     @tasks.loop(seconds=30)
     async def watch_scores(self):
         """Watchdog task that checks if the score loop is still running."""
-        if not self.start_scores_loop.is_running():
-            print("[ScoreCog] Score loop is not running. Restarting...")
+        if not self.start_scores.is_running():
+            logger.error("[ScoreCog] Score loop is not running. Restarting...")
             try:
-                self.start_scores_loop.start()
+                self.start_scores.start()
             except RuntimeError:
                 # Already running or not yet stopped properly
                 pass
 
     @watch_scores.before_loop
     async def before_watch_scores(self):
-        await self.bot.wait_until_ready()
+        await self.discord_bot.wait_until_ready()
 
     async def send_crash_alert(self, error_message: str):
-        channel = self.bot.get_channel(self.alert_channel_id)
+        channel = self.discord_bot.get_channel(self.alert_channel_id)
         if channel:
-            await channel.send(
-                f":warning: **ScoreCog loop crashed**\n"
-                f"```{error_message}```"
-            )
+            try:
+                await channel.send(
+                    f":warning: **ScoreCog loop crashed**\n"
+                    f"```{error_message}```"
+                )
+            except Exception as e:
+                logger.error("Failed to send crash alert to Discord", exc_info=True)
