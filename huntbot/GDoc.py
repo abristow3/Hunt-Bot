@@ -15,8 +15,22 @@ class GDoc:
 
     def on_startup(self):
         try:
-            with open("../conf/conf.yaml", 'r') as f:
-                config = yaml.safe_load(f)
+            config_paths = ["conf/conf.yaml", "../conf/conf.yaml"]
+            config = None
+            
+            for path in config_paths:
+                try:
+                    with open(path, 'r') as f:
+                        config = yaml.safe_load(f)
+                    print(f"Loaded configuration from {path}")
+                    break
+                except FileNotFoundError:
+                    continue
+            
+            if not config:
+                print("Could not find configuration file in any of the expected locations")
+                return
+            
             # Load the service account credentials from the JSON file
             self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
 

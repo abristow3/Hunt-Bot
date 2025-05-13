@@ -3,6 +3,7 @@ from string import Template
 import pytz
 from discord.ext import commands, tasks
 from huntbot.HuntBot import HuntBot
+from huntbot.exceptions import ConfigurationException
 
 begins_template = Template("""
 The Hunt begins in $num_hours hours!
@@ -11,23 +12,6 @@ The Hunt begins in $num_hours hours!
 ends_template = Template("""
 The Hunt ends in $num_hours hours!
 """)
-
-
-class ConfigurationException(Exception):
-    """Exception raised for errors in the configuration."""
-
-    def __init__(self, message="Configuration error occurred", config_key=None):
-        # Call the base class constructor with the message
-        super().__init__(message)
-
-        # Optionally store extra information, like the problematic config key
-        self.config_key = config_key
-
-    def __str__(self):
-        # Customize the string representation of the exception
-        if self.config_key:
-            return f'{self.args[0]} (Config key: {self.config_key})'
-        return self.args[0]
 
 
 class Countdown:

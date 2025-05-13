@@ -9,6 +9,7 @@ from huntbot.plugins.Bounties import Bounties
 from huntbot.plugins import Dailies, Score
 from huntbot.plugins.StarBoard.StarBoard import StarBoard
 import os
+import traceback
 
 '''
 - Automate Hunt score update messages to publish 
@@ -23,17 +24,25 @@ if not TOKEN:
     exit()
 
 # Setup shit
-logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
+logging.basicConfig(level=logging.DEBUG, format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-gdoc = GDoc()
-hunt_bot = HuntBot()
-# countdown = None
-starboard = None
-score = None
+try:
+    print("Initializing GDoc...")
+    gdoc = GDoc()
+    print("Initializing HuntBot...")
+    hunt_bot = HuntBot()
+    print("Initialization complete")
+    # countdown = None
+    starboard = None
+    score = None
+except Exception as e:
+    print(f"Error during initialization: {e}")
+    traceback.print_exc()
 
+print("Bot initialization complete, ready to connect...")
 
 @tasks.loop(seconds=5)
 async def check_start_time():
@@ -197,17 +206,23 @@ async def list_commands():
 
 @bot.event
 async def on_ready():
-    with open("../assets/franken-thrugo.png", "rb") as avatar_file:
-        # Update the bot's avatar
-        image = avatar_file.read()
-        await bot.user.edit(avatar=image)
+    try:
+        with open("assets/franken-thrugo.png", "rb") as avatar_file:
+            # Update the bot's avatar
+            image = avatar_file.read()
+            await bot.user.edit(avatar=image)
+    except Exception as e:
+        print(f"Error updating avatar: {e}")
 
     try:
         channel = bot.get_channel(699971574689955853)
-        await channel.send("I'M ALIVEEEEE!!!!!!!\n"
-                           "FEELS FRANKEN-THURGO MAN")
+        if channel:
+            await channel.send("I'M ALIVEEEEE!!!!!!!\n"
+                               "FEELS FRANKEN-THURGO MAN")
+        else:
+            print("Channel not found")
     except Exception as e:
-        pass
+        print(f"Error sending message: {e}")
 
     await sync_commands()
 
@@ -228,5 +243,9 @@ async def on_ready():
 
 def run():
     # Run bot
-    bot.run(TOKEN)
+    try:
+        print("Starting bot connection...")
+        bot.run(TOKEN)
+    except Exception as e:
+        print(f"Error starting the bot: {e}")
     # bot.run(hunt_bot.discord_token)
