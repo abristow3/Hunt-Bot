@@ -9,6 +9,7 @@ from huntbot.cogs.Bounties import BountiesCog
 from huntbot.cogs.Dailies import DailiesCog
 from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.Score import ScoreCog
+from huntbot.cogs.Countdown import CountdownCog
 import os
 
 logging.basicConfig(
@@ -29,23 +30,18 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
-# countdown = None
-
 
 
 @tasks.loop(seconds=5)
 async def check_start_time():
     # global countdown
 
-
     # Get updated gdoc data rate is 300 reads /per minute
     hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
 
     # Initialize Countdown only once when configured
-    # if hunt_bot.configured and countdown is None:
-    #     countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
-    # if not countdown.countdown_task_started:
-    #     countdown.start_countdown()
+    if hunt_bot.configured:
+        await bot.add_cog(CountdownCog(bot, hunt_bot))
 
     channel = bot.get_channel(hunt_bot.announcements_channel_id)
 
