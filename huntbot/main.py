@@ -5,62 +5,49 @@ from discord import app_commands
 import logging
 from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
-from huntbot.plugins.Bounties import Bounties
-from huntbot.plugins import Dailies, Score
-from huntbot.plugins.StarBoard.StarBoard import StarBoard
+from huntbot.cogs.Bounties import BountiesCog
+from huntbot.cogs.Dailies import DailiesCog
+from huntbot.cogs.StarBoard import StarBoardCog
+from huntbot.cogs.Score import ScoreCog
+from huntbot.cogs.Countdown import CountdownCog
 import os
 
-'''
-- Automate Hunt score update messages to publish 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='[%(asctime)s] [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 
-If drop has specific emoji, paste in star-board, if emoji removed, remove it
-    white list by drop screenshot channels for both teams (only certain users can emoji ni these channels)
-'''
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
     print("NO TOKEN CONFIGURED")
     exit()
 
-# Setup shit
-logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", datefmt="%Y-%m-%d %H:%M", )
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
-# countdown = None
-starboard = None
-score = None
 
 
 @tasks.loop(seconds=5)
 async def check_start_time():
     # global countdown
-    global starboard
-    global score
 
     # Get updated gdoc data rate is 300 reads /per minute
     hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
 
     # Initialize Countdown only once when configured
-    # if hunt_bot.configured and countdown is None:
-    #     countdown = Countdown(hunt_bot=hunt_bot, discord_bot=bot)
-    # if not countdown.countdown_task_started:
-    #     countdown.start_countdown()
+    if hunt_bot.configured:
+        await bot.add_cog(CountdownCog(bot, hunt_bot))
 
     channel = bot.get_channel(hunt_bot.announcements_channel_id)
 
-    if hunt_bot.configured and starboard is None:
+    if hunt_bot.configured:
         # Start Starboard plugin
-        starboard = StarBoard(discord_bot=bot, hunt_bot=hunt_bot)
-        # Check plugin loaded
-        if not starboard.configured:
-            await channel.send("Error loading StarBoard plugin.")
-            return
-        else:
-            await bot.add_cog(starboard)
+        await bot.add_cog(StarBoardCog(discord_bot=bot, hunt_bot=hunt_bot))
 
     if not hunt_bot.started:
         # Check if we need to start the hunt or not
@@ -77,28 +64,22 @@ async def check_start_time():
                 await channel.send(f"@everyone The 13th Hunt has officially concluded...results coming soon!")
                 return
 
-            # If we made it this far then we are ready to start loading the plugins
+            # If we made it this far then we are ready to start loading the cogs
             # Start bounties plugin
-            bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
-
-            # Check plugin loaded
-            if not bounties.configured:
-                await channel.send("Error loading Bounties plugin.")
+            try:
+                await bot.add_cog(BountiesCog(bot=bot, hunt_bot=hunt_bot))
+            except Exception as e:
+                await channel.send(f"Error loading Bounties Cog: {e}")
                 return
 
-            # Start Dailies plugin
-            dailies = Dailies(discord_bot=bot, hunt_bot=hunt_bot)
-
-            # Check plugin loaded
-            if not dailies.configured:
-                await channel.send("Error loading Dailies plugin.")
+            try:
+                await bot.add_cog(DailiesCog(discod_bot=bot, hunt_bot=hunt_bot))
+            except Exception as e:
+                await channel.send(f"Error loading Dailies Cog: {e}")
                 return
 
-            score = Score(discord_bot=bot, hunt_bot=hunt_bot)
+            await bot.add_cog(ScoreCog(discord_bot=bot, hunt_bot=hunt_bot))
 
-            if not score.configured:
-                await channel.send("Error loading Score plugin.")
-                return
         else:
             print("Waiting for the start time...")
 
