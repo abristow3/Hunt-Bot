@@ -6,7 +6,7 @@ import logging
 from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
 from huntbot.cogs.Bounties import BountiesCog
-from huntbot.cogs import Dailies
+from huntbot.cogs import DailiesCog
 from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.Score import ScoreCog
 import os
@@ -76,12 +76,10 @@ async def check_start_time():
                 await channel.send(f"Error loading Bounties Cog: {e}")
                 return
 
-            # Start Dailies plugin
-            dailies = Dailies(discord_bot=bot, hunt_bot=hunt_bot)
-
-            # Check plugin loaded
-            if not dailies.configured:
-                await channel.send("Error loading Dailies plugin.")
+            try:
+                await bot.add_cog(DailiesCog(discod_bot=bot, hunt_bot=hunt_bot))
+            except Exception as e:
+                await channel.send(f"Error loading Dailies Cog: {e}")
                 return
 
             await bot.add_cog(ScoreCog(discord_bot=bot, hunt_bot=hunt_bot))
