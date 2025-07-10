@@ -5,7 +5,7 @@ from discord import app_commands
 import logging
 from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
-from huntbot.cogs.Bounties import Bounties
+from huntbot.cogs.Bounties import BountiesCog
 from huntbot.cogs import Dailies
 from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.Score import ScoreCog
@@ -70,11 +70,10 @@ async def check_start_time():
 
             # If we made it this far then we are ready to start loading the cogs
             # Start bounties plugin
-            bounties = Bounties(discord_bot=bot, hunt_bot=hunt_bot)
-
-            # Check plugin loaded
-            if not bounties.configured:
-                await channel.send("Error loading Bounties plugin.")
+            try:
+                await bot.add_cog(BountiesCog(bot=bot, hunt_bot=hunt_bot))
+            except Exception as e:
+                await channel.send(f"Error loading Bounties Cog: {e}")
                 return
 
             # Start Dailies plugin
