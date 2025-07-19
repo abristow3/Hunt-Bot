@@ -15,7 +15,7 @@ class GDoc:
 
     def on_startup(self):
         try:
-            with open("../conf/conf.yaml", 'r') as f:
+            with open("conf/conf.yaml", 'r') as f:
                 config = yaml.safe_load(f)
             # Load the service account credentials from the JSON file
             self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH")

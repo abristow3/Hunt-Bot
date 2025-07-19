@@ -178,7 +178,7 @@ async def list_commands():
 
 @bot.event
 async def on_ready():
-    with open("../assets/franken-thrugo.png", "rb") as avatar_file:
+    with open("assets/franken-thrugo.png", "rb") as avatar_file:
         # Update the bot's avatar
         image = avatar_file.read()
         await bot.user.edit(avatar=image)
