@@ -15,7 +15,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Discord and Mention Role
+      - name: Notify Discord
         run: |
           EVENT_NAME=${{ github.event_name }}
           ACTOR=${{ github.actor }}
@@ -27,5 +27,5 @@ jobs:
 
           curl -H "Content-Type: application/json" \
                -X POST \
-               -d "{\"content\": \"$MESSAGE\", \"allowed_mentions\": {\"roles\": [\"$ROLE_ID\"]}}" \
+               -d "{\"content\": \"$MESSAGE\"}" \
                ${{ secrets.DISCORD_WEBHOOK }}
