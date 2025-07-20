@@ -15,17 +15,18 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send webhook to Discord
+      - name: Notify Discord and Mention Role
         run: |
           EVENT_NAME=${{ github.event_name }}
           ACTOR=${{ github.actor }}
           REPO=${{ github.repository }}
           REF=${{ github.ref }}
-          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\`"
+          ROLE_ID=1386682156322918551
+          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\` <@&$ROLE_ID>"
 
           echo "Sending to Discord: $MESSAGE"
 
           curl -H "Content-Type: application/json" \
                -X POST \
-               -d "{\"content\": \"$MESSAGE\"}" \
+               -d "{\"content\": \"$MESSAGE\", \"allowed_mentions\": {\"roles\": [\"$ROLE_ID\"]}}" \
                ${{ secrets.DISCORD_WEBHOOK }}
