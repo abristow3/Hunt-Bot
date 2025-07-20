@@ -1,0 +1,31 @@
+name: Notify Discord on Repository Events
+
+on:
+  push:
+  pull_request:
+  issues:
+  issue_comment:
+  create:
+  delete:
+  fork:
+  release:
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Discord
+        run: |
+          EVENT_NAME=${{ github.event_name }}
+          ACTOR=${{ github.actor }}
+          REPO=${{ github.repository }}
+          REF=${{ github.ref }}
+          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\`"
+
+          echo "Sending to Discord: $MESSAGE"
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
