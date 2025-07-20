@@ -21,8 +21,7 @@ jobs:
           ACTOR=${{ github.actor }}
           REPO=${{ github.repository }}
           REF=${{ github.ref }}
-          ROLE_ID=1386682156322918551
-          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\` <@&$ROLE_ID>"
+          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\`"
 
           echo "Sending to Discord: $MESSAGE"
 
