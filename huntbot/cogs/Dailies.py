@@ -2,7 +2,7 @@ from discord.ext import commands, tasks
 import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
-from huntbot import ConfigurationException, TableDataImportException
+from huntbot.exceptions import TableDataImportException, ConfigurationException
 
 single_daily_template = Template("""
 @everyone $task
