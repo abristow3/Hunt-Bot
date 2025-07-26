@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from discord.ext import commands, tasks
 from string import Template
 from huntbot.HuntBot import HuntBot
-from huntbot import ConfigurationException
+from huntbot.exceptions import TableDataImportException, ConfigurationException
 
 begins_template = Template("""
 The Hunt begins in $num_hours hours!

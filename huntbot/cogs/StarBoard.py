@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord import RawReactionActionEvent, Message
 from huntbot.HuntBot import HuntBot
-from huntbot.exceptions import ConfigurationException
+from huntbot.exceptions import TableDataImportException, ConfigurationException
 import logging
 
 logger = logging.getLogger(__name__)

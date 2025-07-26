@@ -2,7 +2,7 @@ from discord.ext import commands, tasks
 from huntbot.HuntBot import HuntBot
 import pandas as pd
 from string import Template
-from huntbot import ConfigurationException, TableDataImportException
+from huntbot.exceptions import TableDataImportException, ConfigurationException
 import logging
 
 logger = logging.getLogger(__name__)

@@ -2,29 +2,7 @@ from discord.ext import commands, tasks
 import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
-
-
-class TableDataImportException(Exception):
-    def __init__(self, message="Configuration error occurred", table_name=None):
-        super().__init__(message)
-        self.config_key = table_name
-
-    def __str__(self):
-        if self.config_key:
-            return f'{self.args[0]} (Config key: {self.config_key})'
-        return self.args[0]
-
-
-class ConfigurationException(Exception):
-    def __init__(self, message="Configuration error occurred", config_key=None):
-        super().__init__(message)
-        self.config_key = config_key
-
-    def __str__(self):
-        if self.config_key:
-            return f'{self.args[0]} (Config key: {self.config_key})'
-        return self.args[0]
-
+from huntbot.exceptions import TableDataImportException, ConfigurationException
 
 single_bounty_template = Template("""
 @everyone $task
@@ -41,7 +19,6 @@ Password: $b1_password
 
 $b2_task
 
-Password: $b2_password
 """)
 
 
@@ -143,8 +120,7 @@ class BountiesCog(commands.Cog):
                 self.message = double_bounty_template.substitute(
                     b1_task=single_task,
                     b1_password=single_password,
-                    b2_task=double_bounty["Task"],
-                    b2_password=double_bounty["Password"]
+                    b2_task=double_bounty["Task"]
                 )
 
             if self.message_id:
