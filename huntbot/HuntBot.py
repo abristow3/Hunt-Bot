@@ -15,8 +15,8 @@ class HuntBot:
         self.sheet_name = ""
         self.sheet_data = pd.DataFrame()
         self.config_table_name = ""
-        self.command_channel_name = "staff-chat"
-        self.command_channel_id = ""
+        self.command_channel_name = "general"
+        self.command_channel_id = "1351532522663837760"  # Default channel ID, can be updated via command
         self.config_map = {}
         self.start_date = ""
         self.start_time = ""

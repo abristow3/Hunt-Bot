@@ -91,6 +91,54 @@ async def beep(interaction: discord.Interaction):
     await interaction.response.send_message("Boop")
 
 
+# Bounty command with automatic 48hr end
+
+# Bounty command with configurable time limit (in minutes), default 48 hours
+@bot.tree.command(name="bounty", description="Create a new bounty")
+@app_commands.describe(
+    name_of_item="Name of the item for the bounty",
+    reward_amount="Reward amount for completing the bounty",
+    time_limit="Time limit for the bounty in minutes (optional, default 2880 = 48 hours)"
+)
+async def bounty(
+    interaction: discord.Interaction,
+    name_of_item: str,
+    reward_amount: str,
+    time_limit: str = None
+):
+    if interaction.channel.id != hunt_bot.command_channel_id:
+        return
+
+    # Default to 48 hours (2880 minutes) if not set
+    if time_limit is None or time_limit == "":
+        minutes = 2880
+    else:
+        if not time_limit.isdigit():
+            await interaction.response.send_message(
+                "Please use only numbers for the time limit.", ephemeral=True
+            )
+            return
+        minutes = int(time_limit)
+        if minutes <= 0:
+            minutes = 2880
+
+    await interaction.response.send_message(
+        f"Bounty created!\nItem: {name_of_item}\nReward: {reward_amount}\nTime Limit: {minutes} minutes ({minutes/60:.1f} hours)"
+    )
+
+    async def end_bounty():
+        await interaction.followup.send(f"The bounty for '{name_of_item}' has ended after {minutes} minutes.")
+
+    bot.loop.create_task(_bounty_timer(end_bounty, minutes))
+
+
+# Helper for bounty timer
+import asyncio
+async def _bounty_timer(callback, minutes):
+    await asyncio.sleep(minutes * 60)
+    await callback()
+
+
 @bot.tree.command(name="start-hunt", description="Starts the Hunt Bot on the pre-configured date and time")
 async def start(interaction: discord.Interaction):
     if interaction.channel.id != hunt_bot.command_channel_id:
