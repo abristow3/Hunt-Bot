@@ -19,7 +19,6 @@ Password: $b1_password
 
 $b2_task
 
-Password: $b2_password
 """)
 
 
@@ -101,8 +100,7 @@ class DailiesCog(commands.Cog):
                 self.message = double_daily_template.substitute(
                     b1_task=single_task,
                     b1_password=single_password,
-                    b2_task=double_daily["Task"],
-                    b2_password=double_daily["Password"]
+                    b2_task=double_daily["Task"]
                 )
 
             if self.message_id:
