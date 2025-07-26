@@ -4,6 +4,10 @@ from discord.ext import commands, tasks
 from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
+from huntbot import ConfigurationException
+import logging
+
+logger = logging.getLogger(__name__)
 
 begins_template = Template("""
 The Hunt begins in $num_hours hours!
@@ -36,11 +40,12 @@ class CountdownCog(commands.Cog):
             self.setup()
             self.start_countdown()
         except Exception as e:
-            print(f"[Countdown] Initialization failed: {e}")
+            logger.error(f"[Countdown Cog] Initialization failed: {e}")
 
     def setup(self):
         self.announcements_channel_id = int(self.hunt_bot.config_map.get('ANNOUNCEMENTS_CHANNEL_ID', "0"))
         if self.announcements_channel_id == 0:
+            logger.error("[Countdown Cog] No ANNOUNCEMENTS_CHANNEL_ID found")
             raise ConfigurationException(config_key='ANNOUNCEMENTS_CHANNEL_ID')
 
     @staticmethod
@@ -59,19 +64,19 @@ class CountdownCog(commands.Cog):
 
         @tasks.loop(seconds=5)
         async def begin_countdown():
-            print("checking countdown")
+            logger.info("[Countdown Cog] checking countdown")
             await self.bot.wait_until_ready()
             ctime = self.check_time()
             channel = self.bot.get_channel(self.announcements_channel_id)
             if not channel:
-                print("[Countdown] Channel not found.")
+                logger.info("[Countdown Cog] Announcements Channel not found.")
                 return
 
             remaining_hours_start = round((self.hunt_bot.start_datetime - ctime).total_seconds() / 3600)
             remaining_hours_end = round((self.hunt_bot.end_datetime - ctime).total_seconds() / 3600)
 
-            print(f"TIME TILL START: {remaining_hours_start}")
-            print(f"TIME TILL END: {remaining_hours_end}")
+            logger.info(f"[Countdown Cog] TIME TILL START: {remaining_hours_start}")
+            logger.info(f"[Countdown Cog]: {remaining_hours_end}")
 
             if not self.start_completed and remaining_hours_start in self.countdown_intervals:
                 self.message = begins_template.substitute(num_hours=remaining_hours_start)
