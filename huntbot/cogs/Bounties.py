@@ -18,6 +18,8 @@ Password: $b1_password
 @@@ DOUBLE BOUNTY @@@
 
 $b2_task
+                                  
+Password: $b2_password
 """)
 
 
