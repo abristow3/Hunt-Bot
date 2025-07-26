@@ -110,7 +110,8 @@ class BountiesCog(commands.Cog):
                 self.message = double_bounty_template.substitute(
                     b1_task=single_task,
                     b1_password=single_password,
-                    b2_task=double_bounty["Task"]
+                    b2_task=double_bounty["Task"],
+                    b2_password=double_bounty["Password"]
                 )
 
             if self.message_id:
