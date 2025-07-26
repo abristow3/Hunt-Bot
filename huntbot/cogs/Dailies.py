@@ -2,7 +2,14 @@ from discord.ext import commands, tasks
 import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
+<<<<<<< Updated upstream
 from huntbot.exceptions import TableDataImportException, ConfigurationException
+=======
+from huntbot import ConfigurationException, TableDataImportException
+import logging
+
+logger = logging.getLogger(__name__)
+>>>>>>> Stashed changes
 
 single_daily_template = Template("""
 @everyone $task
