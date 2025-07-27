@@ -109,8 +109,8 @@ class ScoreCog(commands.Cog):
             raise TableDataImportException(table_name=self.score_table_name)
 
         score_dict = pd.Series(score_df['Total Points'].values, index=score_df['Team Name']).to_dict()
-        self.team1_points = score_dict.get("Team Orange", "")
-        self.team2_points = score_dict.get("Team Green", "")
+        self.team1_points = score_dict.get(f"Team {self.hunt_bot.team_one_name}", "")
+        self.team2_points = score_dict.get(f"Team {self.hunt_bot.team_two_name}", "")
 
     @tasks.loop(seconds=10)
     async def start_scores(self) -> None:
@@ -131,8 +131,8 @@ class ScoreCog(commands.Cog):
             self.get_score()  # your custom data logic
             message = (
                 f"The current score is\n"
-                f"Team Orange: {self.team1_points}\n"
-                f"Team Green: {self.team2_points}"
+                f"Team {self.hunt_bot.team_one_name}: {self.team1_points}\n"
+                f"Team {self.hunt_bot.team_two_name}: {self.team2_points}"
             )
             if self.message:
                 await self.message.edit(content=message)
