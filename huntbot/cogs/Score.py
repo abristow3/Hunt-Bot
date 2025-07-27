@@ -71,6 +71,7 @@ class ScoreCog(commands.Cog):
         self.alert_channel_id = int(self.hunt_bot.config_map.get('ALERT_CHANNEL_ID', "0"))
 
         if self.alert_channel_id == 0:
+            logger.error("[Score Cog] No ALERT_CHANNEL_ID found in configuration.")
             raise ConfigurationException(config_key='ALERT_CHANNEL_ID')
 
     def get_score_channel(self) -> None:
@@ -86,6 +87,7 @@ class ScoreCog(commands.Cog):
         self.score_channel_id = int(self.hunt_bot.config_map.get('POINTS_CHANNEL_ID', "0"))
 
         if self.score_channel_id == 0:
+            logger.error("[Score Cog] No POINTS_CHANNEL_ID found in configuration.")
             raise ConfigurationException(config_key='POINTS_CHANNEL_ID')
 
     def get_score(self) -> None:
@@ -98,10 +100,12 @@ class ScoreCog(commands.Cog):
         Returns:
             None
         """
+        logger.info("[Score Cog] Attempting to fetch score.")
         # Use table map to find score table and pull data
         score_df = self.hunt_bot.pull_table_data(table_name=self.score_table_name)
 
         if score_df.empty:
+            logger.error("[Score Cog] Error retrieving score data from GDoc table.")
             raise TableDataImportException(table_name=self.score_table_name)
 
         score_dict = pd.Series(score_df['Total Points'].values, index=score_df['Team Name']).to_dict()
@@ -139,7 +143,7 @@ class ScoreCog(commands.Cog):
             self.score_crash_count = 0  # Reset crash count on recovery
 
         except Exception as e:
-            logger.exception("Exception in score loop")
+            logger.error("[Score Cog] Error hit in score loop.")
             self.score_crash_count += 1
             if not self.alert_sent:
                 await self.send_crash_alert(str(e))
@@ -164,7 +168,7 @@ class ScoreCog(commands.Cog):
             None
         """
         if not self.start_scores.is_running():
-            logger.error("[ScoreCog] Score loop is not running. Restarting...")
+            logger.error("[Score Cog] Score loop is not running. Restarting...")
             try:
                 self.start_scores.start()
             except RuntimeError:
@@ -199,7 +203,7 @@ class ScoreCog(commands.Cog):
                     f"```{error_message}```"
                 )
             except Exception as e:
-                logger.error("Failed to send crash alert to Discord", exc_info=True)
+                logger.error("[Score Cog] Failed to send crash alert to Discord", exc_info=True)
 
     async def cog_unload(self) -> None:
         """
@@ -208,6 +212,7 @@ class ScoreCog(commands.Cog):
         Returns:
             None
         """
+        logger.info("[Score Cog] Unloading Score Cog.")
         if self.start_scores.is_running():
             self.start_scores.stop()
         if self.watch_scores.is_running():

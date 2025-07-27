@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
+import logging
 
+logger = logging.getLogger(__name__)
 
 class InvalidConfig(Exception):
     def __init__(self, message="Error reading configuration file"):
@@ -43,11 +45,12 @@ class HuntBot:
             df.iloc[0] = df.iloc[0].replace({"": None})
             self.sheet_data = df
         except Exception as e:
-            print(e)
-            print("Error creating Dataframe")
+            logger.error(e)
+            logger.error("Error creating Dataframe")
             self.sheet_data = []
 
     def build_table_map(self):
+        logger.info("Building table map...")
         start_col = None
         end_col = None
         name = ""
@@ -67,17 +70,18 @@ class HuntBot:
                     end_col = col
                     self.table_map.setdefault(name, {})['end_col'] = end_col
         except Exception as e:
-            print(e)
-            print("Error building table map")
+            logger.error(e)
+            logger.error("Error building table map")
             self.table_map = {}
 
     def pull_table_data(self, table_name: str):
         # Find table name in table map
+        logger.ifo("Pulling Table Data...")
         table_metadata = self.table_map.get(table_name, {})
         if not table_metadata:
             return []
 
-        print(f"Data located between columns {table_metadata['start_col']} and {table_metadata['end_col']}")
+        logger.info(f"Data located between columns {table_metadata['start_col']} and {table_metadata['end_col']}")
 
         # get the data based on the start and end columns
         df = self.sheet_data.loc[:, table_metadata['start_col']:table_metadata['end_col']]
@@ -105,7 +109,7 @@ class HuntBot:
         self.config_map = dict(zip(df['Key'], df['Value']))
 
         if not self.config_map:
-            print("Error loading discord config data")
+            logger.error("Error loading discord config data")
 
         self.start_date = self.config_map.get("HUNT_START_DATE", "")
         self.start_time = self.config_map.get("HUNT_START_TIME_GMT", "")
@@ -113,13 +117,13 @@ class HuntBot:
         self.announcements_channel_id = int(self.config_map.get('ANNOUNCEMENTS_CHANNEL_ID', "0"))
 
         if self.announcements_channel_id == 0:
-            print("Error loading announcement channel ID date")
+            logger.error("Error loading announcement channel ID date")
         elif self.start_date == "":
-            print("Error loading hunt start date")
+            logger.error("Error loading hunt start date")
         elif self.start_time == "":
-            print("Error loading hunt start time")
+            logger.error("Error loading hunt start time")
         elif self.master_password == "":
-            print("Error loading master password")
+            logger.error("Error loading master password")
 
         # Combine the date and time strings
         start_datetime_str = f"{self.start_date} {self.start_time}"
@@ -141,6 +145,8 @@ class HuntBot:
     def check_start(self):
         ctime = self.get_current_gmt_time()
 
+        logger.info(f"Current time is: {ctime}, Hunt Start Date time is: {self.start_datetime}")
+
         if ctime < self.start_datetime:
             return
         else:
@@ -148,6 +154,9 @@ class HuntBot:
 
     def check_end(self):
         ctime = self.get_current_gmt_time()
+
+        logger.info(f"Current time is: {ctime}, Hunt End date time is: {self.end_datetime}")
+
         if ctime >= self.end_datetime:
             self.ended = True
         else:
