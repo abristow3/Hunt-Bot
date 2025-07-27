@@ -52,6 +52,7 @@ class StarBoardCog(commands.Cog):
         """
         self.starboard_channel_id = int(self.hunt_bot.config_map.get('STARBOARD_CHANNEL_ID', "0"))
         if self.starboard_channel_id == 0:
+            logger.error("[Starboard Cog] No STARBOARD_CHANNEL_ID found.")
             raise ConfigurationException(config_key='STARBOARD_CHANNEL_ID')
 
     def get_team1_drop_channel_id(self) -> None:
@@ -66,6 +67,7 @@ class StarBoardCog(commands.Cog):
         """
         self.team1_drop_channel_id = int(self.hunt_bot.config_map.get('TEAM_1_DROP_CHANNEL_ID', "0"))
         if self.team1_drop_channel_id == 0:
+            logger.error("[Starboard Cog] No TEAM_1_DROP_CHANNEL_ID found.")
             raise ConfigurationException(config_key='TEAM_1_DROP_CHANNEL_ID')
 
     def get_team2_drop_channel_id(self) -> None:
@@ -80,6 +82,7 @@ class StarBoardCog(commands.Cog):
         """
         self.team2_drop_channel_id = int(self.hunt_bot.config_map.get('TEAM_2_DROP_CHANNEL_ID', "0"))
         if self.team2_drop_channel_id == 0:
+            logger.error("[Starboard Cog] No TEAM_2_DROP_CHANNEL_ID found.")
             raise ConfigurationException(config_key='TEAM_2_DROP_CHANNEL_ID')
 
     @commands.Cog.listener()
@@ -107,12 +110,12 @@ class StarBoardCog(commands.Cog):
             guild = self.discord_bot.get_guild(payload.guild_id)
 
             if guild is None:
-                logger.warning("Guild not found for user %s", user.name)
+                logger.info("[Starboard Cog] Guild not found for user %s", user.name)
                 return
 
             member = await guild.fetch_member(user.id)
             if member is None:
-                logger.warning("Member %s not found in guild %s", user.id, guild.name)
+                logger.info("[Starboard Cog] Member %s not found in guild %s", user.id, guild.name)
                 return
 
             has_required_role = any(
@@ -120,17 +123,17 @@ class StarBoardCog(commands.Cog):
             )
             if not has_required_role:
                 await message.remove_reaction(payload.emoji, member)
-                logger.info("User %s removed star due to missing roles", user.name)
+                logger.info("[Starboard Cog] User %s removed star due to missing roles", user.name)
                 return
 
             if any(r for r in message.reactions if str(r.emoji) == "⭐" and r.count > 1):
                 await message.remove_reaction(payload.emoji, member)
-                logger.info("Duplicate star reaction removed from user %s on message %s", user.name, message.id)
+                logger.info("[Starboard Cog] Duplicate star reaction removed from user %s on message %s", user.name, message.id)
                 return
 
             star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
             if not star_channel:
-                logger.warning("Starboard channel not found.")
+                logger.error("[Starboard Cog] Starboard channel not found.")
                 return
 
             message_content = message.content
@@ -144,10 +147,10 @@ class StarBoardCog(commands.Cog):
                 f"[Jump to Message]({message.jump_url})"
             )
             self.starred_messages[message.id] = sent.id
-            logger.info("Starred message %s sent to starboard", message.id)
+            logger.info("[Starboard Cog] Starred message %s sent to starboard", message.id)
 
         except Exception as e:
-            logger.exception("Error handling star reaction: %s", e)
+            logger.exception("[Starboard Cog] Error handling star reaction: %s", e)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent) -> None:
@@ -180,10 +183,10 @@ class StarBoardCog(commands.Cog):
                     star_msg = await star_channel.fetch_message(starboard_msg_id)
                     await star_msg.delete()
                     logger.info(
-                        "Deleted starboard message %s for original message %s",
+                        [Starboard Cog] "Deleted starboard message %s for original message %s",
                         star_msg.id,
                         original_message.id
                     )
 
         except Exception as e:
-            logger.exception("Error handling reaction removal: %s", e)
+            logger.exception("[Starboard Cog] Error handling reaction removal: %s", e)

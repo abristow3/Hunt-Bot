@@ -49,10 +49,11 @@ class BountiesCog(commands.Cog):
             self.configured = True
             self.start_bounties.start()
         except Exception as e:
-            print(f"[Bounties] Initialization failed: {e}")
+            logger.error(f"[Bounties Cog] Bounties Cog Initialization failed: {e}")
             self.configured = False
 
     def start_up(self):
+        logger.info("[Bounties Cog] Retrieving Bounties data from GDoc config map")
         self.get_bounties_per_day()
         self.set_bounty_interval()
         self.get_bounty_channel()
@@ -65,24 +66,29 @@ class BountiesCog(commands.Cog):
     def get_bounties_per_day(self):
         self.bounties_per_day = int(self.hunt_bot.config_map.get('BOUNTIES_PER_DAY', "0"))
         if self.bounties_per_day == 0:
+            logger.error("[Bounties Cog] No BOUNTIES_PER_DAY data found in config")
             raise ConfigurationException(config_key='BOUNTIES_PER_DAY')
 
     def set_bounty_interval(self):
         self.bounty_interval = 24 / self.bounties_per_day
+        logger.info(f"[Bounties Cog] Bounties interval set to {self.bounty_interval}")
 
     def get_bounty_channel(self):
         self.bounty_channel_id = int(self.hunt_bot.config_map.get('BOUNTY_CHANNEL_ID', "0"))
         if self.bounty_channel_id == 0:
+            logger.error("[Bounties Cog] No BOUNTY_CHANNEL_ID data found in config")
             raise ConfigurationException(config_key='BOUNTY_CHANNEL_ID')
 
     def get_single_bounties(self):
         self.single_bounties_df = self.hunt_bot.pull_table_data(table_name=self.single_bounties_table_name)
         if self.single_bounties_df.empty:
+            logger.error("[Bounties Cog] Error parsing single bounties from config map")
             raise TableDataImportException(table_name=self.single_bounties_table_name)
 
     def get_double_bounties(self):
         self.double_bounties_df = self.hunt_bot.pull_table_data(table_name=self.double_bounties_table_name)
         if self.double_bounties_df.empty:
+            logger.error("[Bounties Cog] Error parsing double bounties from config map")
             raise TableDataImportException(table_name=self.double_bounties_table_name)
 
     @staticmethod
@@ -95,18 +101,21 @@ class BountiesCog(commands.Cog):
         await self.bot.wait_until_ready()
         channel = self.bot.get_channel(self.bounty_channel_id)
         if not channel:
-            print("[Bounties] Channel not found.")
+            log.error("[Bounties Cog] Bounties Channel not found.")
             return
 
         try:
+            logger.info("[Bounties Cog] Attempting to serve bounty")
             single_bounty = next(self.single_bounty_generator)
             single_task = single_bounty["Task"]
             single_password = single_bounty["Password"]
             is_double = not pd.isna(single_bounty.get("Double", None))
 
             if not is_double:
+                logger.info("[Bounties Cog] Bounty is a single bounty")
                 self.message = single_bounty_template.substitute(task=single_task, password=single_password)
             else:
+                logger.info("[Bounties Cog] Bounty is a double bounty")
                 double_bounty = next(self.double_bounty_generator)
                 self.message = double_bounty_template.substitute(
                     b1_task=single_task,
@@ -122,11 +131,12 @@ class BountiesCog(commands.Cog):
             self.message_id = sent_message.id
             await sent_message.pin()
         except StopIteration:
-            print("[Bounties] No more bounties left. Stopping task.")
+            log.info("[Bounties Cog] No more bounties left. Stopping task.")
             self.start_bounties.stop()
 
     @start_bounties.before_loop
     async def before_bounties(self):
         await self.bot.wait_until_ready()
         if self.bounty_interval > 0:
+            logger.info(f"[Bounties Cog] Updating Bounties task interval to: {self.bounty_interval} hours")
             self.start_bounties.change_interval(hours=self.bounty_interval)
