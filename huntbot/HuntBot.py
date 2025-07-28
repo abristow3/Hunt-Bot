@@ -29,6 +29,8 @@ class HuntBot:
         self.master_password = ""
         self.ended = False
         self.announcements_channel_id = 0
+        self.team_one_name = ""
+        self.team_two_name = ""
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -115,6 +117,8 @@ class HuntBot:
         self.start_time = self.config_map.get("HUNT_START_TIME_GMT", "")
         self.master_password = self.config_map.get("MASTER_PASSWORD", "")
         self.announcements_channel_id = int(self.config_map.get('ANNOUNCEMENTS_CHANNEL_ID', "0"))
+        self.team_one_name = self.config_map.get("TEAM_ONE_NAME", "")
+        self.team_two_name = self.config_map.get("TEAM_TWO_NAME", "")
 
         if self.announcements_channel_id == 0:
             logger.error("Error loading announcement channel ID date")
@@ -124,6 +128,10 @@ class HuntBot:
             logger.error("Error loading hunt start time")
         elif self.master_password == "":
             logger.error("Error loading master password")
+        elif self.team_one_name == "":
+            logger.error("Error loading team one name")
+        elif self.team_two_name == "":
+            logger.error("Error loading team two name")
 
         # Combine the date and time strings
         start_datetime_str = f"{self.start_date} {self.start_time}"
