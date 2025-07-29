@@ -183,7 +183,7 @@ class StarBoardCog(commands.Cog):
                     star_msg = await star_channel.fetch_message(starboard_msg_id)
                     await star_msg.delete()
                     logger.info(
-                        [Starboard Cog] "Deleted starboard message %s for original message %s",
+                        "[Starboard Cog] Deleted starboard message %s for original message %s",
                         star_msg.id,
                         original_message.id
                     )

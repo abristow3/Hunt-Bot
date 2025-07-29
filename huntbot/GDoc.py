@@ -15,7 +15,7 @@ class GDoc:
         self.credentials = ""
         self.on_startup()
 
-    def on_startup(self -> None):
+    def on_startup(self) -> None:
         try:
             with open("conf/conf.yaml", 'r') as f:
                 config = yaml.safe_load(f)
