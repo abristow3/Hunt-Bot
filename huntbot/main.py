@@ -110,6 +110,117 @@ async def beep(interaction: discord.Interaction):
     await interaction.response.send_message("Boop")
 
 
+# Bounty command with automatic 48hr end
+
+# Bounty command with configurable time limit (in minutes), default 48 hours
+@bot.tree.command(name="bounty", description="Create a new bounty")
+@app_commands.describe(
+    name_of_item="Name of the item for the bounty",
+    reward_amount="Reward amount for completing the bounty",
+    time_limit="Time limit for the bounty in minutes (optional, default 2880 = 48 hours)"
+)
+async def bounty(
+    interaction: discord.Interaction,
+    name_of_item: str,
+    reward_amount: str,
+    time_limit: str = None
+):
+    if interaction.channel.id != hunt_bot.command_channel_id:
+        return
+
+    # Default to 48 hours (2880 minutes) if not set
+    if time_limit is None or time_limit == "":
+        minutes = 2880
+    else:
+        if not time_limit.isdigit():
+            await interaction.response.send_message(
+                "Please use only numbers for the time limit.", ephemeral=True
+            )
+            return
+        minutes = int(time_limit)
+        if minutes <= 0:
+            minutes = 2880
+
+
+    # Allow K (thousand) and M (million) suffixes in reward_amount
+    reward_str = reward_amount.strip().lower()
+    multiplier = 1
+    if reward_str.endswith('k'):
+        multiplier = 1_000
+        reward_str = reward_str[:-1]
+    elif reward_str.endswith('m'):
+        multiplier = 1_000_000
+        reward_str = reward_str[:-1]
+    try:
+        reward_val = float(reward_str) * multiplier
+        if reward_val < 0:
+            await interaction.response.send_message(
+                "Reward amount cannot be negative.", ephemeral=True
+            )
+            return
+    except ValueError:
+        await interaction.response.send_message(
+            "Reward amount must be a number (optionally with 'K' for thousand or 'M' for million).", ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message(
+        f"Bounty created!\nItem: {name_of_item}\nReward: {reward_amount}\nTime Limit: {minutes} minutes ({minutes/60:.1f} hours)"
+    )
+
+
+    # Store a reference to the end_bounty function for early closure
+    if not hasattr(bot, 'active_bounties'):
+        bot.active_bounties = {}
+
+    bounty_key = name_of_item.strip().lower()
+
+    # Store bounty details for later use
+    bot.active_bounties[bounty_key] = {
+        'handle': None,  # will be set after task creation
+        'reward_amount': reward_amount
+    }
+
+    async def end_bounty():
+        await interaction.followup.send(f"The bounty for '{name_of_item}' has ended after {minutes} minutes.")
+        bot.active_bounties.pop(bounty_key, None)
+
+    # Store the cancel handle so we can close early
+    handle = bot.loop.create_task(_bounty_timer(end_bounty, minutes))
+    bot.active_bounties[bounty_key]['handle'] = handle
+
+
+# Command to close a bounty early and select a user as the claimer
+@bot.tree.command(name="closebounty", description="Close an active bounty early by item name and select a user as the claimer.")
+@app_commands.describe(
+    bounty_item="The item name of the bounty to close early.",
+    user="The user who claimed the bounty."
+)
+async def closebounty(interaction: discord.Interaction, bounty_item: str, user: discord.Member):
+    if interaction.channel.id != hunt_bot.command_channel_id:
+        return
+    if not hasattr(bot, 'active_bounties') or not bot.active_bounties:
+        await interaction.response.send_message("There are no active bounties to close.", ephemeral=True)
+        return
+    bounty_key = bounty_item.strip().lower()
+    info = bot.active_bounties.get(bounty_key)
+    if not info:
+        await interaction.response.send_message("No active bounty found with that item name.", ephemeral=True)
+        return
+    handle = info['handle']
+    handle.cancel()
+    value = info['reward_amount']
+    bot.active_bounties.pop(bounty_key, None)
+    await interaction.response.send_message(f"Bounty for '{bounty_item}' has been claimed by {user.mention} for {value}!")
+
+
+# Helper for bounty timer
+import asyncio
+async def _bounty_timer(callback, minutes):
+    await asyncio.sleep(minutes * 60)
+    await callback()
+
+
 @bot.tree.command(name="start-hunt", description="Starts the Hunt Bot on the pre-configured date and time")
 async def start(interaction: discord.Interaction):
     if interaction.channel.id != hunt_bot.command_channel_id:
