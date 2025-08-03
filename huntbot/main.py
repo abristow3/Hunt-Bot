@@ -48,7 +48,7 @@ async def check_start_time():
         hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
     except Exception as e:
         logger.error(e)
-        logger.error("Failed to retrieve GDoc data)
+        logger.error("Failed to retrieve GDoc data")
 
     logger.info("Checking if Huntbot has been configured...")
     # Initialize Countdown only once when configured
@@ -241,9 +241,8 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
     gdoc.set_sheet_id(sheet_id=sheet_id)
     hunt_bot.set_sheet_name(sheet_name=sheet_name)
     hunt_bot.set_config_table_name(table_name=config_table)
-    await interaction.response.send_message(
-        logger.info("Sheet ID and Name set succesfully")
-        f"The GDoc ID has been updated to reference id: {sheet_id}, and sheet name: {sheet_name}")
+    await interaction.response.send_message("Sheet ID and Name set succesfully")
+    logger.info(f"The GDoc ID has been updated to reference id: {sheet_id}, and sheet name: {sheet_name}")
 
 
 async def sync_commands():
@@ -283,7 +282,7 @@ async def on_ready():
     # List all commands
     await list_commands()
 
-    logger.infof"Logged in as {bot.user}")
+    logger.info(f"Logged in as {bot.user}")
 
     for guild in bot.guilds:
         for channel in guild.text_channels:
