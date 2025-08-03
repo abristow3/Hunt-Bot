@@ -24,7 +24,7 @@ class GDoc:
 
             if not self.creds_path:
                 logger.error("Missing GOOGLE_CREDENTIALS_PATH value")
-                exit()
+                # exit()
 
             logger.info("Google Credentials found, attempting to establish connection to GDocs API server")
             self.credentials = service_account.Credentials.from_service_account_file(self.creds_path, scopes=[

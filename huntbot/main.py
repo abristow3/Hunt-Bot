@@ -141,14 +141,93 @@ async def bounty(
         if minutes <= 0:
             minutes = 2880
 
+
+    # Allow K (thousand) and M (million) suffixes in reward_amount
+    reward_str = reward_amount.strip().lower()
+    multiplier = 1
+    if reward_str.endswith('k'):
+        multiplier = 1_000
+        reward_str = reward_str[:-1]
+    elif reward_str.endswith('m'):
+        multiplier = 1_000_000
+        reward_str = reward_str[:-1]
+    try:
+        reward_val = float(reward_str) * multiplier
+        if reward_val < 0:
+            await interaction.response.send_message(
+                "Reward amount cannot be negative.", ephemeral=True
+            )
+            return
+    except ValueError:
+        await interaction.response.send_message(
+            "Reward amount must be a number (optionally with 'K' for thousand or 'M' for million).", ephemeral=True
+        )
+        return
+
     await interaction.response.send_message(
         f"Bounty created!\nItem: {name_of_item}\nReward: {reward_amount}\nTime Limit: {minutes} minutes ({minutes/60:.1f} hours)"
     )
 
+
+    # Store a reference to the end_bounty function for early closure
+    if not hasattr(bot, 'active_bounties'):
+        bot.active_bounties = {}
+
+    bounty_key = name_of_item.strip().lower()
+
+    # Store bounty details for later use
+    bot.active_bounties[bounty_key] = {
+        'handle': None,  # will be set after task creation
+        'reward_amount': reward_amount
+    }
+
     async def end_bounty():
         await interaction.followup.send(f"The bounty for '{name_of_item}' has ended after {minutes} minutes.")
+        bot.active_bounties.pop(bounty_key, None)
 
-    bot.loop.create_task(_bounty_timer(end_bounty, minutes))
+    # Store the cancel handle so we can close early
+    handle = bot.loop.create_task(_bounty_timer(end_bounty, minutes))
+    bot.active_bounties[bounty_key]['handle'] = handle
+
+
+# Command to list all active bounties (placed next to bounty command)
+@bot.tree.command(name="listbounties", description="List all active bounties.")
+async def listbounties(interaction: discord.Interaction):
+    if interaction.channel.id != hunt_bot.command_channel_id:
+        return
+    if not hasattr(bot, 'active_bounties') or not bot.active_bounties:
+        await interaction.response.send_message("There are no active bounties.", ephemeral=True)
+        return
+    bounty_msgs = []
+    for bounty_key, info in bot.active_bounties.items():
+        bounty_msgs.append(f"Bounty Item: {bounty_key} | Value: {info['reward_amount']}")
+    msg = "**Active Bounties:**\n" + "\n".join(bounty_msgs)
+    await interaction.response.send_message(msg, ephemeral=True)
+
+
+
+# Command to close a bounty early and select a user as the claimer
+@bot.tree.command(name="closebounty", description="Close an active bounty early by item name and select a user as the claimer.")
+@app_commands.describe(
+    bounty_item="The item name of the bounty to close early.",
+    user="The user who claimed the bounty."
+)
+async def closebounty(interaction: discord.Interaction, bounty_item: str, user: discord.Member):
+    if interaction.channel.id != hunt_bot.command_channel_id:
+        return
+    if not hasattr(bot, 'active_bounties') or not bot.active_bounties:
+        await interaction.response.send_message("There are no active bounties to close.", ephemeral=True)
+        return
+    bounty_key = bounty_item.strip().lower()
+    info = bot.active_bounties.get(bounty_key)
+    if not info:
+        await interaction.response.send_message("No active bounty found with that item name.", ephemeral=True)
+        return
+    handle = info['handle']
+    handle.cancel()
+    value = info['reward_amount']
+    bot.active_bounties.pop(bounty_key, None)
+    await interaction.response.send_message(f"Bounty for '{bounty_item}' has been claimed by {user.mention} for {value}!")
 
 
 # Helper for bounty timer
