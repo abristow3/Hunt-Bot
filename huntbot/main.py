@@ -244,17 +244,19 @@ async def list_commands():
 @bot.event
 async def on_ready():
     logger.info("Loading Assets...")
-    # with open("assets/franken-thrugo.png", "rb") as avatar_file:
-    #     # Update the bot's avatar
-    #     image = avatar_file.read()
-    #     await bot.user.edit(avatar=image)
+    with open("assets/franken-thrugo.png", "rb") as avatar_file:
+        # Update the bot's avatar
+        image = avatar_file.read()
+        await bot.user.edit(avatar=image)
 
     logger.info("Assets Loaded")
 
     try:
-        # channel = bot.get_channel(699971574689955853)
-        channel = bot.get_channel(1351532522663837760)
+        print("LOADING MEMORIES")
+        print(f"GEN ID: {hunt_bot.general_channel_id}")
+        channel = bot.get_channel(hunt_bot.general_channel_id)
         memory = load_random_memory("conf/memories.yaml")
+        print("MEMORY: " + memory)
         await channel.send(memory)
     except Exception as e:
         logger.error(e)

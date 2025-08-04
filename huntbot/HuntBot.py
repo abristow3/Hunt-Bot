@@ -31,6 +31,7 @@ class HuntBot:
         self.announcements_channel_id = 0
         self.team_one_name = ""
         self.team_two_name = ""
+        self.general_channel_id = 1351532522663837760
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -117,11 +118,14 @@ class HuntBot:
         self.start_time = self.config_map.get("HUNT_START_TIME_GMT", "")
         self.master_password = self.config_map.get("MASTER_PASSWORD", "")
         self.announcements_channel_id = int(self.config_map.get('ANNOUNCEMENTS_CHANNEL_ID', "0"))
+        self.general_channel_id = int(self.config_map.get('GENERAL_CHANNEL_ID', "0"))
         self.team_one_name = self.config_map.get("TEAM_ONE_NAME", "")
         self.team_two_name = self.config_map.get("TEAM_TWO_NAME", "")
 
         if self.announcements_channel_id == 0:
-            logger.error("Error loading announcement channel ID date")
+            logger.error("Error loading announcement channel ID")
+        elif self.announcements_channel_id == 0:
+            logger.error("Error loading general channel ID")
         elif self.start_date == "":
             logger.error("Error loading hunt start date")
         elif self.start_time == "":
