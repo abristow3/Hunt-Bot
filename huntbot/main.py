@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
+import sys
+import re
+import yaml
 import discord
+import random
 from discord.ext import commands, tasks
 from discord import app_commands
 import logging
@@ -35,6 +39,29 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
+
+
+def load_random_memory(yaml_file_path):
+    with open(yaml_file_path, 'r') as file:
+        data = yaml.safe_load(file)
+
+    memories = data.get('memories', [])
+
+    if not memories:
+        return "No memories found in the file."
+
+    memory = random.choice(memories)
+
+    # Try to extract the player name from the end of the memory string
+    match = re.search(r'\s-\s(.+)$', memory)
+    if match:
+        player = match.group(1).strip()
+        memory_text = memory[:match.start()].strip()
+    else:
+        player = "Unknown"
+        memory_text = memory.strip()
+
+    return f'"{memory_text}"\n\n— {player}'
 
 
 @tasks.loop(seconds=5)
@@ -115,18 +142,20 @@ async def start(interaction: discord.Interaction):
     if interaction.channel.id != hunt_bot.command_channel_id:
         return
 
+    await interaction.response.defer()
+
     logger.info(f"/start-hunt command ran")
 
     # Check sheet ID has been populated
     if gdoc.sheet_id == "":
         logger.info("Sheet ID not set")
-        await interaction.response.send_message("No GDoc sheet ID set. Use the command '/sheet' to set one.")
+        await interaction.followup.send("No GDoc sheet ID set. Use the command '/sheet' to set one.")
         return
 
     # Check sheet name has been populated
     if hunt_bot.sheet_name == "":
         logger.info("Sheet Name not set")
-        await interaction.response.send_message("No GDoc sheet name set. Use the command '/sheet' to set one.")
+        await interaction.followup.send("No GDoc sheet name set. Use the command '/sheet' to set one.")
         return
 
     # Import the sheet data
@@ -139,7 +168,7 @@ async def start(interaction: discord.Interaction):
     # If no data imported
     if hunt_bot.sheet_data.empty:
         logger.error("Error retrieving Hunt Bot configuration.")
-        await interaction.response.send_message("Error retrieving Hunt Bot configuration from GDoc. Check if the "
+        await interaction.followup.send("Error retrieving Hunt Bot configuration from GDoc. Check if the "
                                                 "sheet ID and sheet name are correct.")
         return
 
@@ -149,7 +178,7 @@ async def start(interaction: discord.Interaction):
     # Check table map was created
     if not hunt_bot.table_map:
         logger.error("Error building table map for GDoc")
-        await interaction.response.send_message("Error building sheet table map.")
+        await interaction.followup.send("Error building sheet table map.")
         return
 
     # Get the HuntBot Configuration variables
@@ -158,7 +187,7 @@ async def start(interaction: discord.Interaction):
     # Check config data was found
     if config_df.empty:
         logger.error("Error retrieving configuration data from table")
-        await interaction.response.send_message("Error retrieving config data.")
+        await interaction.followup.send("Error retrieving config data.")
         return
 
     hunt_bot.load_config(df=config_df)
@@ -166,12 +195,12 @@ async def start(interaction: discord.Interaction):
     # Check config data loaded
     if not hunt_bot.configured:
         logger.error("Hunt Bot Configuration failed to load")
-        await interaction.response.send_message("Error setting config data.")
+        await interaction.followup.send("Error setting config data.")
         return
 
     logger.info("Hunt Bot configured succesfully")
 
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}")
 
     if not check_start_time.is_running():
@@ -215,19 +244,21 @@ async def list_commands():
 @bot.event
 async def on_ready():
     logger.info("Loading Assets...")
-    with open("assets/franken-thrugo.png", "rb") as avatar_file:
-        # Update the bot's avatar
-        image = avatar_file.read()
-        await bot.user.edit(avatar=image)
+    # with open("assets/franken-thrugo.png", "rb") as avatar_file:
+    #     # Update the bot's avatar
+    #     image = avatar_file.read()
+    #     await bot.user.edit(avatar=image)
 
     logger.info("Assets Loaded")
 
     try:
-        channel = bot.get_channel(699971574689955853)
-        await channel.send("I'M ALIVEEEEE!!!!!!!\n"
-                           "FEELS FRANKEN-THURGO MAN")
+        # channel = bot.get_channel(699971574689955853)
+        channel = bot.get_channel(1351532522663837760)
+        memory = load_random_memory("conf/memories.yaml")
+        await channel.send(memory)
     except Exception as e:
-        pass
+        logger.error(e)
+        logger.error("Error posting memory during on_ready event")
 
     await sync_commands()
 
@@ -244,6 +275,7 @@ async def on_ready():
 
     if hunt_bot.command_channel_id == "":
         logger.error("NO COMMAND CHANNEL FOUND")
+        sys.exit()
 
 
 def run():

@@ -78,7 +78,7 @@ class HuntBot:
 
     def pull_table_data(self, table_name: str):
         # Find table name in table map
-        logger.ifo("Pulling Table Data...")
+        logger.info("Pulling Table Data...")
         table_metadata = self.table_map.get(table_name, {})
         if not table_metadata:
             return []
