@@ -252,11 +252,8 @@ async def on_ready():
     logger.info("Assets Loaded")
 
     try:
-        print("LOADING MEMORIES")
-        print(f"GEN ID: {hunt_bot.general_channel_id}")
         channel = bot.get_channel(hunt_bot.general_channel_id)
         memory = load_random_memory("conf/memories.yaml")
-        print("MEMORY: " + memory)
         await channel.send(memory)
     except Exception as e:
         logger.error(e)
@@ -277,7 +274,6 @@ async def on_ready():
 
     if hunt_bot.command_channel_id == "":
         logger.error("NO COMMAND CHANNEL FOUND")
-        sys.exit()
 
 
 def run():
