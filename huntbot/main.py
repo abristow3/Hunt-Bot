@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys
 import re
 import yaml
 import discord
@@ -254,7 +253,8 @@ async def on_ready():
     try:
         channel = bot.get_channel(hunt_bot.general_channel_id)
         memory = load_random_memory("conf/memories.yaml")
-        await channel.send(memory)
+        # await channel.send(memory)
+        await channel.send(f"I'M ALIVEEEEE!!!!!!! FEELS FRANKEN-THURGO MAN\n\n{memory}")
     except Exception as e:
         logger.error(e)
         logger.error("Error posting memory during on_ready event")
