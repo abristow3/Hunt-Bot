@@ -168,7 +168,7 @@ async def start(interaction: discord.Interaction):
     if hunt_bot.sheet_data.empty:
         logger.error("Error retrieving Hunt Bot configuration.")
         await interaction.followup.send("Error retrieving Hunt Bot configuration from GDoc. Check if the "
-                                                "sheet ID and sheet name are correct.")
+                                        "sheet ID and sheet name are correct.")
         return
 
     # There is data, so build the table map from the data so we can query it
@@ -223,6 +223,24 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
     hunt_bot.set_config_table_name(table_name=config_table)
     await interaction.response.send_message("Sheet ID and Name set succesfully")
     logger.info(f"The GDoc ID has been updated to reference id: {sheet_id}, and sheet name: {sheet_name}")
+
+
+@bot.tree.command(name="passwords", description="Display the current hunt passwords.")
+async def passwords(interaction: discord.Interaction):
+    # Accessing HuntBot attributes
+    bounty = hunt_bot.bounty_password
+    daily = hunt_bot.daily_password
+    master = hunt_bot.master_password
+
+    # Format response
+    response = (
+        "**===== CURRENT PASSWORDS =====**\n\n"
+        f"**MASTER:** {master}\n"
+        f"**DAILY:** {daily}\n"
+        f"**BOUNTY:** {bounty}"
+    )
+
+    await interaction.response.send_message(response, ephemeral=True)
 
 
 async def sync_commands():

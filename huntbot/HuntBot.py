@@ -27,6 +27,8 @@ class HuntBot:
         self.start_datetime = None
         self.end_datetime = None
         self.master_password = ""
+        self.bounty_password = ""
+        self.daily_password = ""
         self.ended = False
         self.announcements_channel_id = 0
         self.team_one_name = ""

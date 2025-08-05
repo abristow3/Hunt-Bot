@@ -98,6 +98,7 @@ class DailiesCog(commands.Cog):
             single_daily = next(self.single_daily_generator)
             single_task = single_daily["Task"]
             single_password = single_daily["Password"]
+            self.hunt_bot.daily_password = single_password
             is_double = not pd.isna(single_daily.get("Double", None))
 
             if not is_double:
