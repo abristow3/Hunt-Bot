@@ -34,6 +34,8 @@ class HuntBot:
         self.announcements_channel_id = 0
         self.team_one_name = ""
         self.team_two_name = ""
+        self.team_one_chat_channel = ""
+        self.team_two_chat_channel = ""
 
         # TODO hardcode these for now
         self.general_channel_id = 1351532522663837760
@@ -132,8 +134,10 @@ class HuntBot:
             self.admin_channel_id = int(self.config_map.get("ADMIN_CHANNEL_ID", "0"))
             self.team_one_name = self.config_map.get("TEAM_ONE_NAME", "")
             self.team_two_name = self.config_map.get("TEAM_TWO_NAME", "")
+            self.team_one_chat_channel = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
+            self.team_two_chat_channel = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
         except ValueError as e:
-            logger.exception("Invalid type in config values (expected integer for channel IDs).")
+            logger.exception("Invalid type in config values (expected integer for channel IDs).", exc_info=e)
             raise InvalidConfig("Invalid type in config values: expected integers for channel IDs.")
 
         missing_fields = []
@@ -154,6 +158,10 @@ class HuntBot:
             missing_fields.append("TEAM_ONE_NAME")
         if not self.team_two_name:
             missing_fields.append("TEAM_TWO_NAME")
+        if self.team_one_chat_channel == 0:
+            missing_fields.append("TEAM_1_CHAT_CHANNEL_ID")
+        if self.team_two_chat_channel == 0:
+            missing_fields.append("TEAM_2_CHAT_CHANNEL_ID")
 
         if missing_fields:
             logger.error(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
@@ -172,7 +180,6 @@ class HuntBot:
         self.end_datetime = self.start_datetime + timedelta(days=9)
         self.configured = True
         self.update_config_for_state()
-        print(f"BOT CONFIG:\n{self.config_map}")
 
     @staticmethod
     def get_current_gmt_time():

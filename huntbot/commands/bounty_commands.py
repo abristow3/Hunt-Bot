@@ -8,13 +8,34 @@ logger = logging.getLogger(__name__)
 active_bounties = {}  # Shared storage for bounties
 
 
-async def bounty(interaction: discord.Interaction, name_of_item: str, reward_amount: str, time_limit: str = None, hunt_bot=None):
-    if interaction.channel.id != hunt_bot.command_channel_id:
+class Bounty:
+    def __init__(self, item_name: str, reward_amount: str, time_limit_hours: int):
+        self.item_name = item_name
+        self.reward_amount = reward_amount
+        self.time_limit_hours = time_limit_hours
+
+
+class ItemBounties:
+    def __init__(self):
+        self.active_bounties = []
+
+    async def create_bounty(self, item_name: str, reward_amount: str, time_limit_hours: int):
+        new_bounty = Bounty(item_name=item_name, reward_amount=reward_amount, time_limit_hours=time_limit_hours)
+        self.active_bounties.append(new_bounty)
+
+
+async def create_bounty(interaction: discord.Interaction, name_of_item: str, reward_amount: str,
+                        time_limit_hours: int = 48, hunt_bot=None):
+    if interaction.channel.id != 1358934276053405766 and interaction.channel.id != hunt_bot.team_two_chat_channel:
+
+    # if interaction.channel.id != hunt_bot.team_one_chat_channel and interaction.channel.id != hunt_bot.team_two_chat_channel:
+        logger.info("bounty command ran in wrong channel")
         return
 
+    print("RIGHT CHANNEL")
     minutes = 2880  # default
-    if time_limit and time_limit.isdigit():
-        minutes = max(int(time_limit), 1)
+    if time_limit_hours and time_limit_hours.isdigit():
+        minutes = max(int(time_limit_hours), 1)
 
     reward_str = reward_amount.strip().lower()
     multiplier = 1
@@ -53,36 +74,36 @@ async def bounty(interaction: discord.Interaction, name_of_item: str, reward_amo
     }
 
 
-async def listbounties(interaction: discord.Interaction, hunt_bot=None):
-    if interaction.channel.id != hunt_bot.command_channel_id:
-        return
+# async def listbounties(interaction: discord.Interaction, hunt_bot=None):
+#     if interaction.channel.id != hunt_bot.command_channel_id:
+#         return
+#
+#     if not active_bounties:
+#         await interaction.response.send_message("There are no active bounties.", ephemeral=True)
+#         return
+#
+#     msg = "\n".join(
+#         f"Item: {key} | Reward: {info['reward_amount']}" for key, info in active_bounties.items()
+#     )
+#     await interaction.response.send_message(f"**Active Bounties:**\n{msg}", ephemeral=True)
 
-    if not active_bounties:
-        await interaction.response.send_message("There are no active bounties.", ephemeral=True)
-        return
 
-    msg = "\n".join(
-        f"Item: {key} | Reward: {info['reward_amount']}" for key, info in active_bounties.items()
-    )
-    await interaction.response.send_message(f"**Active Bounties:**\n{msg}", ephemeral=True)
-
-
-async def closebounty(interaction: discord.Interaction, bounty_item: str, user: discord.Member, hunt_bot=None):
-    if interaction.channel.id != hunt_bot.command_channel_id:
-        return
-
-    bounty_key = bounty_item.strip().lower()
-    info = active_bounties.get(bounty_key)
-    if not info:
-        await interaction.response.send_message("No such active bounty.", ephemeral=True)
-        return
-
-    info['handle'].cancel()
-    reward = info['reward_amount']
-    active_bounties.pop(bounty_key, None)
-    await interaction.response.send_message(
-        f"Bounty for '{bounty_item}' has been claimed by {user.mention} for {reward}!"
-    )
+# async def closebounty(interaction: discord.Interaction, bounty_item: str, user: discord.Member, hunt_bot=None):
+#     if interaction.channel.id != hunt_bot.command_channel_id:
+#         return
+#
+#     bounty_key = bounty_item.strip().lower()
+#     info = active_bounties.get(bounty_key)
+#     if not info:
+#         await interaction.response.send_message("No such active bounty.", ephemeral=True)
+#         return
+#
+#     info['handle'].cancel()
+#     reward = info['reward_amount']
+#     active_bounties.pop(bounty_key, None)
+#     await interaction.response.send_message(
+#         f"Bounty for '{bounty_item}' has been claimed by {user.mention} for {reward}!"
+#     )
 
 
 def register_bounty_commands(tree: app_commands.CommandTree, hunt_bot):
@@ -92,17 +113,18 @@ def register_bounty_commands(tree: app_commands.CommandTree, hunt_bot):
         reward_amount="Reward amount",
         time_limit="Time limit in minutes (optional)"
     )
-    async def bounty_cmd(interaction: discord.Interaction, name_of_item: str, reward_amount: str, time_limit: str = None):
-        await bounty(interaction, name_of_item, reward_amount, time_limit, hunt_bot=hunt_bot)
+    async def bounty_cmd(interaction: discord.Interaction, name_of_item: str, reward_amount: str,
+                         time_limit: str = None):
+        await create_bounty(interaction, name_of_item, reward_amount, time_limit, hunt_bot=hunt_bot)
 
-    @tree.command(name="listbounties", description="List all active bounties.")
-    async def listbounties_cmd(interaction: discord.Interaction):
-        await listbounties(interaction, hunt_bot=hunt_bot)
-
-    @tree.command(name="closebounty", description="Close a bounty early.")
-    @app_commands.describe(
-        bounty_item="The item name of the bounty",
-        user="The user who claimed it"
-    )
-    async def closebounty_cmd(interaction: discord.Interaction, bounty_item: str, user: discord.Member):
-        await closebounty(interaction, bounty_item, user, hunt_bot=hunt_bot)
+    # @tree.command(name="listbounties", description="List all active bounties.")
+    # async def listbounties_cmd(interaction: discord.Interaction):
+    #     await listbounties(interaction, hunt_bot=hunt_bot)
+    #
+    # @tree.command(name="closebounty", description="Close a bounty early.")
+    # @app_commands.describe(
+    #     bounty_item="The item name of the bounty",
+    #     user="The user who claimed it"
+    # )
+    # async def closebounty_cmd(interaction: discord.Interaction, bounty_item: str, user: discord.Member):
+    #     await closebounty(interaction, bounty_item, user, hunt_bot=hunt_bot)
