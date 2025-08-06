@@ -97,7 +97,7 @@ async def passwords(interaction: discord.Interaction, hunt_bot):
         f"**DAILY:** {hunt_bot.daily_password}\n"
         f"**BOUNTY:** {hunt_bot.bounty_password}"
     )
-    await interaction.response.send_message(response, ephemeral=True)
+    await interaction.response.send_message(response)
 
 
 async def show_state(interaction: discord.Interaction, hunt_bot, state):
@@ -105,7 +105,7 @@ async def show_state(interaction: discord.Interaction, hunt_bot, state):
         return
 
     if not state.state_data:
-        await interaction.response.send_message("State is currently empty.", ephemeral=True)
+        await interaction.response.send_message("State is currently empty.")
         return
 
     yaml_text = yaml.safe_dump(state.state_data, sort_keys=False)
