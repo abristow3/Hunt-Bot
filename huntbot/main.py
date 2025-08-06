@@ -21,7 +21,7 @@ from huntbot.commands.main_commands import register_main_commands
 
 # Set up the logger
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='[%(asctime)s] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )

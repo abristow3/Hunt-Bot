@@ -21,7 +21,7 @@ class GDoc:
             # Load the service account credentials from the JSON file
             self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
 
-            print("GOOGLE CREDS PATH: " + self.creds_path)
+            logger.info("GOOGLE CREDS PATH: " + self.creds_path)
 
             if not self.creds_path:
                 logger.error("Missing GOOGLE_CREDENTIALS_PATH value")
