@@ -247,7 +247,7 @@ async def passwords(interaction: discord.Interaction):
 
 @bot.tree.command(name="state", description="Show the current state file contents")
 async def show_state(interaction: discord.Interaction):
-    if interaction.channel.id != hunt_bot.command_channel_id:
+    if interaction.channel.id != hunt_bot.admin_channel_id:
         return
     logger.info("/state command ran")
 

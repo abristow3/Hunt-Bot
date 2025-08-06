@@ -2,7 +2,6 @@ import os
 import yaml
 import logging
 from filelock import FileLock, Timeout
-import sys
 
 logger = logging.getLogger(__name__)
 
