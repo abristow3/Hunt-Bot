@@ -202,7 +202,10 @@ async def start(interaction: discord.Interaction):
         return
 
     logger.info("Hunt Bot configured successfully")
-    await state.update_state(bot=True, **hunt_bot.config_map)
+    try:
+        await state.update_state(bot=True, **hunt_bot.config_map)
+    except Exception as e:
+        logger.error("Exception encountered when updating state during startup when updating initial state", exc_info=e)
 
     await interaction.followup.send(
         f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}")
@@ -329,8 +332,8 @@ async def main():
     try:
         await state.load_state()
         logger.info("State loaded successfully.")
-    except Timeout:
-        logger.error("Timeout while loading state during startup.")
+    except Exception as e:
+        logger.error("Exception encountered when updating state during startup when loading existing state", exc_info=e)
 
     await bot.start(TOKEN)
 
