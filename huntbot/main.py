@@ -210,7 +210,6 @@ async def bounty(
     handle = bot.loop.create_task(_bounty_timer(end_bounty, minutes))
     bot.active_bounties[bounty_key]['handle'] = handle
 
-
 # Command to list all active bounties (placed next to bounty command)
 @bot.tree.command(name="listbounties", description="List all active bounties.")
 async def listbounties(interaction: discord.Interaction):
@@ -224,8 +223,6 @@ async def listbounties(interaction: discord.Interaction):
         bounty_msgs.append(f"Bounty Item: {bounty_key} | Value: {info['reward_amount']}")
     msg = "**Active Bounties:**\n" + "\n".join(bounty_msgs)
     await interaction.response.send_message(msg, ephemeral=True)
-
-
 
 # Command to close a bounty early and select a user as the claimer
 @bot.tree.command(name="closebounty", description="Close an active bounty early by item name and select a user as the claimer.")
