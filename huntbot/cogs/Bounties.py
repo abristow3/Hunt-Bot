@@ -3,6 +3,9 @@ import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
+import logging
+
+logger = logging.getLogger(__name__)
 
 single_bounty_template = Template("""
 @everyone $task
@@ -101,7 +104,7 @@ class BountiesCog(commands.Cog):
         await self.bot.wait_until_ready()
         channel = self.bot.get_channel(self.bounty_channel_id)
         if not channel:
-            log.error("[Bounties Cog] Bounties Channel not found.")
+            logger.error("[Bounties Cog] Bounties Channel not found.")
             return
 
         try:
@@ -109,6 +112,7 @@ class BountiesCog(commands.Cog):
             single_bounty = next(self.single_bounty_generator)
             single_task = single_bounty["Task"]
             single_password = single_bounty["Password"]
+            self.hunt_bot.bounty_password = single_password
             is_double = not pd.isna(single_bounty.get("Double", None))
 
             if not is_double:
@@ -131,7 +135,7 @@ class BountiesCog(commands.Cog):
             self.message_id = sent_message.id
             await sent_message.pin()
         except StopIteration:
-            log.info("[Bounties Cog] No more bounties left. Stopping task.")
+            logger.info("[Bounties Cog] No more bounties left. Stopping task.")
             self.start_bounties.stop()
 
     @start_bounties.before_loop
