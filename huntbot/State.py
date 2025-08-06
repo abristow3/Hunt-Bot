@@ -13,6 +13,8 @@ class State:
         self.state_data = {}
         self._init_state_file()
 
+        print("test")
+
     def _init_state_file(self) -> None:
         # Check if state file exists
         if not os.path.exists(self.state_file):
