@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import asyncio
 import re
 import yaml
 import discord
@@ -6,6 +7,7 @@ import random
 from discord.ext import commands, tasks
 from discord import app_commands
 import logging
+from filelock import Timeout
 from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
 from huntbot.cogs.Bounties import BountiesCog
@@ -18,7 +20,7 @@ import os
 
 # Set up the logger
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='[%(asctime)s] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -199,9 +201,8 @@ async def start(interaction: discord.Interaction):
         await interaction.followup.send("Error setting config data.")
         return
 
-    await state.update_state(bot=True)
-    print(f"CONFIG MAP:\n{hunt_bot.config_map}")
     logger.info("Hunt Bot configured successfully")
+    await state.update_state(bot=True, **hunt_bot.config_map)
 
     await interaction.followup.send(
         f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}")
@@ -324,6 +325,15 @@ async def on_ready():
         logger.error("NO COMMAND CHANNEL FOUND")
 
 
+async def main():
+    try:
+        await state.load_state()
+        logger.info("State loaded successfully.")
+    except Timeout:
+        logger.error("Timeout while loading state during startup.")
+
+    await bot.start(TOKEN)
+
+
 def run():
-    # Run bot
-    bot.run(TOKEN)
+    asyncio.run(main())

@@ -17,23 +17,23 @@ class State:
     def _init_state_file(self):
         # Check if state file exists
         if not os.path.exists(self.state_file):
-            logger.warning(f"No state file found at: {self.state_file}")
+            logger.warning(f"[STATE] No state file found at: {self.state_file}")
             # Create an empty YAML file
             os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
             with open(self.state_file, 'w') as f:
                 yaml.safe_dump({}, f)
-            logger.info(f"Created new empty state file at {self.state_file}")
+            logger.info(f"[STATE] Created new empty state file at {self.state_file}")
             self.state_data = {}
         else:
-            logger.info("State file found")
+            logger.info("[STATE] State file found")
             # Load existing state data
             try:
                 with open(self.state_file, 'r') as f:
                     self.state_data = yaml.safe_load(f)
-                logger.info(f"Loaded state from {self.state_file}")
+                logger.info(f"[STATE] Loaded state from {self.state_file}")
                 logger.info(self.state_data)
             except yaml.YAMLError as e:
-                logger.error(f"Failed to load YAML from {self.state_file}: {e}")
+                logger.error(f"[STATE] Failed to load YAML from {self.state_file}: {e}")
                 self.state_data = {}
 
     async def update_state(self, cog: bool = False, bot: bool = False, **kwargs):
@@ -54,8 +54,9 @@ class State:
                     self.state_data['cogs'].update(kwargs)
 
                 self._write_state_locked()
+                logger.info("[STATE] State Updated")
         except Timeout:
-            logger.error("Could not acquire state lock within timeout.")
+            logger.error("[STATE] Could not acquire state lock within timeout.")
             raise
 
     async def load_state(self):
@@ -65,7 +66,7 @@ class State:
             with lock:
                 self._load_state_locked()
         except Timeout:
-            logger.error("Could not acquire lock to load state.")
+            logger.error("[STATE] Could not acquire lock to load state.")
             raise
 
     def _load_state_locked(self):
@@ -75,9 +76,9 @@ class State:
                 try:
                     self.state_data = yaml.safe_load(file)
                 except yaml.YAMLError as e:
-                    raise ValueError(f"Error reading YAML file: {e}")
+                    raise ValueError(f"[STATE] Error reading YAML file: {e}")
         else:
-            logger.warning(f"No state file found at: {self.state_file}")
+            logger.warning(f"[STATE] No state file found at: {self.state_file}")
             self.state_data = {}
 
     def _write_state_locked(self):
