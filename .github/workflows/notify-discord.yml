@@ -24,7 +24,7 @@ jobs:
           REF="${{ github.ref }}"
           SERVER_URL="https://github.com/${REPO}"
 
-          MESSAGE="📣 Unknown event: $EVENT_NAME by $ACTOR on $REPO"
+          MESSAGE="📣 Event: $EVENT_NAME by $ACTOR on $REPO"
 
           case "$EVENT_NAME" in
             push)
