@@ -18,6 +18,7 @@ class State:
         # Check if state file exists
         if not os.path.exists(self.state_file):
             logger.warning(f"[STATE] No state file found at: {self.state_file}")
+
             # Create an empty YAML file
             os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
             self.state_data = {"bot": {}, "cogs": {}}
