@@ -84,7 +84,6 @@ class HuntBot:
             self.table_map = {}
 
     def pull_table_data(self, table_name: str):
-        # Find table name in table map
         logger.info("Pulling Table Data...")
         table_metadata = self.table_map.get(table_name, {})
         if not table_metadata:
@@ -92,26 +91,26 @@ class HuntBot:
 
         logger.info(f"Data located between columns {table_metadata['start_col']} and {table_metadata['end_col']}")
 
-        # get the data based on the start and end columns
-        df = self.sheet_data.loc[:, table_metadata['start_col']:table_metadata['end_col']]
+        # Get the data between columns
+        df = self.sheet_data.iloc[:, table_metadata['start_col']:table_metadata['end_col'] + 1].copy()
 
-        # Clean the data
-        # Drop the first row (table name)
-        df.drop(0, axis=0, inplace=True)
-        df.reset_index(drop=True, inplace=True)
+        # Drop the header row (merged cell label)
+        df = df.drop(index=0).reset_index(drop=True)
 
-        # Drop the empty columns
-        df.replace("", pd.NA, inplace=True)
-        df_cleaned_col = df.dropna(axis=1, how='all')
+        # Replace empty strings with pd.NA
+        df = df.replace("", pd.NA)
 
-        # Drop the empty rows
-        df_cleaned = df_cleaned_col.dropna(how='all')
+        # Drop completely empty columns
+        df = df.dropna(axis=1, how='all')
 
-        # Set column names from table headers (row 1)
-        df_cleaned.columns = df_cleaned.iloc[0]
-        df_cleaned = df_cleaned.drop(0).reset_index(drop=True)
+        # Drop completely empty rows
+        df = df.dropna(how='all')
 
-        return df_cleaned
+        # Set the second row (index 0 now) as column headers
+        df.columns = df.iloc[0]
+        df = df.drop(index=0).reset_index(drop=True)
+
+        return df
 
     def load_config(self, df):
         try:

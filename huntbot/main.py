@@ -90,7 +90,7 @@ async def check_start_time():
         if hunt_bot.started:
             logger.info("The Hunt has begun!")
             if channel:
-                await channel.send(f"@everyone the 14th Flux Hunt has officially begun!\n"
+                await channel.send(f"https://imgur.com/Of4zPcO \n@everyone the 14th Flux Hunt has officially begun!\n"
                                    f"The password is: {hunt_bot.master_password}")
 
             # Check if we need to end the hunt
@@ -98,7 +98,8 @@ async def check_start_time():
             hunt_bot.check_end()
             if hunt_bot.ended:
                 logger.info("The Hunt has ended!")
-                await channel.send(f"@everyone The 14th Hunt has officially concluded...results coming soon!")
+                await channel.send(
+                    f"https://imgur.com/qdtYicb \n@everyone The 14th Hunt has officially concluded...results coming soon!")
                 return
 
             # If we made it this far then we are ready to start loading the cogs
@@ -261,13 +262,16 @@ async def show_state(interaction: discord.Interaction):
         await interaction.response.send_message("State is currently empty.", ephemeral=True)
         return
 
-    pretty_state = yaml.safe_dump(state.state_data, sort_keys=False)
+    import io
+    import yaml
 
-    # Discord has a 2000-character limit, so we truncate if needed
-    if len(pretty_state) > 1900:
-        pretty_state = pretty_state[:1900] + "\n... (truncated)"
+    yaml_text = yaml.safe_dump(state.state_data, sort_keys=False)
+    fp = io.BytesIO(yaml_text.encode("utf-8"))
 
-    await interaction.response.send_message(f"```yaml\n{pretty_state}\n```", ephemeral=True)
+    await interaction.response.send_message(
+        content="📄 Full state file attached (too long to display):",
+        file=discord.File(fp, filename="state.yaml")
+    )
 
 
 async def sync_commands(test: bool = False):

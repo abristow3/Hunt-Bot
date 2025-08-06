@@ -5,6 +5,7 @@ from filelock import FileLock, Timeout
 
 logger = logging.getLogger(__name__)
 
+
 class State:
     def __init__(self, state_file: str = "conf/state.yaml", lock_timeout: int = 5) -> None:
         self.state_file = state_file
@@ -12,8 +13,6 @@ class State:
         self.lock_timeout = lock_timeout
         self.state_data = {}
         self._init_state_file()
-
-        print("test")
 
     def _init_state_file(self) -> None:
         # Check if state file exists
@@ -61,6 +60,10 @@ class State:
             logger.error("[STATE] Could not acquire state lock within timeout.")
             raise
 
+    # In State.py
+    async def update_cog_state(self, cog_name: str, data: dict) -> None:
+        await self.update_state(cog=True, **{cog_name: data})
+
     async def load_state(self) -> None:
         """Load the state with a lock to prevent partial reads."""
         lock = FileLock(self.lock_file, timeout=self.lock_timeout)
@@ -89,4 +92,3 @@ class State:
         """Internal function to write state file. Call only with lock held."""
         with open(self.state_file, 'w') as file:
             yaml.safe_dump(self.state_data, file, default_flow_style=False)
-
