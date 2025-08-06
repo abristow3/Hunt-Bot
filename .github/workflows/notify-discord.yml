@@ -32,46 +32,42 @@ jobs:
               COMMITS=$(jq -r '.commits[].message' "$GITHUB_EVENT_PATH" | paste -sd '; ' -)
               COMMIT_URL=$(jq -r '.compare' "$GITHUB_EVENT_PATH")
               MESSAGE="🚀 **${ACTOR}** pushed to **${BRANCH}** in [${REPO}](${SERVER_URL})
-        [ View changes ](${COMMIT_URL})
-        **Messages:** ${COMMITS:-_No commit messages_}"
-        ;;
-        
-        pull_request)
-        ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-        PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
-        PR_URL=$(jq -r '.pull_request.html_url' "$GITHUB_EVENT_PATH")
-        BRANCH=$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")
-        MESSAGE="📬 **${ACTOR}** ${ACTION} a pull request in [${REPO}](${SERVER_URL})
-        🔀 **${PR_TITLE}** → **${BRANCH}**
-        [View Pull Request](${PR_URL})"
-        ;;
-        
-        issues)
-        ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-        ISSUE_TITLE=$(jq -r '.issue.title' "$GITHUB_EVENT_PATH")
-        ISSUE_URL=$(jq -r '.issue.html_url' "$GITHUB_EVENT_PATH")
-        MESSAGE="🐛 **${ACTOR}** ${ACTION} an issue in [${REPO}](${SERVER_URL})
-        📝 **${ISSUE_TITLE}**
-        [View Issue](${ISSUE_URL})"
-        ;;
-        
-        release)
-        ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-        RELEASE_NAME=$(jq -r '.release.name' "$GITHUB_EVENT_PATH")
-        RELEASE_URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
-        MESSAGE="📦 **${ACTOR}** ${ACTION} a release in [${REPO}](${SERVER_URL})
-        🏷️ **${RELEASE_NAME}**
-        [View Release](${RELEASE_URL})"
-        ;;
-        esac
-        
-        echo "Sending to Discord: $MESSAGE"
-        
-        echo '{}' | jq --arg msg "$MESSAGE" '{content: $msg}' > payload.json
-        
-        curl -s -H "Content-Type: application/json" \
-          -X POST \
-          -d @payload.json \
-          "$DISCORD_WEBHOOK"
-        
+[View changes](${COMMIT_URL})
+**Messages:** ${COMMITS:-_No commit messages_}"
+              ;;
+            pull_request)
+              ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
+              PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+              PR_URL=$(jq -r '.pull_request.html_url' "$GITHUB_EVENT_PATH")
+              BRANCH=$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")
+              MESSAGE="📬 **${ACTOR}** ${ACTION} a pull request in [${REPO}](${SERVER_URL})
+🔀 **${PR_TITLE}** → **${BRANCH}**
+[View Pull Request](${PR_URL})"
+              ;;
+            issues)
+              ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
+              ISSUE_TITLE=$(jq -r '.issue.title' "$GITHUB_EVENT_PATH")
+              ISSUE_URL=$(jq -r '.issue.html_url' "$GITHUB_EVENT_PATH")
+              MESSAGE="🐛 **${ACTOR}** ${ACTION} an issue in [${REPO}](${SERVER_URL})
+📝 **${ISSUE_TITLE}**
+[View Issue](${ISSUE_URL})"
+              ;;
+            release)
+              ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
+              RELEASE_NAME=$(jq -r '.release.name' "$GITHUB_EVENT_PATH")
+              RELEASE_URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
+              MESSAGE="📦 **${ACTOR}** ${ACTION} a release in [${REPO}](${SERVER_URL})
+🏷️ **${RELEASE_NAME}**
+[View Release](${RELEASE_URL})"
+              ;;
+          esac
 
+          echo "DEBUG: Sending to Discord:"
+          echo "$MESSAGE"
+
+          echo '{}' | jq --arg msg "$MESSAGE" '{content: $msg}' > payload.json
+
+          curl -s -H "Content-Type: application/json" \
+            -X POST \
+            -d @payload.json \
+            "$DISCORD_WEBHOOK"
