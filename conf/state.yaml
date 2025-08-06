@@ -11,6 +11,8 @@ bot:
 
 cogs:
   bounties:
+    -
+    -
   dailies:
   score:
   starboard:
