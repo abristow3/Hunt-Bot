@@ -7,7 +7,6 @@ import random
 from discord.ext import commands, tasks
 from discord import app_commands
 import logging
-from filelock import Timeout
 from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
 from huntbot.cogs.Bounties import BountiesCog
@@ -81,13 +80,6 @@ async def check_start_time():
         logger.error("Failed to retrieve GDoc data")
 
     logger.info("Checking if Hunt Bot has been configured...")
-    # Initialize Countdown only once when configured
-    if hunt_bot.configured:
-        logger.info("Hunt Bot is configured, starting Countdown Cog")
-        await bot.add_cog(CountdownCog(bot, hunt_bot))
-
-        logger.info("Hunt Bot is configured, starting Star Board Cog")
-        await bot.add_cog(StarBoardCog(discord_bot=bot, hunt_bot=hunt_bot))
 
     channel = bot.get_channel(hunt_bot.announcements_channel_id)
 
@@ -134,15 +126,14 @@ async def check_start_time():
 
 @bot.tree.command(name="beep")
 async def beep(interaction: discord.Interaction):
-    if interaction.channel.id != hunt_bot.command_channel_id:
-        return
     logger.info("/beep command ran")
     await interaction.response.send_message("Boop")
 
 
 @bot.tree.command(name="start-hunt", description="Starts the Hunt Bot on the pre-configured date and time")
 async def start(interaction: discord.Interaction):
-    if interaction.channel.id != hunt_bot.command_channel_id:
+    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
         return
 
     await interaction.response.defer()
@@ -200,7 +191,15 @@ async def start(interaction: discord.Interaction):
         logger.error("Hunt Bot Configuration failed to load")
         await interaction.followup.send("Error setting config data.")
         return
+    else:
+        try:
+            logger.info("Hunt Bot is configured, starting Star Board Cog")
+            await bot.add_cog(StarBoardCog(discord_bot=bot, hunt_bot=hunt_bot))
 
+            # logger.info("Hunt Bot is configured, starting Countdown Cog")
+            # await bot.add_cog(CountdownCog(bot, hunt_bot))
+        except Exception as e:
+            logger.error(e)
     logger.info("Hunt Bot configured successfully")
     try:
         await state.update_state(bot=True, **hunt_bot.config_map)
@@ -221,7 +220,8 @@ async def start(interaction: discord.Interaction):
                        config_table="Name of the discord configuration table in the sheet")
 async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str = "BotConfig",
                 config_table: str = "Discord Conf"):
-    if interaction.channel.id != hunt_bot.command_channel_id:
+    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
         return
 
     logger.info(f"/sheet command ran with args: sheet_name={sheet_name} sheet_id={sheet_id}")
