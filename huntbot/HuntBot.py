@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class InvalidConfig(Exception):
     def __init__(self, message="Error reading configuration file"):
         # Call the base class constructor

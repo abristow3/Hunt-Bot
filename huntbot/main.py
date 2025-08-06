@@ -70,9 +70,9 @@ async def check_start_time():
     # global countdown
     logger.info("Checking start time task loop....")
 
-    # Get updated gdoc data rate is 300 reads /per minute
-    logger.info("Retrieving GDoc data....")
     try:
+        # Get updated gdoc data rate is 300 reads /per minute
+        logger.info("Retrieving GDoc data....")
         hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
     except Exception as e:
         logger.error(e)
@@ -175,6 +175,7 @@ async def start(interaction: discord.Interaction):
 
     # There is data, so build the table map from the data so we can query it
     hunt_bot.build_table_map()
+    print(f"TABLE MAP:\n{hunt_bot.config_map}")
 
     # Check table map was created
     if not hunt_bot.table_map:
