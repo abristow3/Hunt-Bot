@@ -3,13 +3,8 @@ from discord import app_commands
 import logging
 import io
 import yaml
-from huntbot.GDoc import GDoc
-from huntbot.HuntBot import HuntBot
-from huntbot.cogs.Bounties import BountiesCog
-from huntbot.cogs.Dailies import DailiesCog
 from huntbot.cogs.StarBoard import StarBoardCog
-from huntbot.cogs.Score import ScoreCog
-from huntbot.cogs.Countdown import CountdownCog
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +58,6 @@ async def start_hunt(interaction: discord.Interaction, gdoc, hunt_bot, state, bo
         return
 
     try:
-        from huntbot.cogs.StarBoard import StarBoardCog
         await bot.add_cog(StarBoardCog(discord_bot=bot, hunt_bot=hunt_bot))
     except Exception as e:
         logger.error("Error loading StarBoardCog", exc_info=e)

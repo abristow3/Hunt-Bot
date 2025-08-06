@@ -11,7 +11,6 @@ from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
 from huntbot.cogs.Bounties import BountiesCog
 from huntbot.cogs.Dailies import DailiesCog
-from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.Score import ScoreCog
 from huntbot.cogs.Countdown import CountdownCog
 from huntbot.State import State
