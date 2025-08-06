@@ -66,7 +66,7 @@ async def create_bounty(interaction: discord.Interaction, name_of_item: str, rew
 
 
 def register_bounty_commands(tree: app_commands.CommandTree, hunt_bot):
-    @tree.command(name="bounty", description="Create a new bounty")
+    @tree.command(name="new_bounty", description="Create a new bounty")
     @app_commands.describe(
         name_of_item="Name of the item",
         reward_amount="Reward amount",

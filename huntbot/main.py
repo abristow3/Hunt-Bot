@@ -17,6 +17,8 @@ from huntbot.State import State
 import os
 from huntbot.commands.bounty_commands import register_bounty_commands
 from huntbot.commands.main_commands import register_main_commands
+from huntbot.commands.dailies_command import register_daily_commands
+from huntbot.commands.bounties_command import register_bounties_commands
 
 # Set up the logger
 logging.basicConfig(
@@ -169,7 +171,8 @@ async def on_ready():
 
     register_bounty_commands(bot.tree, hunt_bot)
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
-
+    register_bounties_commands(bot.tree, bot)
+    register_daily_commands(bot.tree, bot)
     await sync_commands(test=True)
 
     # List all commands

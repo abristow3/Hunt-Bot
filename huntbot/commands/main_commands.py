@@ -5,7 +5,6 @@ import io
 import yaml
 from huntbot.cogs.StarBoard import StarBoardCog
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -113,6 +112,7 @@ async def show_state(interaction: discord.Interaction, hunt_bot, state):
 
 def register_main_commands(tree: app_commands.CommandTree, gdoc, hunt_bot, state, bot):
     logger.info("Registering main commands")
+
     @tree.command(name="beep")
     async def beep_cmd(interaction: discord.Interaction):
         await beep(interaction)
