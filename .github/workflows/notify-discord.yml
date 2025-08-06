@@ -4,74 +4,73 @@ on:
   push:
   pull_request:
   issues:
-  release:
   issue_comment:
-  workflow_dispatch:
+  create:
+  delete:
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Event to Discord
+      - name: Notify Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          echo "🔧 Preparing GitHub event data"
+          EVENT_NAME=${{ github.event_name }}
+          ACTOR=${{ github.actor }}
+          REPO=${{ github.repository }}
+          REF=${{ github.ref }}
+          EVENT_PATH="$GITHUB_EVENT_PATH"
 
-          EVENT_NAME="${{ github.event_name }}"
-          ACTOR="${{ github.actor }}"
-          REPO="${{ github.repository }}"
-          REF="${{ github.ref }}"
-          SERVER_URL="https://github.com/${REPO}"
+          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\`"
 
-          MESSAGE="📣 Unknown event: $EVENT_NAME by $ACTOR on $REPO"
+          if [ "$EVENT_NAME" = "push" ]; then
+            BRANCH=$(echo "$REF" | sed 's|refs/heads/||')
+            COMMITS=$(jq -r '.commits[].message' "$EVENT_PATH" | paste -sd '; ' -)
+            [ -z "$COMMITS" ] && COMMITS="No commit messages"
+            URL=$(jq -r '.compare // "not found"' "$EVENT_PATH")
+            MESSAGE="🚀 \`${ACTOR}\` pushed to \`${BRANCH}\` in \`${REPO}\`\n🔗 $URL\n📝 $COMMITS"
+          fi
 
-          case "$EVENT_NAME" in
-            push)
-              BRANCH=$(echo "$REF" | sed 's|refs/heads/||')
-              COMMITS=$(jq -r '.commits[].message' "$GITHUB_EVENT_PATH" | paste -sd '; ' -)
-              COMMIT_URL=$(jq -r '.compare' "$GITHUB_EVENT_PATH")
-              MESSAGE="🚀 **${ACTOR}** pushed to **${BRANCH}** in [${REPO}](${SERVER_URL})
-        [ View changes ](${COMMIT_URL})
-        **Messages:** ${COMMITS:-_No commit messages_}"
-        ;;
-        
-        pull_request)
-        ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-        PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
-        PR_URL=$(jq -r '.pull_request.html_url' "$GITHUB_EVENT_PATH")
-        BRANCH=$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")
-        MESSAGE="📬 **${ACTOR}** ${ACTION} a pull request in [${REPO}](${SERVER_URL})
-        🔀 **${PR_TITLE}** → **${BRANCH}**
-        [View Pull Request](${PR_URL})"
-        ;;
-        
-        issues)
-        ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-        ISSUE_TITLE=$(jq -r '.issue.title' "$GITHUB_EVENT_PATH")
-        ISSUE_URL=$(jq -r '.issue.html_url' "$GITHUB_EVENT_PATH")
-        MESSAGE="🐛 **${ACTOR}** ${ACTION} an issue in [${REPO}](${SERVER_URL})
-        📝 **${ISSUE_TITLE}**
-        [View Issue](${ISSUE_URL})"
-        ;;
-        
-        release)
-        ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-        RELEASE_NAME=$(jq -r '.release.name' "$GITHUB_EVENT_PATH")
-        RELEASE_URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
-        MESSAGE="📦 **${ACTOR}** ${ACTION} a release in [${REPO}](${SERVER_URL})
-        🏷️ **${RELEASE_NAME}**
-        [View Release](${RELEASE_URL})"
-        ;;
-        esac
-        
-        echo "Sending to Discord: $MESSAGE"
-        
-        echo '{}' | jq --arg msg "$MESSAGE" '{content: $msg}' > payload.json
-        
-        curl -s -H "Content-Type: application/json" \
-          -X POST \
-          -d @payload.json \
-          "$DISCORD_WEBHOOK"
-        
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            ACTION=$(jq -r '.action' "$EVENT_PATH")
+            TITLE=$(jq -r '.pull_request.title // "No title"' "$EVENT_PATH")
+            URL=$(jq -r '.pull_request.html_url // "No URL"' "$EVENT_PATH")
+            HEAD_BRANCH=$(jq -r '.pull_request.head.ref // "unknown"' "$EVENT_PATH")
+            BASE_BRANCH=$(jq -r '.pull_request.base.ref // "unknown"' "$EVENT_PATH")
+            MESSAGE="📬 \`${ACTOR}\` ${ACTION} a PR in \`${REPO}\`\n🔀 \`${TITLE}\`\n📤 \`${HEAD_BRANCH}\` → 📥 \`${BASE_BRANCH}\`\n🔗 $URL"
+          fi
 
+          if [ "$EVENT_NAME" = "issues" ]; then
+            ACTION=$(jq -r '.action' "$EVENT_PATH")
+            TITLE=$(jq -r '.issue.title // "No title"' "$EVENT_PATH")
+            URL=$(jq -r '.issue.html_url // "No URL"' "$EVENT_PATH")
+            MESSAGE="🐛 \`${ACTOR}\` ${ACTION} an issue in \`${REPO}\`\n📝 \`${TITLE}\`\n🔗 $URL"
+          fi
+
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            ACTION=$(jq -r '.action' "$EVENT_PATH")
+            COMMENT=$(jq -r '.comment.body // "No comment"' "$EVENT_PATH")
+            URL=$(jq -r '.comment.html_url // "No URL"' "$EVENT_PATH")
+            MESSAGE="💬 \`${ACTOR}\` ${ACTION} a comment in \`${REPO}\`\n🗨️ ${COMMENT}\n🔗 $URL"
+          fi
+
+          if [ "$EVENT_NAME" = "create" ]; then
+            TYPE=$(jq -r '.ref_type // "unknown"' "$EVENT_PATH")
+            NAME=$(jq -r '.ref // "unknown"' "$EVENT_PATH")
+            MESSAGE="✨ \`${ACTOR}\` created ${TYPE} \`${NAME}\` in \`${REPO}\`"
+          fi
+
+          if [ "$EVENT_NAME" = "delete" ]; then
+            TYPE=$(jq -r '.ref_type // "unknown"' "$EVENT_PATH")
+            NAME=$(jq -r '.ref // "unknown"' "$EVENT_PATH")
+            MESSAGE="🗑️ \`${ACTOR}\` deleted ${TYPE} \`${NAME}\` in \`${REPO}\`"
+          fi
+
+          echo "Sending to Discord:"
+          echo "$MESSAGE"
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               "$DISCORD_WEBHOOK"
