@@ -6,13 +6,10 @@ bot:
   team_two_name:
   channels_ids:
     announcements:
-
-
-
 cogs:
   bounties:
-    -
-    -
+    - 1
+    - 2
   dailies:
   score:
   starboard:

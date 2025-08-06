@@ -13,6 +13,7 @@ from huntbot.cogs.Dailies import DailiesCog
 from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.Score import ScoreCog
 from huntbot.cogs.Countdown import CountdownCog
+from huntbot.State import State
 import os
 
 # Set up the logger
@@ -38,6 +39,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
+state = State()
 
 
 def load_random_memory(yaml_file_path):
@@ -243,10 +245,36 @@ async def passwords(interaction: discord.Interaction):
     await interaction.response.send_message(response, ephemeral=True)
 
 
-async def sync_commands():
+@bot.tree.command(name="state", description="Show the current state file contents")
+async def show_state(interaction: discord.Interaction):
+    if interaction.channel.id != hunt_bot.command_channel_id:
+        return
+    logger.info("/state command ran")
+
+    if not state.state_data:
+        await interaction.response.send_message("State is currently empty.", ephemeral=True)
+        return
+
+    pretty_state = yaml.safe_dump(state.state_data, sort_keys=False)
+
+    # Discord has a 2000 character limit, so we truncate if needed
+    if len(pretty_state) > 1900:
+        pretty_state = pretty_state[:1900] + "\n... (truncated)"
+
+    await interaction.response.send_message(f"```yaml\n{pretty_state}\n```", ephemeral=True)
+
+
+async def sync_commands(test: bool = False):
     try:
+        # Optional: force sync for a specific guild
+        if test:
+            guild = discord.Object(id=1351532522663837757)
+            await bot.tree.sync(guild=guild)
+            logger.info("Slash commands have been synced to guild.")
+
+        # Also sync globally (optional but safe to include)
         await bot.tree.sync()
-        logger.info("Slash commands have been successfully refreshed!")
+        logger.info("Global slash commands have been successfully refreshed!")
     except Exception as e:
         logger.error(f"Error refreshing commands: {e}")
 
@@ -272,12 +300,12 @@ async def on_ready():
         channel = bot.get_channel(hunt_bot.general_channel_id)
         memory = load_random_memory("conf/memories.yaml")
         # await channel.send(memory)
-        await channel.send(f"I'M ALIVEEEEE!!!!!!! FEELS FRANKEN-THURGO MAN\n\n{memory}")
+        await channel.send(memory)
     except Exception as e:
         logger.error(e)
         logger.error("Error posting memory during on_ready event")
 
-    await sync_commands()
+    await sync_commands(test=True)
 
     # List all commands
     await list_commands()
@@ -297,4 +325,3 @@ async def on_ready():
 def run():
     # Run bot
     bot.run(TOKEN)
-    # bot.run(hunt_bot.discord_token)
