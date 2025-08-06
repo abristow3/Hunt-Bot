@@ -5,7 +5,6 @@ from filelock import FileLock, Timeout
 
 logger = logging.getLogger(__name__)
 
-
 class State:
     def __init__(self, state_file: str = "conf/state.yaml", lock_timeout: int = 5) -> None:
         self.state_file = state_file
