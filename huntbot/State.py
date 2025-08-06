@@ -49,9 +49,9 @@ class State:
                     self.state_data['bot'].update(kwargs)
 
                 if cog:
-                    if 'cog' not in self.state_data:
-                        self.state_data['cog'] = {}
-                    self.state_data['cog'].update(kwargs)
+                    if 'cogs' not in self.state_data:
+                        self.state_data['cogs'] = {}
+                    self.state_data['cogs'].update(kwargs)
 
                 self._write_state_locked()
         except Timeout:

@@ -31,7 +31,7 @@ if not TOKEN:
     logger.debug("No Discord API token found.")
     exit()
 
-logger.info("Discord API token found succesfully.")
+logger.info("Discord API token found successfully.")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -78,7 +78,7 @@ async def check_start_time():
         logger.error(e)
         logger.error("Failed to retrieve GDoc data")
 
-    logger.info("Checking if Huntbot has been configured...")
+    logger.info("Checking if Hunt Bot has been configured...")
     # Initialize Countdown only once when configured
     if hunt_bot.configured:
         logger.info("Hunt Bot is configured, starting Countdown Cog")
@@ -112,15 +112,15 @@ async def check_start_time():
             try:
                 logger.info("Loading Bounties Cog...")
                 await bot.add_cog(BountiesCog(bot=bot, hunt_bot=hunt_bot))
-                logger.info("Bounties Cog loaded succesfully")
+                logger.info("Bounties Cog loaded successfully")
 
                 logger.info("Loading Dailies Cog...")
-                await bot.add_cog(DailiesCog(discod_bot=bot, hunt_bot=hunt_bot))
-                logger.info("Dailies Cog loaded succesfully")
+                await bot.add_cog(DailiesCog(bot=bot, hunt_bot=hunt_bot))
+                logger.info("Dailies Cog loaded successfully")
 
                 logger.info("Loading Score Cog...")
                 await bot.add_cog(ScoreCog(discord_bot=bot, hunt_bot=hunt_bot))
-                logger.info("Score Cog loaded succesfully")
+                logger.info("Score Cog loaded successfully")
             except Exception as e:
                 logger.error(e)
                 logger.error("Error Loading Cogs")
@@ -173,9 +173,8 @@ async def start(interaction: discord.Interaction):
                                         "sheet ID and sheet name are correct.")
         return
 
-    # There is data, so build the table map from the data so we can query it
+    # There is data, so build the table map from the data, so we can query it
     hunt_bot.build_table_map()
-    print(f"TABLE MAP:\n{hunt_bot.config_map}")
 
     # Check table map was created
     if not hunt_bot.table_map:
@@ -200,7 +199,9 @@ async def start(interaction: discord.Interaction):
         await interaction.followup.send("Error setting config data.")
         return
 
-    logger.info("Hunt Bot configured succesfully")
+    await state.update_state(bot=True)
+    print(f"CONFIG MAP:\n{hunt_bot.config_map}")
+    logger.info("Hunt Bot configured successfully")
 
     await interaction.followup.send(
         f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}")
@@ -211,7 +212,7 @@ async def start(interaction: discord.Interaction):
         check_start_time.start()
 
 
-@bot.tree.command(name="sheet", description="Updates the GDoc sheet ID that the Hunt Bot refernces")
+@bot.tree.command(name="sheet", description="Updates the GDoc sheet ID that the Hunt Bot references")
 @app_commands.describe(sheet_id="The GDoc sheet ID", sheet_name="The name of the sheet in the GDoc",
                        config_table="Name of the discord configuration table in the sheet")
 async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str = "BotConfig",
@@ -224,7 +225,7 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
     gdoc.set_sheet_id(sheet_id=sheet_id)
     hunt_bot.set_sheet_name(sheet_name=sheet_name)
     hunt_bot.set_config_table_name(table_name=config_table)
-    await interaction.response.send_message("Sheet ID and Name set succesfully")
+    await interaction.response.send_message("Sheet ID and Name set successfully")
     logger.info(f"The GDoc ID has been updated to reference id: {sheet_id}, and sheet name: {sheet_name}")
 
 
@@ -258,7 +259,7 @@ async def show_state(interaction: discord.Interaction):
 
     pretty_state = yaml.safe_dump(state.state_data, sort_keys=False)
 
-    # Discord has a 2000 character limit, so we truncate if needed
+    # Discord has a 2000-character limit, so we truncate if needed
     if len(pretty_state) > 1900:
         pretty_state = pretty_state[:1900] + "\n... (truncated)"
 
@@ -290,7 +291,7 @@ async def list_commands():
 @bot.event
 async def on_ready():
     logger.info("Loading Assets...")
-    with open("assets/franken-thrugo.png", "rb") as avatar_file:
+    with open("assets/franken-thurgo.png", "rb") as avatar_file:
         # Update the bot's avatar
         image = avatar_file.read()
         await bot.user.edit(avatar=image)
