@@ -14,16 +14,16 @@ class Bounty:
         self.reward_amount = reward_amount
         self.time_limit_hours = time_limit_hours
         self.active = True
+        self.completed_by = ""
 
 
 class ItemBounties:
     def __init__(self):
-        self.active_bounties = []
-        self.inactive_bounties = []
+        self.item_bounties = []
 
     async def create_new_bounty(self, item_name: str, reward_amount: str, time_limit_hours: int = 48):
         new_bounty = Bounty(item_name=item_name, reward_amount=reward_amount, time_limit_hours=time_limit_hours)
-        self.active_bounties.append(new_bounty)
+        self.item_bounties.append(new_bounty)
 
 
 async def create_bounty(interaction: discord.Interaction, name_of_item: str, reward_amount: str,
@@ -31,47 +31,6 @@ async def create_bounty(interaction: discord.Interaction, name_of_item: str, rew
     if interaction.channel.id != hunt_bot.team_one_chat_channel and interaction.channel.id != hunt_bot.team_two_chat_channel:
         logger.info("bounty command ran in wrong channel")
         return
-
-    print("RIGHT CHANNEL")
-    minutes = 2880  # default
-    if time_limit_hours and time_limit_hours.isdigit():
-        minutes = max(int(time_limit_hours), 1)
-
-    reward_str = reward_amount.strip().lower()
-    multiplier = 1
-    if reward_str.endswith('k'):
-        multiplier = 1_000
-        reward_str = reward_str[:-1]
-    elif reward_str.endswith('m'):
-        multiplier = 1_000_000
-        reward_str = reward_str[:-1]
-
-    try:
-        reward_val = float(reward_str) * multiplier
-        if reward_val < 0:
-            await interaction.response.send_message("Reward amount cannot be negative.", ephemeral=True)
-            return
-    except ValueError:
-        await interaction.response.send_message("Reward must be a number (K/M allowed).", ephemeral=True)
-        return
-
-    await interaction.response.send_message(
-        f"Bounty created!\nItem: {name_of_item}\nReward: {reward_amount}\nTime Limit: {minutes} minutes"
-    )
-
-    bounty_key = name_of_item.strip().lower()
-
-    async def end_bounty():
-        await interaction.followup.send(f"The bounty for '{name_of_item}' has ended after {minutes} minutes.")
-        active_bounties.pop(bounty_key, None)
-
-    task = asyncio.create_task(asyncio.sleep(minutes * 60))
-    task.add_done_callback(lambda _: asyncio.create_task(end_bounty()))
-
-    active_bounties[bounty_key] = {
-        'handle': task,
-        'reward_amount': reward_amount
-    }
 
 
 # async def listbounties(interaction: discord.Interaction, hunt_bot=None):
@@ -111,11 +70,12 @@ def register_bounty_commands(tree: app_commands.CommandTree, hunt_bot):
     @app_commands.describe(
         name_of_item="Name of the item",
         reward_amount="Reward amount",
-        time_limit="Time limit in minutes (optional)"
+        time_limit_hours="Time limit in hours (optional)"
     )
     async def bounty_cmd(interaction: discord.Interaction, name_of_item: str, reward_amount: str,
-                         time_limit: str = None):
-        await create_bounty(interaction, name_of_item, reward_amount, time_limit, hunt_bot=hunt_bot)
+                         time_limit_hours: int = 48):
+        await create_bounty(interaction, name_of_item=name_of_item, reward_amount=reward_amount,
+                            time_limit_hours=time_limit_hours, hunt_bot=hunt_bot)
 
     # @tree.command(name="listbounties", description="List all active bounties.")
     # async def listbounties_cmd(interaction: discord.Interaction):
