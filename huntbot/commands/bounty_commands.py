@@ -9,26 +9,26 @@ active_bounties = {}  # Shared storage for bounties
 
 
 class Bounty:
-    def __init__(self, item_name: str, reward_amount: str, time_limit_hours: int):
+    def __init__(self, item_name: str, reward_amount: str, time_limit_hours: int = 48):
         self.item_name = item_name
         self.reward_amount = reward_amount
         self.time_limit_hours = time_limit_hours
+        self.active = True
 
 
 class ItemBounties:
     def __init__(self):
         self.active_bounties = []
+        self.inactive_bounties = []
 
-    async def create_bounty(self, item_name: str, reward_amount: str, time_limit_hours: int):
+    async def create_new_bounty(self, item_name: str, reward_amount: str, time_limit_hours: int = 48):
         new_bounty = Bounty(item_name=item_name, reward_amount=reward_amount, time_limit_hours=time_limit_hours)
         self.active_bounties.append(new_bounty)
 
 
 async def create_bounty(interaction: discord.Interaction, name_of_item: str, reward_amount: str,
                         time_limit_hours: int = 48, hunt_bot=None):
-    if interaction.channel.id != 1358934276053405766 and interaction.channel.id != hunt_bot.team_two_chat_channel:
-
-    # if interaction.channel.id != hunt_bot.team_one_chat_channel and interaction.channel.id != hunt_bot.team_two_chat_channel:
+    if interaction.channel.id != hunt_bot.team_one_chat_channel and interaction.channel.id != hunt_bot.team_two_chat_channel:
         logger.info("bounty command ran in wrong channel")
         return
 
