@@ -67,7 +67,4 @@ jobs:
 
           echo '{}' | jq --arg msg "$MESSAGE" '{content: $msg}' > payload.json
 
-          curl -s -H "Content-Type: application/json" \
-            -X POST \
-            -d @payload.json \
-            "$DISCORD_WEBHOOK"
+          curl -s -H "Content-Type: application/json" -X POST -d @payload.json "$DISCORD_WEBHOOK"
