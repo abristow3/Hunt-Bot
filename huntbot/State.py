@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class State:
     def __init__(self):
-        self.state_file = "../conf/state.yaml"
+        self.state_file = "conf/state.yaml"
         self.lock_file = self.state_file + ".lock"
         self.lock_timeout = 5  # seconds
         self.state_data = {}
@@ -86,7 +86,3 @@ class State:
         with open(self.state_file, 'w') as file:
             yaml.safe_dump(self.state_data, file, default_flow_style=False)
 
-
-if __name__ == '__main__':
-    state = State()
-    print(state.state_data)
