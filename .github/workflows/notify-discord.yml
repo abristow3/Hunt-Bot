@@ -16,96 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Discord
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          EVENT_NAME="${{ github.event_name }}"
-          ACTOR="${{ github.actor }}"
-          REPO="${{ github.repository }}"
-          REF="${{ github.ref }}"
-          SERVER_URL="https://github.com/${REPO}"
-
-          # Helper function to replace empty variables with 'not found'
-          sanitize() {
-            if [ -z "$1" ]; then
-              echo "not found"
-            else
-              echo "$1"
-            fi
-          }
-
-          # Sanitize variables
-          SAFE_ACTOR=$(sanitize "$ACTOR")
-          SAFE_REPO=$(sanitize "$REPO")
-          SAFE_REF=$(sanitize "$REF")
-
-          # Default message if event not matched
-          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${SAFE_REPO}\` by \`${SAFE_ACTOR}\`. Ref: \`${SAFE_REF}\`"
-
-          case "$EVENT_NAME" in
-            push)
-              BRANCH=$(echo "$REF" | sed 's|refs/heads/||')
-              COMMITS=$(jq -r '.commits[].message' "$GITHUB_EVENT_PATH" | paste -sd '; ' -)
-              COMMIT_URL=$(jq -r '.compare' "$GITHUB_EVENT_PATH")
-
-              # Sanitize push-specific variables
-              SAFE_BRANCH=$(sanitize "$BRANCH")
-              SAFE_COMMITS=$(sanitize "$COMMITS")
-              SAFE_COMMIT_URL=$(sanitize "$COMMIT_URL")
-
-              MESSAGE="🚀 **${SAFE_ACTOR}** pushed to **${SAFE_BRANCH}** in [${SAFE_REPO}](${SERVER_URL})
-[View changes](${SAFE_COMMIT_URL})
-**Commit messages:** ${SAFE_COMMITS}"
-              ;;
-            pull_request)
-              ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-              PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
-              PR_URL=$(jq -r '.pull_request.html_url' "$GITHUB_EVENT_PATH")
-              BRANCH=$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")
-
-              SAFE_ACTION=$(sanitize "$ACTION")
-              SAFE_PR_TITLE=$(sanitize "$PR_TITLE")
-              SAFE_PR_URL=$(sanitize "$PR_URL")
-              SAFE_BRANCH=$(sanitize "$BRANCH")
-
-              MESSAGE="📬 **${SAFE_ACTOR}** ${SAFE_ACTION} a pull request in [${SAFE_REPO}](${SERVER_URL})
-🔀 **${SAFE_PR_TITLE}** → **${SAFE_BRANCH}**
-[View Pull Request](${SAFE_PR_URL})"
-              ;;
-            issues)
-              ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-              ISSUE_TITLE=$(jq -r '.issue.title' "$GITHUB_EVENT_PATH")
-              ISSUE_URL=$(jq -r '.issue.html_url' "$GITHUB_EVENT_PATH")
-
-              SAFE_ACTION=$(sanitize "$ACTION")
-              SAFE_ISSUE_TITLE=$(sanitize "$ISSUE_TITLE")
-              SAFE_ISSUE_URL=$(sanitize "$ISSUE_URL")
-
-              MESSAGE="🐛 **${SAFE_ACTOR}** ${SAFE_ACTION} an issue in [${SAFE_REPO}](${SERVER_URL})
-📝 **${SAFE_ISSUE_TITLE}**
-[View Issue](${SAFE_ISSUE_URL})"
-              ;;
-            release)
-              ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
-              RELEASE_NAME=$(jq -r '.release.name' "$GITHUB_EVENT_PATH")
-              RELEASE_URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
-
-              SAFE_ACTION=$(sanitize "$ACTION")
-              SAFE_RELEASE_NAME=$(sanitize "$RELEASE_NAME")
-              SAFE_RELEASE_URL=$(sanitize "$RELEASE_URL")
-
-              MESSAGE="📦 **${SAFE_ACTOR}** ${SAFE_ACTION} a release in [${SAFE_REPO}](${SERVER_URL})
-🏷️ **${SAFE_RELEASE_NAME}**
-[View Release](${SAFE_RELEASE_URL})"
-              ;;
-          esac
+          EVENT_NAME=${{ github.event_name }}
+          ACTOR=${{ github.actor }}
+          REPO=${{ github.repository }}
+          REF=${{ github.ref }}
+          MESSAGE="📣 GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\`"
 
           echo "Sending to Discord: $MESSAGE"
 
-          # Use jq to safely create JSON payload with proper escaping
-          echo '{}' | jq --arg msg "$MESSAGE" '{content: $msg}' > payload.json
-
-          curl -s -H "Content-Type: application/json" \
-            -X POST \
-            -d @payload.json \
-            "$DISCORD_WEBHOOK"
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
