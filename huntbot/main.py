@@ -17,10 +17,11 @@ from huntbot.cogs.Countdown import CountdownCog
 from huntbot.State import State
 import os
 from huntbot.commands.bounty_commands import register_bounty_commands
+from huntbot.commands.main_commands import register_main_commands
 
 # Set up the logger
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='[%(asctime)s] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
-    logger.debug("No Discord API token found.")
+    logger.error("No Discord API token found.")
     exit()
 
 logger.info("Discord API token found successfully.")
@@ -126,154 +127,6 @@ async def check_start_time():
             logger.info("Waiting for start time...")
 
 
-@bot.tree.command(name="beep")
-async def beep(interaction: discord.Interaction):
-    logger.info("/beep command ran")
-    await interaction.response.send_message("Boop")
-
-@bot.tree.command(name="start-hunt", description="Starts the Hunt Bot on the pre-configured date and time")
-async def start(interaction: discord.Interaction):
-    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
-
-    await interaction.response.defer()
-
-    logger.info(f"/start-hunt command ran")
-
-    # Check sheet ID has been populated
-    if gdoc.sheet_id == "":
-        logger.info("Sheet ID not set")
-        await interaction.followup.send("No GDoc sheet ID set. Use the command '/sheet' to set one.")
-        return
-
-    # Check sheet name has been populated
-    if hunt_bot.sheet_name == "":
-        logger.info("Sheet Name not set")
-        await interaction.followup.send("No GDoc sheet name set. Use the command '/sheet' to set one.")
-        return
-
-    # Import the sheet data
-    try:
-        hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
-    except Exception as e:
-        logger.error(e)
-        logger.error("Error loading Sheet Data from GDoc")
-
-    # If no data imported
-    if hunt_bot.sheet_data.empty:
-        logger.error("Error retrieving Hunt Bot configuration.")
-        await interaction.followup.send("Error retrieving Hunt Bot configuration from GDoc. Check if the "
-                                        "sheet ID and sheet name are correct.")
-        return
-
-    # There is data, so build the table map from the data, so we can query it
-    hunt_bot.build_table_map()
-
-    # Check table map was created
-    if not hunt_bot.table_map:
-        logger.error("Error building table map for GDoc")
-        await interaction.followup.send("Error building sheet table map.")
-        return
-
-    # Get the HuntBot Configuration variables
-    config_df = hunt_bot.pull_table_data(table_name=hunt_bot.config_table_name)
-
-    # Check config data was found
-    if config_df.empty:
-        logger.error("Error retrieving configuration data from table")
-        await interaction.followup.send("Error retrieving config data.")
-        return
-
-    hunt_bot.load_config(df=config_df)
-
-    # Check config data loaded
-    if not hunt_bot.configured:
-        logger.error("Hunt Bot Configuration failed to load")
-        await interaction.followup.send("Error setting config data.")
-        return
-    else:
-        try:
-            logger.info("Hunt Bot is configured, starting Star Board Cog")
-            await bot.add_cog(StarBoardCog(discord_bot=bot, hunt_bot=hunt_bot))
-
-            # logger.info("Hunt Bot is configured, starting Countdown Cog")
-            # await bot.add_cog(CountdownCog(bot, hunt_bot))
-        except Exception as e:
-            logger.error(e)
-    logger.info("Hunt Bot configured successfully")
-    try:
-        await state.update_state(bot=True, **hunt_bot.config_map)
-    except Exception as e:
-        logger.error("Exception encountered when updating state during startup when updating initial state", exc_info=e)
-
-    await interaction.followup.send(
-        f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}")
-
-    if not check_start_time.is_running():
-        logger.info("Starting check_start_time task")
-        # Start the periodic check if not already running
-        check_start_time.start()
-
-
-@bot.tree.command(name="sheet", description="Updates the GDoc sheet ID that the Hunt Bot references")
-@app_commands.describe(sheet_id="The GDoc sheet ID", sheet_name="The name of the sheet in the GDoc",
-                       config_table="Name of the discord configuration table in the sheet")
-async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str = "BotConfig",
-                config_table: str = "Discord Conf"):
-    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
-
-    logger.info(f"/sheet command ran with args: sheet_name={sheet_name} sheet_id={sheet_id}")
-
-    gdoc.set_sheet_id(sheet_id=sheet_id)
-    hunt_bot.set_sheet_name(sheet_name=sheet_name)
-    hunt_bot.set_config_table_name(table_name=config_table)
-    await interaction.response.send_message("Sheet ID and Name set successfully")
-    logger.info(f"The GDoc ID has been updated to reference id: {sheet_id}, and sheet name: {sheet_name}")
-
-
-@bot.tree.command(name="passwords", description="Display the current hunt passwords.")
-async def passwords(interaction: discord.Interaction):
-    # Accessing HuntBot attributes
-    bounty = hunt_bot.bounty_password
-    daily = hunt_bot.daily_password
-    master = hunt_bot.master_password
-
-    # Format response
-    response = (
-        "**===== CURRENT PASSWORDS =====**\n\n"
-        f"**MASTER:** {master}\n"
-        f"**DAILY:** {daily}\n"
-        f"**BOUNTY:** {bounty}"
-    )
-
-    await interaction.response.send_message(response, ephemeral=True)
-
-
-@bot.tree.command(name="state", description="Show the current state file contents")
-async def show_state(interaction: discord.Interaction):
-    if interaction.channel.id != hunt_bot.admin_channel_id:
-        return
-    logger.info("/state command ran")
-
-    if not state.state_data:
-        await interaction.response.send_message("State is currently empty.", ephemeral=True)
-        return
-
-    import io
-    import yaml
-
-    yaml_text = yaml.safe_dump(state.state_data, sort_keys=False)
-    fp = io.BytesIO(yaml_text.encode("utf-8"))
-
-    await interaction.response.send_message(
-        content="📄 Full state file attached (too long to display):",
-        file=discord.File(fp, filename="state.yaml")
-    )
-
-
 async def sync_commands(test: bool = False):
     try:
         # Optional: force sync for a specific guild
@@ -316,6 +169,8 @@ async def on_ready():
         logger.error("Error posting memory during on_ready event")
 
     register_bounty_commands(bot.tree, hunt_bot)
+    register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
+
     await sync_commands(test=True)
 
     # List all commands
