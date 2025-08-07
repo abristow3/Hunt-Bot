@@ -99,7 +99,7 @@ class BountiesCog(commands.Cog):
         for _, row in df.iterrows():
             yield row
 
-    @tasks.loop(hours=1)  # Will override this interval after init
+    @tasks.loop(hours=6)  # Will override this interval after init
     async def start_bounties(self):
         await self.bot.wait_until_ready()
         channel = self.bot.get_channel(self.bounty_channel_id)
