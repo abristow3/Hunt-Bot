@@ -14,7 +14,7 @@ class Bounty:
         self.time_limit_hours = time_limit_hours
         self.active = True
         self.completed_by = ""
-        self.start_time = self.start_time = datetime.utcnow()
+        self.start_time = datetime.utcnow()
         self.time_remaining = self.time_limit_hours
 
 
@@ -26,21 +26,27 @@ class ItemBounties:
         # Setup dict format: {"team1":[], "team2":[]}
         self.active_bounties = {self.hunt_bot.team_one_name: [], self.hunt_bot.team_two_name: []}
 
-        # Set empty bounty leaderboard (same format as active bounties)
+        # Set empty bounty leaderboard (same structure as active bounties)
         self.bounty_leaderboard = self.active_bounties
 
     async def create_bounty(self, interaction: discord.Interaction, item_name: str, reward_amount: str,
                             time_limit_hours: int = 48):
         # Check correct channel
-        if not await self.check_channel_id(interaction):
+        if not await self._check_channel_id(interaction):
             return
 
         # Check user roles for privileges
-        if not await self.check_user_roles(interaction):
+        if not await self._check_user_roles(interaction):
             return
 
-        # Validate entry
-        if not await self._parse_reward_amount(interaction, reward_amount):
+        reward_val = None
+        if reward_amount != "":
+            reward_val = await self._parse_reward_amount(interaction, reward_amount)
+            if reward_val is None:
+                return
+
+        if time_limit_hours <= 0:
+            await interaction.response.send_message("Time limit must be greater than 0.", ephemeral=True)
             return
 
         # Determine team and embed color
@@ -81,39 +87,34 @@ class ItemBounties:
 
     async def list_bounties(self, interaction: discord.Interaction):
         # Check correct channel
-        if not await self.check_channel_id(interaction=interaction):
+        if not await self._check_channel_id(interaction=interaction):
+            return
+
+        # Determine team and embed color
+        team_name = self._get_team_name(interaction=interaction)
+        if not team_name:
+            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
             return
 
         # Only update when command is used (uses less resources and clock)
         await self.update_bounty_time_remaining()
 
-        if interaction.channel_id == self.hunt_bot.team_one_chat_channel:
-            team_name = self.hunt_bot.team_one_name
-        elif interaction.channel_id == self.hunt_bot.team_two_chat_channel:
-            team_name = self.hunt_bot.team_two_name
-        else:
-            await interaction.response.send_message("This command can only be run in team channels.", ephemeral=True)
-            return
-
-        embed = await self._create_bounties_embed(team_name=team_name)
+        embed = await self._create_bounties_embed(team_name=str(team_name))
         await interaction.response.send_message(embed=embed)
 
     async def close_bounty(self, interaction: discord.Interaction, item_name: str, completed_by: str):
         # Check correct channel
-        if not await self.check_channel_id(interaction=interaction):
+        if not await self._check_channel_id(interaction=interaction):
             return
 
         # Check user roles for privileges
-        if not await self.check_user_roles(interaction):
+        if not await self._check_user_roles(interaction):
             return
 
         # Determine team
-        if interaction.channel_id == self.hunt_bot.team_one_chat_channel:
-            team_name = self.hunt_bot.team_one_name
-        elif interaction.channel_id == self.hunt_bot.team_two_chat_channel:
-            team_name = self.hunt_bot.team_two_name
-        else:
-            await interaction.response.send_message("This command can only be run in a team channel.", ephemeral=True)
+        team_name = self._get_team_name(interaction=interaction)
+        if not team_name:
+            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
             return
 
         # Find the bounty
@@ -138,62 +139,78 @@ class ItemBounties:
         await interaction.response.send_message(f"Bounty for {item_name} closed successfully", ephemeral=True)
 
     async def update_bounty(self, interaction: discord.Interaction, item_name: str, reward_amount: str = "",
-                            time_limit_hours: int = -1):
+                            time_limit_hours: int = -100):
         # Check correct channel
-        if not await self.check_channel_id(interaction):
+        if not await self._check_channel_id(interaction):
             return
 
         # Check user roles for privileges
-        if not await self.check_user_roles(interaction):
+        if not await self._check_user_roles(interaction):
             return
 
-        if reward_amount == "" and time_limit_hours == -1:
+        # Determine team
+        team_name = self._get_team_name(interaction=interaction)
+
+        if not team_name:
+            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
+            return
+
+        if reward_amount == "" and time_limit_hours == -100:
             await interaction.response.send_message("Error: You must update either the reward amount, or the time "
                                                     "remaining.", ephemeral=True)
             return
 
-        # Validate entry
-        if not await self._parse_reward_amount(interaction, reward_amount):
+        reward_val = None
+        if reward_amount != "":
+            reward_val = await self._parse_reward_amount(interaction, reward_amount)
+            if reward_val is None:
+                return
+
+        if time_limit_hours != -100 and time_limit_hours <= 0:
+            await interaction.response.send_message("Time limit must be greater than 0.", ephemeral=True)
             return
 
         item_name = item_name.lower()
-
-        # Determine team and embed color
-        if interaction.channel_id == self.hunt_bot.team_one_chat_channel:
-            team_name = self.hunt_bot.team_one_name
-        elif interaction.channel_id == self.hunt_bot.team_two_chat_channel:
-            team_name = self.hunt_bot.team_two_name
-        else:
-            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
-            return
-
         updated = False
 
         # Find bounty and update time and or reward amount
         for bounty in self.active_bounties[team_name]:
             if bounty.item_name.lower() == item_name:
-                if reward_amount is not None:
+                if reward_val is not None:
                     bounty.reward_amount = reward_amount
-                if time_limit_hours is not None:
+                if time_limit_hours > 0:
                     bounty.time_limit_hours = time_limit_hours
+                    bounty.start_time = datetime.utcnow()  # Reset the timer
 
-                # Update bounty times
+                updated = True
                 logger.info("Item bounty found and updated")
+                # Update bounty times in memory
                 await self.update_bounty_time_remaining()
+                break
 
         if not updated:
-            await interaction.response.send_message(f"Error: Could not find bounty item '{item_name}' and update it.", ephemeral=True)
+            await interaction.response.send_message(f"Error: Could not find bounty item '{item_name}' and update it.",
+                                                    ephemeral=True)
             return
 
         await interaction.response.send_message(f"Bounty for {item_name} updated successfully!", ephemeral=True)
         return
+
+    async def _get_team_name(self, interaction: discord.Interaction) -> str | None:
+        if interaction.channel_id == self.hunt_bot.team_one_chat_channel:
+            return self.hunt_bot.team_one_name
+        elif interaction.channel_id == self.hunt_bot.team_two_chat_channel:
+            return self.hunt_bot.team_two_name
+        else:
+            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
+            return None
 
     def _is_duplicate_bounty(self, team_name, item_name: str) -> bool:
         item_name = item_name.lower()
         return any(
             bounty.item_name.lower() == item_name and bounty.active for bounty in self.active_bounties[team_name])
 
-    async def check_user_roles(self, interaction: discord.Interaction) -> bool:
+    async def _check_user_roles(self, interaction: discord.Interaction) -> bool:
         member = interaction.user
         role_names = [role.name.lower() for role in member.roles]
         normalized_targets = {r.lower() for r in self.target_roles}
@@ -210,7 +227,8 @@ class ItemBounties:
                 if bounty.active:
                     await self._update_single_bounty_time(bounty)
 
-    async def _update_single_bounty_time(self, bounty):
+    @staticmethod
+    async def _update_single_bounty_time(bounty):
         if not bounty.active:
             return
 
@@ -267,7 +285,7 @@ class ItemBounties:
 
         return embed
 
-    async def check_channel_id(self, interaction) -> bool:
+    async def _check_channel_id(self, interaction) -> bool:
         if interaction.channel.id != self.hunt_bot.team_one_chat_channel and interaction.channel.id != self.hunt_bot.team_two_chat_channel:
             await interaction.response.send_message("This command can only be ran in the team chat channels",
                                                     ephemeral=True)
@@ -275,7 +293,8 @@ class ItemBounties:
         else:
             return True
 
-    async def _parse_reward_amount(self, interaction: discord.Interaction, reward_amount: str) -> float | None:
+    @staticmethod
+    async def _parse_reward_amount(interaction: discord.Interaction, reward_amount: str) -> float | None:
         """
         Parses a reward amount string, allowing 'K' (thousand) and 'M' (million) suffixes.
         Returns the numeric value as float, or None if invalid input (after sending an error response).
@@ -334,9 +353,10 @@ def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: Item
         reward_amount="New reward amount (optional, e.g. 100k, 2M)",
         time_limit_hours="New time limit in hours (optional, e.g. 10, 15)"
     )
-    async def update_bounty_cmd(interaction: discord.Interaction, item_name: str, reward_amount: str = None,
-                                time_limit_hours: int = -1):
-        await item_bounties.update_bounty(interaction, item_name=item_name, reward_amount=reward_amount, time_limit_hours=time_limit_hours)
+    async def update_bounty_cmd(interaction: discord.Interaction, item_name: str, reward_amount: str = "",
+                                time_limit_hours: int = -100):
+        await item_bounties.update_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
+                                          time_limit_hours=time_limit_hours)
 
 #
 # # Command to show the top 3 bounty completers per team
