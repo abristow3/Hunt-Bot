@@ -96,7 +96,7 @@ async def check_start_time():
     logger.debug("Checking start time task loop....")
     if not command_synced:
         # Sync and List all commands
-        logger.inf("Syncing item bounty commands")
+        logger.info("Syncing item bounty commands")
         item_bounties = ItemBounties(hunt_bot)
         register_bounty_commands(bot.tree, item_bounties)
         await sync_commands()
