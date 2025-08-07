@@ -20,14 +20,23 @@ from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
 
-# Set up the logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] [%(levelname)s] %(message)s',
+# Create a logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Create a file handler that logs messages to a file
+file_handler = logging.FileHandler('app.log')
+file_handler.setLevel(logging.INFO)
+
+# Create a logging format
+formatter = logging.Formatter(
+    '[%(asctime)s] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+file_handler.setFormatter(formatter)
 
-logger = logging.getLogger(__name__)
+# Add the file handler to the logger
+logger.addHandler(file_handler)
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
