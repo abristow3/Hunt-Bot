@@ -87,10 +87,18 @@ def load_random_memory(yaml_file_path):
     return f'"{memory_text}"\n\n— {player}'
 
 
+command_synced = False
+
+
 @tasks.loop(seconds=5)
 async def check_start_time():
-    # global countdown
+    global command_synced  # <--- Add this line
+
     logger.debug("Checking start time task loop....")
+    if not command_synced:
+        register_bounty_commands(bot.tree, item_bounties)
+        await sync_commands()
+        command_synced = True
 
     try:
         # Get updated gdoc data rate is 300 reads /per minute
@@ -148,6 +156,7 @@ async def check_start_time():
 
 bot.check_start_time = check_start_time
 
+
 async def sync_commands(test: bool = False):
     try:
         # Optional: force sync for a specific guild
@@ -193,13 +202,12 @@ async def on_ready():
         logger.error(e)
         logger.error("Error posting memory during on_ready event")
 
-    register_bounty_commands(bot.tree, item_bounties)
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
     register_bounties_commands(bot.tree, bot)
     register_daily_commands(bot.tree, bot)
 
     # Sync and List all commands
-    await sync_commands(test=True)
+    await sync_commands()
     await list_commands()
 
     logger.info(f"Logged in as {bot.user}")
