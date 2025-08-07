@@ -61,6 +61,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 gdoc = GDoc()
 hunt_bot = HuntBot()
 state = State()
+item_bounties = ItemBounties(hunt_bot)
 
 
 def load_random_memory(yaml_file_path):
@@ -86,22 +87,9 @@ def load_random_memory(yaml_file_path):
     return f'"{memory_text}"\n\n— {player}'
 
 
-command_synced = False
-
-
 @tasks.loop(seconds=5)
 async def check_start_time():
-    global command_synced  # <--- Add this line
-
     logger.debug("Checking start time task loop....")
-    if not command_synced:
-        # Sync and List all commands
-        logger.info("Syncing item bounty commands")
-        item_bounties = ItemBounties(hunt_bot)
-        register_bounty_commands(bot.tree, item_bounties)
-        await sync_commands(test=True)
-        await list_commands()
-        command_synced = True
 
     try:
         # Get updated gdoc data rate is 300 reads /per minute
@@ -208,9 +196,10 @@ async def on_ready():
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
     register_bounties_commands(bot.tree, bot)
     register_daily_commands(bot.tree, bot)
+    register_bounty_commands(bot.tree, item_bounties)
 
     # Sync and List all commands
-    await sync_commands()
+    await sync_commands(test=True)
     await list_commands()
 
     logger.info(f"Logged in as {bot.user}")
