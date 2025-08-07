@@ -99,7 +99,7 @@ async def check_start_time():
         logger.info("Syncing item bounty commands")
         item_bounties = ItemBounties(hunt_bot)
         register_bounty_commands(bot.tree, item_bounties)
-        await sync_commands()
+        await sync_commands(test=True)
         await list_commands()
         command_synced = True
 
@@ -164,7 +164,7 @@ async def sync_commands(test: bool = False):
     try:
         # Optional: force sync for a specific guild
         if test:
-            guild = discord.Object(id=1351532522663837757)
+            guild = discord.Object(id=699971574689955850)
             await bot.tree.sync(guild=guild)
             logger.info("Slash commands have been synced to guild.")
 
