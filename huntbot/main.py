@@ -61,7 +61,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 gdoc = GDoc()
 hunt_bot = HuntBot()
 state = State()
-item_bounties = ItemBounties(hunt_bot)
+
 
 
 def load_random_memory(yaml_file_path):
@@ -96,6 +96,7 @@ async def check_start_time():
 
     logger.debug("Checking start time task loop....")
     if not command_synced:
+        item_bounties = ItemBounties(hunt_bot)
         register_bounty_commands(bot.tree, item_bounties)
         await sync_commands()
         command_synced = True
