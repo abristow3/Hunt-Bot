@@ -63,7 +63,6 @@ hunt_bot = HuntBot()
 state = State()
 
 
-
 def load_random_memory(yaml_file_path):
     with open(yaml_file_path, 'r') as file:
         data = yaml.safe_load(file)
@@ -96,9 +95,12 @@ async def check_start_time():
 
     logger.debug("Checking start time task loop....")
     if not command_synced:
+        # Sync and List all commands
+        logger.inf("Syncing item bounty commands")
         item_bounties = ItemBounties(hunt_bot)
         register_bounty_commands(bot.tree, item_bounties)
         await sync_commands()
+        await list_commands()
         command_synced = True
 
     try:
