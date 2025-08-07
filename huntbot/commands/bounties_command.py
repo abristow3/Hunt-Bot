@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 async def current_bounty(interaction: discord.Interaction, discord_bot):
     cog = discord_bot.get_cog("BountiesCog")
     if not cog:
-        await interaction.response.send_message("Bounties cog is not loaded.")
+        await interaction.response.send_message("No bounty to display.")
         return
 
     message = cog.message

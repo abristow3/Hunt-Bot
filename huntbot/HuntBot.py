@@ -18,7 +18,6 @@ class HuntBot:
         self.sheet_name = ""
         self.sheet_data = pd.DataFrame()
         self.config_table_name = ""
-        self.command_channel_name = "staff-chat"
         self.command_channel_id = 0
         self.config_map = {}
         self.start_date = ""
@@ -34,12 +33,13 @@ class HuntBot:
         self.announcements_channel_id = 0
         self.team_one_name = ""
         self.team_two_name = ""
-        self.team_one_chat_channel = ""
-        self.team_two_chat_channel = ""
+        self.team_one_chat_channel = 0
+        self.team_two_chat_channel = 0
 
         # TODO hardcode these for now
-        self.general_channel_id = 1351532522663837760
-        self.admin_channel_id = 1402617750139965510
+        self.general_channel_id = 699971574689955853
+        self.admin_channel_id = 796104858100695151
+        self.first_join = True
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -211,7 +211,6 @@ class HuntBot:
             return
 
     def update_config_for_state(self):
-        self.config_map['COMMAND_CHANNEL_NAME']=self.command_channel_name
         self.config_map['COMMAND_CHANNEL_ID'] = self.command_channel_id
         self.config_map['CONFIGURED'] = self.configured
         self.config_map['STARTED'] = self.started

@@ -163,9 +163,13 @@ async def on_ready():
 
     try:
         channel = bot.get_channel(hunt_bot.general_channel_id)
-        memory = load_random_memory("conf/memories.yaml")
-        # await channel.send(memory)
-        await channel.send(memory)
+
+        if hunt_bot.first_join:
+            await channel.send("Ah shit, it's about that time 👀")
+        else:
+            memory = load_random_memory("conf/memories.yaml")
+            # await channel.send(memory)
+            await channel.send(memory)
     except Exception as e:
         logger.error(e)
         logger.error("Error posting memory during on_ready event")
@@ -180,15 +184,6 @@ async def on_ready():
     await list_commands()
 
     logger.info(f"Logged in as {bot.user}")
-
-    for guild in bot.guilds:
-        for channel in guild.text_channels:
-            if channel.name == hunt_bot.command_channel_name:
-                hunt_bot.command_channel_id = channel.id
-                return
-
-    if hunt_bot.command_channel_id == "":
-        logger.error("NO COMMAND CHANNEL FOUND")
 
 
 async def main():

@@ -71,19 +71,49 @@ class ItemBounties:
         self.active_bounties[team_name].append(new_bounty)
         logger.info(f"[CREATE_BOUNTY] New bounty created for {team_name} team")
 
-        # Create and send embed
-        embed = discord.Embed(
-            title="🎯 New Bounty Posted!",
-            description=f"A new bounty has been added for **{team_name}**!",
-            color=embed_color
-        )
-        embed.add_field(name="Item Name", value=new_bounty.item_name, inline=True)
-        embed.add_field(name="Reward", value=new_bounty.reward_amount, inline=True)
-        embed.add_field(name="Time Remaining", value=f"{new_bounty.time_remaining} hours", inline=True)
-        embed.add_field(name="Active", value=str(new_bounty.active), inline=True)
-        embed.add_field(name="Completed By", value=new_bounty.completed_by or "N/A", inline=True)
+        # Table formatting for new bounty message
+        col_widths = {
+            "Item Name": 20,
+            "Status": 8,
+            "Reward": 16,
+            "Time Left": 12,
+            "Completed By": 14
+        }
 
-        await interaction.response.send_message(embed=embed)
+        headers = list(col_widths.keys())
+        header_row = "| " + " | ".join(f"{header:^{col_widths[header]}}" for header in headers) + " |"
+        divider = "+-" + "-+-".join("-" * col_widths[header] for header in headers) + "-+"
+
+        # Bounty details
+        status = "Active"
+        time_left = f"{new_bounty.time_remaining:.1f}h"
+        reward = f"{int(new_bounty.reward_amount):,}" if new_bounty.reward_amount else "N/A"
+        completed_by = "N/A"
+
+        row = "| " + " | ".join([
+            f"{new_bounty.item_name[:col_widths['Item Name']]:^{col_widths['Item Name']}}",
+            f"{status:^{col_widths['Status']}}",
+            f"{reward:^{col_widths['Reward']}}",
+            f"{time_left:^{col_widths['Time Left']}}",
+            f"{completed_by:^{col_widths['Completed By']}}"
+        ]) + " |"
+
+        # Combine full message
+        lines = [
+            f"🎯 **New Bounty Posted for {team_name}!** 🎯",
+            "",
+            divider,
+            header_row,
+            divider,
+            row,
+            divider
+        ]
+
+        message = "\n".join(lines)
+        # Wrap in code block for proper monospace alignment
+        formatted_message = f"```{message}```"
+        await interaction.response.send_message(formatted_message)
+
 
     async def list_bounties(self, interaction: discord.Interaction):
         # Check correct channel
@@ -91,7 +121,7 @@ class ItemBounties:
             return
 
         # Determine team and embed color
-        team_name = self._get_team_name(interaction=interaction)
+        team_name = await self._get_team_name(interaction=interaction)
         if not team_name:
             await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
             return
@@ -99,8 +129,9 @@ class ItemBounties:
         # Only update when command is used (uses less resources and clock)
         await self.update_bounty_time_remaining()
 
-        embed = await self._create_bounties_embed(team_name=str(team_name))
-        await interaction.response.send_message(embed=embed)
+        # Generate table
+        message = await self._create_bounty_table(team_name)
+        await interaction.response.send_message(f"```\n{message}\n```")
 
     async def close_bounty(self, interaction: discord.Interaction, item_name: str, completed_by: str):
         # Check correct channel
@@ -112,7 +143,7 @@ class ItemBounties:
             return
 
         # Determine team
-        team_name = self._get_team_name(interaction=interaction)
+        team_name = await self._get_team_name(interaction=interaction)
         if not team_name:
             await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
             return
@@ -149,7 +180,7 @@ class ItemBounties:
             return
 
         # Determine team
-        team_name = self._get_team_name(interaction=interaction)
+        team_name = await self._get_team_name(interaction=interaction)
 
         if not team_name:
             await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
@@ -240,51 +271,6 @@ class ItemBounties:
             bounty.time_remaining = 0
             bounty.active = False
 
-    async def _create_bounties_embed(self, team_name: str) -> discord.Embed:
-        bounties = self.active_bounties.get(team_name, [])
-
-        if not bounties:
-            embed = discord.Embed(
-                title=f"No Bounties for {team_name}",
-                description="There are currently no bounties active or inactive for this team.",
-                color=discord.Color.light_grey()
-            )
-            return embed
-
-        # Sort by active first (True before False), then by least time remaining
-        sorted_bounties = sorted(bounties, key=lambda b: (not b.active, b.time_remaining))
-
-        # Determine embed color based on team name (adjust as necessary)
-        if team_name.lower() == self.hunt_bot.team_one_name.lower():
-            embed_color = discord.Color.red()
-        elif team_name.lower() == self.hunt_bot.team_two_name.lower():
-            embed_color = discord.Color.gold()
-        else:
-            embed_color = discord.Color.blurple()
-
-        embed = discord.Embed(
-            title=f"🗒️ Bounties for {team_name}",
-            description=f"Listing active and inactive bounties sorted by time remaining.",
-            color=embed_color,
-            timestamp=datetime.utcnow()
-        )
-
-        # Add each bounty as a field
-        for bounty in sorted_bounties:
-            status = "🟢 Active" if bounty.active else "🔴 Inactive"
-            time_left = f"{bounty.time_remaining:.2f} hours" if bounty.active else "Expired"
-            completed_by = bounty.completed_by or "N/A"
-
-            field_name = f"{bounty.item_name} ({status})"
-            field_value = (
-                f"**Reward:** {bounty.reward_amount}\n"
-                f"**Time Remaining:** {time_left}\n"
-                f"**Completed By:** {completed_by}"
-            )
-            embed.add_field(name=field_name, value=field_value, inline=False)
-
-        return embed
-
     async def _check_channel_id(self, interaction) -> bool:
         if interaction.channel.id != self.hunt_bot.team_one_chat_channel and interaction.channel.id != self.hunt_bot.team_two_chat_channel:
             await interaction.response.send_message("This command can only be ran in the team chat channels",
@@ -324,11 +310,56 @@ class ItemBounties:
             )
             return None
 
+    async def _create_bounty_table(self, team_name: str) -> str:
+        bounties = self.active_bounties.get(team_name, [])
+
+        if not bounties:
+            return f"No bounties currently listed for {team_name}."
+
+        # Sort bounties
+        sorted_bounties = sorted(bounties, key=lambda b: (not b.active, b.time_remaining))
+
+        # Column widths
+        col_widths = {
+            "Item Name": 20,
+            "Status": 8,
+            "Reward": 16,
+            "Time Left": 12,
+            "Completed By": 14
+        }
+
+        # Header row with borders
+        headers = list(col_widths.keys())
+        header_row = "| " + " | ".join(f"{header:^{col_widths[header]}}" for header in headers) + " |"
+        divider = "+-" + "-+-".join("-" * col_widths[header] for header in headers) + "-+"
+
+        lines = [divider, header_row, divider]
+
+        # Table rows with border after each row
+        for b in sorted_bounties:
+            status = "Active" if b.active else "Inactive"
+            time_left = f"{b.time_remaining:.1f}h" if b.active else "Expired"
+            reward = f"{int(b.reward_amount):,}" if b.reward_amount else "N/A"
+            completed_by = b.completed_by or "N/A"
+
+            row = "| " + " | ".join([
+                f"{b.item_name[:col_widths['Item Name']]:^{col_widths['Item Name']}}",
+                f"{status:^{col_widths['Status']}}",
+                f"{reward:^{col_widths['Reward']}}",
+                f"{time_left:^{col_widths['Time Left']}}",
+                f"{completed_by[:col_widths['Completed By']]:^{col_widths['Completed By']}}"
+            ]) + " |"
+
+            lines.append(row)
+            lines.append(divider)  # <-- Add divider here after every row
+
+        return "\n".join(lines)
+
 
 def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: ItemBounties):
     @tree.command(name="create_team_bounty", description="Create a new team bounty")
     @app_commands.describe(
-        name_of_item="Name of the item",
+        item_name="Name of the item",
         reward_amount="Reward amount",
         time_limit_hours="Time limit in hours (optional)"
     )

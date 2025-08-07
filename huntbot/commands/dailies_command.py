@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 async def current_daily(interaction: discord.Interaction, discord_bot=None):
     cog = discord_bot.get_cog("DailiesCog")
     if not cog:
-        await interaction.response.send_message("Dailies cog is not loaded.")
+        await interaction.response.send_message("No daily to display.")
         return
 
     message = cog.message
