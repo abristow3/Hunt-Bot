@@ -365,17 +365,29 @@ def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: Item
     )
     async def create_bounty_cmd(interaction: discord.Interaction, item_name: str, reward_amount: str,
                                 time_limit_hours: int = 48):
-        await item_bounties.create_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
+        try:
+            await item_bounties.create_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
                                           time_limit_hours=time_limit_hours)
+        except Exception as e:
+            logger.error("Error running create bounty command", exc_info=e)
+            return
 
     @tree.command(name="list_team_bounties", description="Lists all team bounties.")
     async def list_bounties_cmd(interaction: discord.Interaction):
-        await item_bounties.list_bounties(interaction)
+        try:
+            await item_bounties.list_bounties(interaction)
+        except Exception as e:
+            logger.error("Error running list team bounties command", exc_info=e)
+            return
 
     @tree.command(name="close_team_bounty", description="Close a bounty early.")
     @app_commands.describe(item_name="The item name of the bounty", completed_by="The user who completed it")
     async def close_bounty_cmd(interaction: discord.Interaction, item_name: str, completed_by: str):
-        await item_bounties.close_bounty(interaction, item_name=item_name, completed_by=completed_by)
+        try:
+            await item_bounties.close_bounty(interaction, item_name=item_name, completed_by=completed_by)
+        except Exception as e:
+            logger.error("Error running close team bounty command",exc_info=e)
+            return
 
     @tree.command(name="update_team_bounty",
                   description="Update the reward value and/or time remaining for an active bounty.")
@@ -386,8 +398,12 @@ def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: Item
     )
     async def update_bounty_cmd(interaction: discord.Interaction, item_name: str, reward_amount: str = "",
                                 time_limit_hours: int = -100):
-        await item_bounties.update_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
+        try:
+            await item_bounties.update_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
                                           time_limit_hours=time_limit_hours)
+        except Exception as e:
+            logger.error("Error running update team bounty command", exc_info=e)
+            return
 
 #
 # # Command to show the top 3 bounty completers per team
