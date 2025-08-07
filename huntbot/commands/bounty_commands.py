@@ -278,6 +278,9 @@ class ItemBounties:
             bounty.active = False
 
     async def _check_channel_id(self, interaction) -> bool:
+        logger.info(f"[ITEM BOUNTIES] interaction channel id {interaction.channel_id}")
+        logger.info(f"[ITEM BOUNTIES] team one general channel id {self.hunt_bot.team_one_name}")
+        logger.info(f"[ITEM BOUNTIES] team two general channel id {self.hunt_bot.team_two_chat_channel}")
         if interaction.channel.id != self.hunt_bot.team_one_chat_channel and interaction.channel.id != self.hunt_bot.team_two_chat_channel:
             await interaction.response.send_message("This command can only be ran in the team chat channels",
                                                     ephemeral=True)

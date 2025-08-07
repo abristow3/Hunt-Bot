@@ -184,7 +184,7 @@ async def on_ready():
         channel = bot.get_channel(hunt_bot.general_channel_id)
 
         if hunt_bot.first_join:
-            await channel.send("Ah shit, it's about that time 👀")
+            # await channel.send("Ah shit, it's about that time 👀")
             hunt_bot.first_join = False
         else:
             memory = load_random_memory("conf/memories.yaml")
