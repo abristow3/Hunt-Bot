@@ -70,7 +70,12 @@ class ItemBounties:
 
         # Create and add bounty
         new_bounty = Bounty(item_name=item_name.lower(), reward_amount=reward_val, time_limit_hours=time_limit_hours)
+
+        if team_name not in self.active_bounties:
+            self.active_bounties[team_name] = []
+
         self.active_bounties[team_name].append(new_bounty)
+        logger.info(f"All bounties: {self.active_bounties}")
         logger.info(f"[CREATE_BOUNTY] New bounty created for {team_name} team")
 
         # Table formatting for new bounty message
