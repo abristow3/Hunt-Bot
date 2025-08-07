@@ -15,7 +15,7 @@ from huntbot.cogs.Score import ScoreCog
 from huntbot.cogs.Countdown import CountdownCog
 from huntbot.State import State
 import os
-from huntbot.commands.bounty_commands import register_bounty_commands
+from huntbot.commands.bounty_commands import register_bounty_commands, ItemBounties
 from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
@@ -44,6 +44,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 gdoc = GDoc()
 hunt_bot = HuntBot()
 state = State()
+item_bounties = ItemBounties(hunt_bot)
 
 
 def load_random_memory(yaml_file_path):
@@ -169,13 +170,13 @@ async def on_ready():
         logger.error(e)
         logger.error("Error posting memory during on_ready event")
 
-    register_bounty_commands(bot.tree, hunt_bot)
+    register_bounty_commands(bot.tree, item_bounties)
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
     register_bounties_commands(bot.tree, bot)
     register_daily_commands(bot.tree, bot)
-    await sync_commands(test=True)
 
-    # List all commands
+    # Sync and List all commands
+    await sync_commands(test=True)
     await list_commands()
 
     logger.info(f"Logged in as {bot.user}")
