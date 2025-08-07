@@ -49,13 +49,13 @@ class ItemBounties:
             await interaction.response.send_message("Time limit must be greater than 0.", ephemeral=True)
             return
 
+        logger.info(f"[ITEM BOUNTIES] create bounty arguments validated: {item_name} {reward_val} {time_limit_hours}")
+
         # Determine team and embed color
         if interaction.channel_id == self.hunt_bot.team_one_chat_channel:
             team_name = self.hunt_bot.team_one_name
-            embed_color = discord.Color.red()
         elif interaction.channel_id == self.hunt_bot.team_two_chat_channel:
             team_name = self.hunt_bot.team_two_name
-            embed_color = discord.Color.gold()
         else:
             await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
             return
@@ -65,6 +65,8 @@ class ItemBounties:
             await interaction.response.send_message("Error: Your team already has a bounty out for this item.",
                                                     ephemeral=True)
             return
+
+        await interaction.response.defer()
 
         # Create and add bounty
         new_bounty = Bounty(item_name=item_name.lower(), reward_amount=reward_val, time_limit_hours=time_limit_hours)
@@ -112,7 +114,7 @@ class ItemBounties:
         message = "\n".join(lines)
         # Wrap in code block for proper monospace alignment
         formatted_message = f"```{message}```"
-        await interaction.response.send_message(formatted_message)
+        await interaction.followup.send(formatted_message)
 
 
     async def list_bounties(self, interaction: discord.Interaction):
@@ -246,6 +248,8 @@ class ItemBounties:
         role_names = [role.name.lower() for role in member.roles]
         normalized_targets = {r.lower() for r in self.target_roles}
 
+        logger.info(f"[ITEM BOUNTIES] Checking user roles: {role_names}, valid roles: {normalized_targets}")
+
         if not any(role in role_names for role in normalized_targets):
             await interaction.response.send_message("You don't have permission to run that command.", ephemeral=True)
             return False
@@ -277,6 +281,7 @@ class ItemBounties:
                                                     ephemeral=True)
             return False
         else:
+            logger.info("[ITEM BOUNTIES] Chat channel check passed")
             return True
 
     @staticmethod
@@ -366,6 +371,7 @@ def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: Item
     async def create_bounty_cmd(interaction: discord.Interaction, item_name: str, reward_amount: str,
                                 time_limit_hours: int = 48):
         try:
+            logger.info(f"[ITEM BOUNTIES] create command ran with: {item_name} {reward_amount} {time_limit_hours}")
             await item_bounties.create_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
                                           time_limit_hours=time_limit_hours)
         except Exception as e:
@@ -374,6 +380,7 @@ def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: Item
 
     @tree.command(name="list_team_bounties", description="Lists all team bounties.")
     async def list_bounties_cmd(interaction: discord.Interaction):
+        logger.info(f"[ITEM BOUNTIES] list command ran")
         try:
             await item_bounties.list_bounties(interaction)
         except Exception as e:
@@ -383,6 +390,7 @@ def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: Item
     @tree.command(name="close_team_bounty", description="Close a bounty early.")
     @app_commands.describe(item_name="The item name of the bounty", completed_by="The user who completed it")
     async def close_bounty_cmd(interaction: discord.Interaction, item_name: str, completed_by: str):
+        logger.info(f"[ITEM BOUNTIES] close bounty command ran with {item_name} {completed_by}")
         try:
             await item_bounties.close_bounty(interaction, item_name=item_name, completed_by=completed_by)
         except Exception as e:
@@ -398,6 +406,7 @@ def register_bounty_commands(tree: app_commands.CommandTree, item_bounties: Item
     )
     async def update_bounty_cmd(interaction: discord.Interaction, item_name: str, reward_amount: str = "",
                                 time_limit_hours: int = -100):
+        logger.info(f"[ITEM BOUNTIES] close bounty command ran with {item_name} {reward_amount} {time_limit_hours}")
         try:
             await item_bounties.update_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
                                           time_limit_hours=time_limit_hours)

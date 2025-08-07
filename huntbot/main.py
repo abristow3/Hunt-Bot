@@ -20,23 +20,31 @@ from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
 
-# Create a logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)  # Capture all logs
 
-# Create a file handler that logs messages to a file
-file_handler = logging.FileHandler('app.log')
-file_handler.setLevel(logging.INFO)
-
-# Create a logging format
+# Common formatter
 formatter = logging.Formatter(
     '[%(asctime)s] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-file_handler.setFormatter(formatter)
 
-# Add the file handler to the logger
-logger.addHandler(file_handler)
+# Debug handler (everything goes here)
+debug_handler = logging.FileHandler('debug.log')
+debug_handler.setLevel(logging.DEBUG)
+debug_handler.setFormatter(formatter)
+
+# Info handler (INFO and up)
+info_handler = logging.FileHandler('app.log')
+info_handler.setLevel(logging.INFO)
+info_handler.setFormatter(formatter)
+
+# Add handlers to root logger
+logger.addHandler(debug_handler)
+logger.addHandler(info_handler)
+
+# Optional: Get logger for current module
+logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -82,7 +90,7 @@ def load_random_memory(yaml_file_path):
 @tasks.loop(seconds=5)
 async def check_start_time():
     # global countdown
-    logger.info("Checking start time task loop....")
+    logger.debug("Checking start time task loop....")
 
     try:
         # Get updated gdoc data rate is 300 reads /per minute
@@ -92,12 +100,12 @@ async def check_start_time():
         logger.error(e)
         logger.error("Failed to retrieve GDoc data")
 
-    logger.info("Checking if Hunt Bot has been configured...")
+    logger.debug("Checking if Hunt Bot has been configured...")
 
     channel = bot.get_channel(hunt_bot.announcements_channel_id)
 
     if not hunt_bot.started:
-        logger.info("The Hunt has not started yet... checking start time...")
+        logger.debug("The Hunt has not started yet... checking start time...")
         # Check if we need to start the hunt or not
         hunt_bot.check_start()
         if hunt_bot.started:
@@ -107,7 +115,7 @@ async def check_start_time():
                                    f"The password is: {hunt_bot.master_password}")
 
             # Check if we need to end the hunt
-            logger.info("Checking Hunt End Date and Time...")
+            logger.debug("Checking Hunt End Date and Time...")
             hunt_bot.check_end()
             if hunt_bot.ended:
                 logger.info("The Hunt has ended!")
