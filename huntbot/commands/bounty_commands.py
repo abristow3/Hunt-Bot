@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class Bounty:
-    def __init__(self, item_name: str, reward_amount: str, time_limit_hours: int = 48):
+    def __init__(self, item_name: str, reward_amount: float, time_limit_hours: int = 48):
         self.item_name = item_name
         self.reward_amount = reward_amount
         self.time_limit_hours = time_limit_hours
@@ -67,7 +67,7 @@ class ItemBounties:
             return
 
         # Create and add bounty
-        new_bounty = Bounty(item_name=item_name.lower(), reward_amount=reward_amount, time_limit_hours=time_limit_hours)
+        new_bounty = Bounty(item_name=item_name.lower(), reward_amount=reward_val, time_limit_hours=time_limit_hours)
         self.active_bounties[team_name].append(new_bounty)
         logger.info(f"[CREATE_BOUNTY] New bounty created for {team_name} team")
 
