@@ -241,7 +241,9 @@ class ItemBounties:
     def _is_duplicate_bounty(self, team_name, item_name: str) -> bool:
         item_name = item_name.lower()
         return any(
-            bounty.item_name.lower() == item_name and bounty.active for bounty in self.active_bounties[team_name])
+            (bounty.item_name.lower() == item_name and bounty.active)
+            for bounty in self.active_bounties[team_name]
+        )
 
     async def _check_user_roles(self, interaction: discord.Interaction) -> bool:
         member = interaction.user
