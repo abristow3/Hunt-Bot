@@ -15,11 +15,15 @@ async def beep(interaction: discord.Interaction):
 
 
 async def start_hunt(interaction: discord.Interaction, gdoc, hunt_bot, state, bot):
-    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+    try:
+        await interaction.response.defer()
+    except discord.NotFound:
+        logger.error("Failed to defer interaction: already expired")
         return
 
-    await interaction.response.defer()
+    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
+        await interaction.followup.send("You do not have permission to use this command.", ephemeral=True)
+        return
 
     logger.info(f"/start-hunt command ran")
 
