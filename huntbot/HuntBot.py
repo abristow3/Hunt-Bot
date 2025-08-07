@@ -38,7 +38,7 @@ class HuntBot:
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
-        self.admin_channel_id = 796104858100695151
+        self.admin_channel_id = 0
         self.first_join = True
 
     def set_config_table_name(self, table_name: str):

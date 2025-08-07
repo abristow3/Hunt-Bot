@@ -129,6 +129,8 @@ async def check_start_time():
             logger.info("Waiting for start time...")
 
 
+bot.check_start_time = check_start_time
+
 async def sync_commands(test: bool = False):
     try:
         # Optional: force sync for a specific guild
@@ -166,9 +168,9 @@ async def on_ready():
 
         if hunt_bot.first_join:
             await channel.send("Ah shit, it's about that time 👀")
+            hunt_bot.first_join = False
         else:
             memory = load_random_memory("conf/memories.yaml")
-            # await channel.send(memory)
             await channel.send(memory)
     except Exception as e:
         logger.error(e)

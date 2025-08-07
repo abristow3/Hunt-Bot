@@ -7,6 +7,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+dan_message = "<@157670673328766976> you're late, don't worry boss I'll take care of it..."
+
+
 single_bounty_template = Template("""
 @everyone $task
 
@@ -114,6 +117,8 @@ class BountiesCog(commands.Cog):
             single_password = single_bounty["Password"]
             self.hunt_bot.bounty_password = single_password
             is_double = not pd.isna(single_bounty.get("Double", None))
+
+            await channel.send(dan_message)
 
             if not is_double:
                 logger.info("[Bounties Cog] Bounty is a single bounty")

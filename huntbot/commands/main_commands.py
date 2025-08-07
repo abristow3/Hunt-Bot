@@ -70,6 +70,9 @@ async def start_hunt(interaction: discord.Interaction, gdoc, hunt_bot, state, bo
         f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}"
     )
 
+    if not bot.check_start_time.is_running():
+        bot.check_start_time.start()
+
 
 async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str, config_table: str, gdoc, hunt_bot):
     if not any(role.name.lower() == "admin" for role in interaction.user.roles):
