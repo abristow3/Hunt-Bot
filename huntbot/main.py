@@ -113,15 +113,6 @@ async def check_start_time():
                 await channel.send(f"https://imgur.com/Of4zPcO \n@everyone the 14th Flux Hunt has officially begun!\n"
                                    f"The password is: {hunt_bot.master_password}")
 
-            # Check if we need to end the hunt
-            logger.debug("Checking Hunt End Date and Time...")
-            hunt_bot.check_end()
-            if hunt_bot.ended:
-                logger.info("The Hunt has ended!")
-                await channel.send(
-                    f"https://imgur.com/qdtYicb \n@everyone The 14th Hunt has officially concluded...results coming soon!")
-                return
-
             # If we made it this far then we are ready to start loading the cogs
             # Start bounties plugin
             try:
@@ -143,6 +134,15 @@ async def check_start_time():
                 return
         else:
             logger.info("Waiting for start time...")
+    else:
+                # Check if we need to end the hunt
+        logger.debug("Checking Hunt End Date and Time...")
+        hunt_bot.check_end()
+        if hunt_bot.ended:
+            logger.info("The Hunt has ended!")
+            await channel.send(
+                f"https://imgur.com/qdtYicb \n@everyone The 14th Hunt has officially concluded...results coming soon!")
+            check_start_time.stop()
 
 
 bot.check_start_time = check_start_time
