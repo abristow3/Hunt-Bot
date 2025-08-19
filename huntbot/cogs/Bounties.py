@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-dan_message = "<@157670673328766976> you're late, don't worry boss I'll take care of it..."
+dan_message = "Dan's late. Don't worry boss I'll take care of it..."
 
 
 single_bounty_template = Template("""

@@ -8,6 +8,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+dan_message = "Dan's late. Don't worry boss I'll take care of it..."
+
 single_daily_template = Template("""
 @everyone $task
 
@@ -100,6 +102,8 @@ class DailiesCog(commands.Cog):
             single_password = single_daily["Password"]
             self.hunt_bot.daily_password = single_password
             is_double = not pd.isna(single_daily.get("Double", None))
+
+            await channel.send(dan_message)
 
             if not is_double:
                 logger.info("[Dailies Cog] Serving single daily")
