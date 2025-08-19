@@ -88,7 +88,7 @@ class DailiesCog(commands.Cog):
         for _, row in df.iterrows():
             yield row
 
-    @tasks.loop(hours=1)  # overridden after init
+    @tasks.loop(hours=1) 
     async def start_dailies(self):
         await self.bot.wait_until_ready()
         channel = self.bot.get_channel(self.daily_channel_id)
