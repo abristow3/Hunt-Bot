@@ -33,5 +33,5 @@ Needs to look in the meme channel AFTER the hunt starts (load cog on start)
 Look at the messages that come in
 If they have a image or a video store that message ID in a dict as a new key and set the values to 0 as default
 once per task loop, check all the message IDs in the list and count up the number of reactions on them and set the value as the updated count
-
+testetset
 '''
