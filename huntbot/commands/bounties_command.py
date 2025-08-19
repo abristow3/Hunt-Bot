@@ -12,7 +12,7 @@ async def current_bounty(interaction: discord.Interaction, discord_bot):
         return
 
     message = cog.message
-    await interaction.response.send_message(f"**Current Bounty:**\n{message}")
+    await interaction.response.send_message(f"**Current Bounty:**\n{message}", ephemeral=True)
 
 
 def register_bounties_commands(tree: app_commands.CommandTree, discord_bot):
