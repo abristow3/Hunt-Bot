@@ -114,7 +114,7 @@ async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
 
         # Check user role
         has_required_role = any(
-            role.name.endswith('Team Leader') or role.name == 'Staff'
+            role.name.endswith('Team Leader') or role.name == 'Staff' or role.name == "Sheet helper"
             for role in member.roles
         )
         if not has_required_role:
