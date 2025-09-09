@@ -14,6 +14,7 @@ from huntbot.cogs.Dailies import DailiesCog
 from huntbot.cogs.Score import ScoreCog
 from huntbot.cogs.Countdown import CountdownCog
 from huntbot.State import State
+from huntbot.cogs.Memes import MemesCog
 import os
 from huntbot.commands.bounty_commands import register_bounty_commands, ItemBounties
 from huntbot.commands.main_commands import register_main_commands
@@ -127,6 +128,10 @@ async def check_start_time():
                 logger.info("Loading Score Cog...")
                 await bot.add_cog(ScoreCog(discord_bot=bot, hunt_bot=hunt_bot))
                 logger.info("Score Cog loaded successfully")
+
+                logger.info("Loading Memes Cog...")
+                await bot.add_cog(MemesCog(bot=bot, hunt_bot=hunt_bot))
+                logger.info("Memes Cog loaded succesfully")
             except Exception as e:
                 logger.error(e)
                 logger.error("Error Loading Cogs")
