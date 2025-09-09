@@ -2,8 +2,7 @@ from discord.ext import commands, tasks
 from discord import RawReactionActionEvent
 import discord
 from huntbot.HuntBot import HuntBot
-from huntbot.exceptions import TableDataImportException, ConfigurationException
-from huntbot import ConfigurationException, TableDataImportException
+from huntbot.exceptions import ConfigurationException
 import logging
 from string import Template
 
@@ -15,7 +14,7 @@ meme_scoreboard_message_template = Template("""
 $meme
 """)
 
-
+# TODO still needs to be loadd and added to main bot hunt process when hunt starts
 class MemesCog(commands.Cog):
     def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
         self.bot = bot
@@ -52,13 +51,13 @@ class MemesCog(commands.Cog):
         # First thing first, check if the message has an image, video, or gif attachment
         valid_attachments = self.validate_attachments(message=message)
         if not valid_attachments:
-            print("Invalid attachments types and extensions")
+            logger.error("[Memes Cog] Invalid attachments types and extensions")
             return
 
             
         # We made it to here, so we have a message, with an image or video, posted after the hunt started, but before it ends, in the meme channel
         # now we need to capture the message ID and store it in memory to reference later when adding or removing reaction counts
-
+        logger.info("[Memes Cog] New meme posted and added to memory")
         # Capture message ID and start count at 0
         self.message_reactions[message.id] = 0
 
@@ -71,10 +70,12 @@ class MemesCog(commands.Cog):
         if payload.channel_id != self.meme_channel_id:
             return
 
+        logger.info("[Memes Cog] Message deleted, checking tracker in memory")
+
         # Check if message deleted was one we are currently tracking in memory, if so remove from tracking
         if payload.message_id in self.message_reactions:
             del self.message_reactions[payload.message_id]
-            print(f"Deleted message {payload.message_id} removed from tracking.")
+            logger.info(f"[Memes Cog] Deleted message {payload.message_id} removed from tracking.")
         
         return
 
@@ -90,6 +91,7 @@ class MemesCog(commands.Cog):
             return
         
         # Since it was, and this is a reaction add, we incriment the value for the message_id key by 1
+        logger.info(f"[Memes Cog] Reaction added to meme {payload.message.id}, updating total")
         self.message_reactions[payload.message_id] += 1
         return
 
@@ -104,6 +106,7 @@ class MemesCog(commands.Cog):
             return
         
         # Since it was, and this is a reaction add, we decriment the value for the message_id key by 1
+        logger.info(f"[Memes Cog] Reaction removed from meme {payload.message.id}, updating total")
         if self.message_reactions[payload.message_id] > 0:
             self.message_reactions[payload.message_id] -= 1
         
@@ -127,11 +130,13 @@ class MemesCog(commands.Cog):
             return False
         
         else:
+            logger.info("[Memes Cog] Attachment is a valid")
             return True
     
     async def initialize_meme_messages(self) -> None:
         # Method called on startup in case bot goes down mid hunt and we need to restart
         # Sorts through initial messages after start date and sums reactions, then adds in memory
+        logger.info("[Starting Memes Cog]")
         await self.bot.wait_until_ready()
 
         # Get the actual TextChannel object from ID
@@ -142,6 +147,7 @@ class MemesCog(commands.Cog):
 
         # Only check messages that were posted after the hunt start date and time
         after_time = self.hunt_bot.start_datetime
+        logger.info(f"[Memes Cog] Retrieving message history after {after_time}")
 
         # Loop through messages in the meme channel after the hunt start time
         async for message in channel.history(after=after_time, oldest_first=True, limit=None):
@@ -164,6 +170,8 @@ class MemesCog(commands.Cog):
             logger.error("[Memes Cog] Meme channel not found or invalid.")
             return
         
+        logger.info("[Memes Cog] Generating top 5 memes messages...")
+
         # Sort messages by reactions count descending (highest shown first)
         top_memes = sorted(self.message_reactions.items(), key=lambda x: x[1], reverse=True)[:5]
         top_memes.reverse()
