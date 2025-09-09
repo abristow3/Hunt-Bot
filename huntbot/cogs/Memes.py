@@ -1,10 +1,20 @@
 from discord.ext import commands, tasks
+from discord import RawReactionActionEvent
+import discord
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
 from huntbot import ConfigurationException, TableDataImportException
 import logging
+from string import Template
 
 logger = logging.getLogger(__name__)
+
+meme_scoreboard_message_template = Template("""
+**Number $placement with $num_reactions reactions - <@$user_id>:**
+
+$meme
+""")
+
 
 class MemesCog(commands.Cog):
     def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
@@ -13,25 +23,191 @@ class MemesCog(commands.Cog):
         self.meme_channel_id = 0
         self.message_reactions = {}
 
-        self.update_reaction_counts.start()
+        self.get_meme_channel()
+        self.bot.loop.create_task(self.initialize_meme_messages())
 
-    def get_daily_channel(self):
+    def get_meme_channel(self):
         self.meme_channel_id = int(self.hunt_bot.config_map.get('MEME_CHANNEL_ID', "0"))
         if self.meme_channel_id == 0:
             logger.error("[Memes Cog] MEME_CHANNEL_ID not found")
             raise ConfigurationException(config_key='MEME_CHANNEL_ID')
         
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         # Only look in the meme channel after the hunt has started
+        # Not the meme channel so return
         if message.channel.id != self.meme_channel_id:
             return
-        if not self.hunt_bot.is_hunt_active():  # assume this method exists
+        
+        # Hunt hasn't started yet so ignore
+        if not self.hunt_bot.started:
             return
-'''
-Needs to look in the meme channel AFTER the hunt starts (load cog on start)
-Look at the messages that come in
-If they have a image or a video store that message ID in a dict as a new key and set the values to 0 as default
-once per task loop, check all the message IDs in the list and count up the number of reactions on them and set the value as the updated count
-testetset
-'''
+        
+        # The hunt has ended, so ignore
+        # TODO possibly here where we put the logic to post the top ranking memes?
+        if self.hunt_bot.ended:
+            return
+        
+        # Made it to here the hunt has started, has not ended, and this is the correct text channel
+        # First thing first, check if the message has an image, video, or gif attachment
+        valid_attachments = self.validate_attachments(message=message)
+        if not valid_attachments:
+            print("Invalid attachments types and extensions")
+            return
+
+            
+        # We made it to here, so we have a message, with an image or video, posted after the hunt started, but before it ends, in the meme channel
+        # now we need to capture the message ID and store it in memory to reference later when adding or removing reaction counts
+
+        # Capture message ID and start count at 0
+        self.message_reactions[message.id] = 0
+
+        # And now this function is done so return
+        return
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
+        # Check if message deleted was in the memes channel
+        if payload.channel_id != self.meme_channel_id:
+            return
+
+        # Check if message deleted was one we are currently tracking in memory, if so remove from tracking
+        if payload.message_id in self.message_reactions:
+            del self.message_reactions[payload.message_id]
+            print(f"Deleted message {payload.message_id} removed from tracking.")
+        
+        return
+
+    # Task loop, or on reaction add and reaction remove? On an add increment by 1, on a remove decrement by 1, all need is message id, dont matter reaction type
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
+        # Check event occured in the meme channel
+        if payload.channel_id != self.meme_channel_id:
+            return
+        
+        # Check the message that got the reaction is one of the memes we are tracking, if not then return
+        if payload.message_id not in self.message_reactions:
+            return
+        
+        # Since it was, and this is a reaction add, we incriment the value for the message_id key by 1
+        self.message_reactions[payload.message_id] += 1
+        return
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: RawReactionActionEvent) -> None:
+        # Check event occured in the meme channel
+        if payload.channel_id != self.meme_channel_id:
+            return
+        
+        # Check the message that got the reaction is one of the memes we are tracking, if not then return
+        if payload.message_id not in self.message_reactions:
+            return
+        
+        # Since it was, and this is a reaction add, we decriment the value for the message_id key by 1
+        if self.message_reactions[payload.message_id] > 0:
+            self.message_reactions[payload.message_id] -= 1
+        
+        return
+    
+    def validate_attachments(self, message: discord.Message) -> bool:
+        # If the message has no attachments, then there must be no meme, so ignore and return
+        if not message.attachments:
+            return False
+        
+        # Otherwise it does have attachments, so check if a video or iamge
+        # Check each attachment and check if it is a video or image, if not then just return
+        if not any(
+            (att.content_type and (att.content_type.startswith("image/") or att.content_type.startswith("video/"))) or
+            att.filename.lower().endswith((
+                ".png", ".jpg", ".jpeg", ".gif", ".webp",
+                ".mp4", ".mov", ".avi", ".webm", ".mkv"
+            ))
+            for att in message.attachments
+        ):
+            return False
+        
+        else:
+            return True
+    
+    async def initialize_meme_messages(self) -> None:
+        # Method called on startup in case bot goes down mid hunt and we need to restart
+        # Sorts through initial messages after start date and sums reactions, then adds in memory
+        await self.bot.wait_until_ready()
+
+        # Get the actual TextChannel object from ID
+        channel = self.bot.get_channel(self.meme_channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            logger.error("[Memes Cog] Meme channel not found or invalid.")
+            return
+
+        # Only check messages that were posted after the hunt start date and time
+        after_time = self.hunt_bot.start_datetime
+
+        # Loop through messages in the meme channel after the hunt start time
+        async for message in channel.history(after=after_time, oldest_first=True, limit=None):
+            if not self.validate_attachments(message):
+                continue
+            
+            # Sum reactions on meme
+            total_reactions = sum(reaction.count for reaction in message.reactions)
+
+            # Update in memory
+            self.message_reactions[message.id] = total_reactions
+        
+        logger.info(f"[Memes Cog] Initialized {len(self.message_reactions)} meme messages with reactions.")
+
+
+    async def post_top_memes_scoreboard(self):
+        # Get the meme channel object
+        channel = self.bot.get_channel(self.meme_channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            logger.error("[Memes Cog] Meme channel not found or invalid.")
+            return
+        
+        # Sort messages by reactions count descending (highest shown first)
+        top_memes = sorted(self.message_reactions.items(), key=lambda x: x[1], reverse=True)[:5]
+        top_memes.reverse()
+        if not top_memes:
+            logger.info("[Memes Cog] No memes to post.")
+            return
+        
+        place = 5
+        # Since they are sorted like most to least, and we want to post them in order to the first place gets posted last so its newest to the user, we need to reverse the list and post
+        for message_id, reaction_count in top_memes:
+            # Try to get the message object
+            try:
+                # Get the message object and author
+                message = await channel.fetch_message(message_id)
+                user_id = message.author.id
+
+                # Get the attachment from the message
+                media_url = None
+                for att in message.attachments:
+                    if att.content_type and (att.content_type.startswith("image/") or att.content_type.startswith("video/")):
+                        media_url = att.url
+                        break
+                    elif att.filename.lower().endswith((
+                        ".png", ".jpg", ".jpeg", ".gif", ".webp",
+                        ".mp4", ".mov", ".avi", ".webm", ".mkv"
+                    )):
+                        media_url = att.url
+                        break
+                if not media_url:
+                    media_url = "(No media found)"
+                
+                # Template injection and send message
+                formatted_message = meme_scoreboard_message_template.substitute(
+                    placement=place,
+                    num_reactions = reaction_count,
+                    user_id=user_id,
+                    meme=media_url
+                )
+                
+                await channel.send(f"{formatted_message}\n---")
+
+            except discord.NotFound:
+                logger.warning(f"[Memes Cog] Could not fetch message {message_id} for top memes.")
+                continue
+            
+            place -= 1
+            
