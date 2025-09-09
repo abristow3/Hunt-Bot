@@ -14,9 +14,21 @@ meme_scoreboard_message_template = Template("""
 $meme
 """)
 
-# TODO still needs to be loadd and added to main bot hunt process when hunt starts
 class MemesCog(commands.Cog):
+    """
+    A Discord Cog responsible for tracking and ranking meme submissions
+    during an active hunt. Memes are ranked based on the number of reactions received.
+    """
+    
     def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
+        """
+        Initializes the MemesCog.
+
+        Args:
+            bot (commands.Bot): The Discord bot instance.
+            hunt_bot (HuntBot): The HuntBot instance with hunt state and configuration.
+        """
+        
         self.bot = bot
         self.hunt_bot = hunt_bot
         self.meme_channel_id = 0
@@ -25,14 +37,24 @@ class MemesCog(commands.Cog):
         self.get_meme_channel()
         self.bot.loop.create_task(self.initialize_meme_messages())
 
-    def get_meme_channel(self):
+    def get_meme_channel(self) -> None:
+        """
+        Loads the meme channel ID from the configuration.
+        Raises a ConfigurationException if not set properly.
+        """
         self.meme_channel_id = int(self.hunt_bot.config_map.get('MEME_CHANNEL_ID', "0"))
         if self.meme_channel_id == 0:
             logger.error("[Memes Cog] MEME_CHANNEL_ID not found")
             raise ConfigurationException(config_key='MEME_CHANNEL_ID')
         
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message) -> None:
+        """
+        Event listener triggered when a new message is posted.
+
+        Args:
+            message (discord.Message): The message object from Discord.
+        """
         # Only look in the meme channel after the hunt has started
         # Not the meme channel so return
         if message.channel.id != self.meme_channel_id:
@@ -66,6 +88,12 @@ class MemesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
+        """
+        Event listener triggered when a message is deleted.
+
+        Args:
+            payload (discord.RawMessageDeleteEvent): Raw delete event data.
+        """
         # Check if message deleted was in the memes channel
         if payload.channel_id != self.meme_channel_id:
             return
@@ -82,6 +110,12 @@ class MemesCog(commands.Cog):
     # Task loop, or on reaction add and reaction remove? On an add increment by 1, on a remove decrement by 1, all need is message id, dont matter reaction type
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
+        """
+        Event listener triggered when a reaction is added.
+
+        Args:
+            payload (RawReactionActionEvent): Raw reaction add event data.
+        """
         # Check event occured in the meme channel
         if payload.channel_id != self.meme_channel_id:
             return
@@ -97,6 +131,12 @@ class MemesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent) -> None:
+        """
+        Event listener triggered when a reaction is removed.
+
+        Args:
+            payload (RawReactionActionEvent): Raw reaction remove event data.
+        """
         # Check event occured in the meme channel
         if payload.channel_id != self.meme_channel_id:
             return
@@ -113,6 +153,15 @@ class MemesCog(commands.Cog):
         return
     
     def validate_attachments(self, message: discord.Message) -> bool:
+        """
+        Validates that a message has at least one valid image or video attachment.
+
+        Args:
+            message (discord.Message): The message to validate.
+
+        Returns:
+            bool: True if a valid attachment is found, False otherwise.
+        """
         # If the message has no attachments, then there must be no meme, so ignore and return
         if not message.attachments:
             return False
@@ -134,6 +183,10 @@ class MemesCog(commands.Cog):
             return True
     
     async def initialize_meme_messages(self) -> None:
+        """
+        On bot startup, initialize in-memory meme tracking by scanning messages
+        in the meme channel posted after the hunt started.
+        """
         # Method called on startup in case bot goes down mid hunt and we need to restart
         # Sorts through initial messages after start date and sums reactions, then adds in memory
         logger.info("[Starting Memes Cog]")
@@ -163,7 +216,10 @@ class MemesCog(commands.Cog):
         logger.info(f"[Memes Cog] Initialized {len(self.message_reactions)} meme messages with reactions.")
 
 
-    async def post_top_memes_scoreboard(self):
+    async def post_top_memes_scoreboard(self) -> None:
+        """
+        Posts the top 5 memes (based on reaction count) in the meme channel as a scoreboard.
+        """
         # Get the meme channel object
         channel = self.bot.get_channel(self.meme_channel_id)
         if not isinstance(channel, discord.TextChannel):
