@@ -35,11 +35,12 @@ class HuntBot:
         self.team_two_name = ""
         self.team_one_chat_channel = 0
         self.team_two_chat_channel = 0
+        self.hunt_edition = ""
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
         self.admin_channel_id = 0
-        self.first_join = True
+
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -136,6 +137,7 @@ class HuntBot:
             self.team_two_name = self.config_map.get("TEAM_TWO_NAME", "")
             self.team_one_chat_channel = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
             self.team_two_chat_channel = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
+            self.hunt_edition = self.config_map.get("HUNT_EDITION", "")
         except ValueError as e:
             logger.exception("Invalid type in config values (expected integer for channel IDs).", exc_info=e)
             raise InvalidConfig("Invalid type in config values: expected integers for channel IDs.")
@@ -162,6 +164,8 @@ class HuntBot:
             missing_fields.append("TEAM_1_CHAT_CHANNEL_ID")
         if self.team_two_chat_channel == 0:
             missing_fields.append("TEAM_2_CHAT_CHANNEL_ID")
+        if not self.hunt_edition:
+            missing_fields.append("HUNT_EDITION")
 
         if missing_fields:
             logger.error(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
