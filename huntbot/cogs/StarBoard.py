@@ -85,82 +85,82 @@ class StarBoardCog(commands.Cog):
             logger.error("[Starboard Cog] No TEAM_2_DROP_CHANNEL_ID found.")
             raise ConfigurationException(config_key='TEAM_2_DROP_CHANNEL_ID')
 
-@commands.Cog.listener()
-async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
-    """
-    Handles new ⭐ or 🤔 reactions. If the reacting user is authorized and it's the first reaction,
-    the message is copied to the starboard.
-    """
-    if payload.channel_id not in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
-        return
-
-    if str(payload.emoji) not in ["⭐", "🤔"]:
-        return
-
-    try:
-        channel = self.discord_bot.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        user = await self.discord_bot.fetch_user(payload.user_id)
-        guild = self.discord_bot.get_guild(payload.guild_id)
-
-        if guild is None:
-            logger.info("[Starboard Cog] Guild not found for user %s", user.name)
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
+        """
+        Handles new ⭐ or 🤔 reactions. If the reacting user is authorized and it's the first reaction,
+        the message is copied to the starboard.
+        """
+        if payload.channel_id not in [self.team1_drop_channel_id, self.team2_drop_channel_id]:
             return
 
-        member = await guild.fetch_member(user.id)
-        if member is None:
-            logger.info("[Starboard Cog] Member %s not found in guild %s", user.id, guild.name)
+        if str(payload.emoji) not in ["⭐", "🤔"]:
             return
 
-        # Check user role
-        has_required_role = any(
-            role.name.endswith('Team Leader') or role.name == 'Staff' or role.name == "Sheet helper"
-            for role in member.roles
-        )
-        if not has_required_role:
-            await message.remove_reaction(payload.emoji, member)
-            logger.info("[Starboard Cog] User %s reaction removed due to missing roles", user.name)
-            return
+        try:
+            channel = self.discord_bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            user = await self.discord_bot.fetch_user(payload.user_id)
+            guild = self.discord_bot.get_guild(payload.guild_id)
 
-        # Check if already posted to starboard
-        if message.id in self.starred_messages:
-            await message.remove_reaction(payload.emoji, member)
-            logger.info("[Starboard Cog] Duplicate reaction removed from user %s on message %s", user.name, message.id)
-            return
+            if guild is None:
+                logger.info("[Starboard Cog] Guild not found for user %s", user.name)
+                return
 
-        # Prepare message content
-        message_content = message.content
-        if message.attachments:
-            attachments = "\n".join([attachment.url for attachment in message.attachments])
-            message_content += f"\n{attachments}"
+            member = await guild.fetch_member(user.id)
+            if member is None:
+                logger.info("[Starboard Cog] Member %s not found in guild %s", user.id, guild.name)
+                return
 
-        # Send to starboard
-        star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
-        if not star_channel:
-            logger.error("[Starboard Cog] Starboard channel not found.")
-            return
-
-        if str(payload.emoji) == "⭐":
-            sent = await star_channel.send(
-                f"⭐ Starred message from {channel.mention}:\n"
-                f"{message_content}\n"
-                f"[Jump to Message]({message.jump_url})"
+            # Check user role
+            has_required_role = any(
+                role.name.endswith('Team Leader') or role.name == 'Staff' or role.name == "Sheet helper"
+                for role in member.roles
             )
-            logger.info("[Starboard Cog] Starred message %s sent to starboard", message.id)
+            if not has_required_role:
+                await message.remove_reaction(payload.emoji, member)
+                logger.info("[Starboard Cog] User %s reaction removed due to missing roles", user.name)
+                return
 
-        elif str(payload.emoji) == "🤔":
-            sent = await star_channel.send(
-                f"🤔 Thinking message from {channel.mention}:\n"
-                f"{message_content}\n"
-                f"[Jump to Message]({message.jump_url})"
-            )
-            logger.info("[Starboard Cog] Thinking message %s sent to starboard", message.id)
+            # Check if already posted to starboard
+            if message.id in self.starred_messages:
+                await message.remove_reaction(payload.emoji, member)
+                logger.info("[Starboard Cog] Duplicate reaction removed from user %s on message %s", user.name, message.id)
+                return
 
-        # Store reference
-        self.starred_messages[message.id] = sent.id
+            # Prepare message content
+            message_content = message.content
+            if message.attachments:
+                attachments = "\n".join([attachment.url for attachment in message.attachments])
+                message_content += f"\n{attachments}"
 
-    except Exception as e:
-        logger.exception("[Starboard Cog] Error handling reaction add: %s", e)
+            # Send to starboard
+            star_channel = self.discord_bot.get_channel(self.starboard_channel_id)
+            if not star_channel:
+                logger.error("[Starboard Cog] Starboard channel not found.")
+                return
+
+            if str(payload.emoji) == "⭐":
+                sent = await star_channel.send(
+                    f"⭐ Starred message from {channel.mention}:\n"
+                    f"{message_content}\n"
+                    f"[Jump to Message]({message.jump_url})"
+                )
+                logger.info("[Starboard Cog] Starred message %s sent to starboard", message.id)
+
+            elif str(payload.emoji) == "🤔":
+                sent = await star_channel.send(
+                    f"🤔 Thinking message from {channel.mention}:\n"
+                    f"{message_content}\n"
+                    f"[Jump to Message]({message.jump_url})"
+                )
+                logger.info("[Starboard Cog] Thinking message %s sent to starboard", message.id)
+
+            # Store reference
+            self.starred_messages[message.id] = sent.id
+
+        except Exception as e:
+            logger.exception("[Starboard Cog] Error handling reaction add: %s", e)
 
 
     @commands.Cog.listener()
