@@ -13,6 +13,7 @@ from huntbot.cogs.Bounties import BountiesCog
 from huntbot.cogs.Dailies import DailiesCog
 from huntbot.cogs.Score import ScoreCog
 from huntbot.cogs.Countdown import CountdownCog
+from huntbot.cogs.Memories import MemoriesCog
 from huntbot.State import State
 import os
 from huntbot.commands.bounty_commands import register_bounty_commands, ItemBounties
@@ -63,30 +64,6 @@ hunt_bot = HuntBot()
 state = State()
 item_bounties = ItemBounties(hunt_bot)
 
-
-def load_random_memory(yaml_file_path):
-    with open(yaml_file_path, 'r') as file:
-        data = yaml.safe_load(file)
-
-    memories = data.get('memories', [])
-
-    if not memories:
-        return "No memories found in the file."
-
-    memory = random.choice(memories)
-
-    # Try to extract the player name from the end of the memory string
-    match = re.search(r'\s-\s(.+)$', memory)
-    if match:
-        player = match.group(1).strip()
-        memory_text = memory[:match.start()].strip()
-    else:
-        player = "Unknown"
-        memory_text = memory.strip()
-
-    return f'"{memory_text}"\n\n— {player}'
-
-
 @tasks.loop(seconds=5)
 async def check_start_time():
     logger.debug("Checking start time task loop....")
@@ -127,6 +104,13 @@ async def check_start_time():
                 logger.info("Loading Score Cog...")
                 await bot.add_cog(ScoreCog(discord_bot=bot, hunt_bot=hunt_bot))
                 logger.info("Score Cog loaded successfully")
+
+                logger.info("Loading Memories Cog...")
+                memories_cog = MemoriesCog(discord_bot=bot, hunt_bot=hunt_bot)
+                await bot.add_cog(memories_cog)
+                await memories_cog.cog_load()
+                logger.info("Memories Cog loaded successfully")
+
             except Exception as e:
                 logger.error(e)
                 logger.error("Error Loading Cogs")
@@ -179,19 +163,6 @@ async def on_ready():
         await bot.user.edit(avatar=image)
 
     logger.info("Assets Loaded")
-
-    try:
-        channel = bot.get_channel(hunt_bot.general_channel_id)
-
-        if hunt_bot.first_join:
-            # await channel.send("Ah shit, it's about that time 👀")
-            hunt_bot.first_join = False
-        else:
-            memory = load_random_memory("conf/memories.yaml")
-            await channel.send(memory)
-    except Exception as e:
-        logger.error(e)
-        logger.error("Error posting memory during on_ready event")
 
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
     register_bounties_commands(bot.tree, bot)
