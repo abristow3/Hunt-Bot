@@ -35,7 +35,10 @@ class MemesCog(commands.Cog):
         self.message_reactions = {}
 
         self.get_meme_channel()
-        self.bot.loop.create_task(self.initialize_meme_messages())
+
+    async def cog_load(self) -> None:
+        # Called when the cog is fully loaded and the bot is ready
+        await self.initialize_meme_messages()
 
     def get_meme_channel(self) -> None:
         """
