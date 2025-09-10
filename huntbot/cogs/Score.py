@@ -42,6 +42,7 @@ class ScoreCog(commands.Cog):
         self.alert_channel_id = 0
         self.alert_sent = False  # Prevent spam
         self.score_crash_count = 0
+        self.lead_message = ""
 
         self.setup()
         self.start_scores.start()
@@ -109,8 +110,21 @@ class ScoreCog(commands.Cog):
             raise TableDataImportException(table_name=self.score_table_name)
 
         score_dict = pd.Series(score_df['Total Points'].values, index=score_df['Team Name']).to_dict()
-        self.team1_points = score_dict.get(f"Team {self.hunt_bot.team_one_name}", "")
-        self.team2_points = score_dict.get(f"Team {self.hunt_bot.team_two_name}", "")
+        self.team1_points = score_dict.get(f"Team {self.hunt_bot.team_one_name}", 0)
+        self.team2_points = score_dict.get(f"Team {self.hunt_bot.team_two_name}", 0)
+
+    def determine_lead(self) -> None:
+        # Calculate lead
+        if self.team1_points > self.team2_points:
+            lead_team = self.hunt_bot.team_one_name
+            lead_points = self.team1_points - self.team2_points
+            self.lead_message = f"Team {lead_team} is ahead by {lead_points} point{'s' if lead_points != 1 else ''}!"
+        elif self.team2_points > self.team1_points:
+            lead_team = self.hunt_bot.team_two_name
+            lead_points = self.team2_points - self.team1_points
+            self.lead_message = f"Team {lead_team} is ahead by {lead_points} point{'s' if lead_points != 1 else ''}!"
+        else:
+           self.lead_message = "It's a tie!"
 
     @tasks.loop(seconds=10)
     async def start_scores(self) -> None:
@@ -128,11 +142,19 @@ class ScoreCog(commands.Cog):
                 logger.warning("Score channel not found.")
                 return
 
-            self.get_score()  # your custom data logic
+            try:
+                self.get_score()
+            except TableDataImportException as e:
+                logger.error("[Score Cog] Failed to update score, skipping update cycle.")
+                return
+
+            self.determine_lead()
+            
             message = (
                 f"The current score is\n"
                 f"Team {self.hunt_bot.team_one_name}: {self.team1_points}\n"
-                f"Team {self.hunt_bot.team_two_name}: {self.team2_points}"
+                f"Team {self.hunt_bot.team_two_name}: {self.team2_points}\n\n"
+                f"{self.lead_message}"
             )
             if self.message:
                 await self.message.edit(content=message)
