@@ -84,7 +84,7 @@ async def check_start_time():
         if hunt_bot.started:
             logger.info("[Main Task Loop] The Hunt has begun!")
             if channel:
-                await channel.send(f"https://imgur.com/Of4zPcO \n@everyone the 14th Flux Hunt has officially begun!\n"
+                await channel.send(f"https://imgur.com/Of4zPcO \n@everyone the {hunt_bot.hunt_edition} Flux Hunt has officially begun!\n"
                                    f"The password is: {hunt_bot.master_password}")
 
             # If we made it this far then we are ready to start loading the cogs
@@ -125,7 +125,7 @@ async def check_start_time():
         if hunt_bot.ended:
             logger.info("[Main Task Loop] The Hunt has ended!")
             await channel.send(
-                f"https://imgur.com/qdtYicb \n@everyone The 14th Hunt has officially concluded...results coming soon!")
+                f"https://imgur.com/qdtYicb \n@everyone The {hunt_bot.hunt_edition} Hunt has officially concluded...results coming soon!")
             check_start_time.stop()
 
 
