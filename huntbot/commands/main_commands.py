@@ -4,7 +4,6 @@ import logging
 import io
 import yaml
 from huntbot.cogs.StarBoard import StarBoardCog
-from huntbot.commands.bounty_commands import ItemBounties
 
 logger = logging.getLogger(__name__)
 

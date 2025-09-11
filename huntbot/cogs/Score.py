@@ -43,6 +43,7 @@ class ScoreCog(commands.Cog):
         self.alert_sent = False  # Prevent spam
         self.score_crash_count = 0
         self.lead_message = ""
+        self.score_message = ""
 
         self.setup()
         self.start_scores.start()
@@ -146,20 +147,20 @@ class ScoreCog(commands.Cog):
                 self.get_score()
             except TableDataImportException as e:
                 logger.error("[Score Cog] Failed to update score, skipping update cycle.")
-                return
+                return 
 
             self.determine_lead()
             
-            message = (
+            self.score_message = (
                 f"The current score is\n"
                 f"Team {self.hunt_bot.team_one_name}: {self.team1_points}\n"
                 f"Team {self.hunt_bot.team_two_name}: {self.team2_points}\n\n"
                 f"{self.lead_message}"
             )
             if self.message:
-                await self.message.edit(content=message)
+                await self.message.edit(content=self.score_message)
             else:
-                self.message = await channel.send(message)
+                self.message = await channel.send(self.score_message)
 
             self.alert_sent = False  # Reset alert flag on success
             self.score_crash_count = 0  # Reset crash count on recovery
