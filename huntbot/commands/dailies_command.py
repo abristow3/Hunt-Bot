@@ -12,7 +12,8 @@ async def current_daily(interaction: discord.Interaction, discord_bot=None):
         return
 
     message = cog.message
-    await interaction.response.send_message(f"**Current Daily:**\n{message}", ephemeral=True)
+    clean_message = message.replace("@everyone ", "")
+    await interaction.response.send_message(f"**Current Daily:**\n{clean_message}", ephemeral=True)
 
 
 def register_daily_commands(tree: app_commands.CommandTree, discord_bot):
