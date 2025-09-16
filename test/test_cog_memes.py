@@ -280,15 +280,19 @@ async def test_on_message_all_invalid_attachments(cog):
     assert 9876 not in cog.message_reactions
 
 
-def test_get_meme_channel_raises_config_exception():
+@pytest.mark.asyncio
+async def test_get_meme_channel_raises_config_exception():
     bot_mock = MagicMock()
     hunt_bot_mock = MagicMock()
     hunt_bot_mock.config_map = {}  # Missing MEME_CHANNEL_ID
 
+    cog = MemesCog(bot_mock, hunt_bot_mock)
+
     with pytest.raises(ConfigurationException) as excinfo:
-        _ = MemesCog(bot_mock, hunt_bot_mock)
+        await cog.cog_load()
 
     assert "MEME_CHANNEL_ID" in str(excinfo.value)
+
 
 
 @pytest.mark.asyncio
