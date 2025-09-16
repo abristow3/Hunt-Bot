@@ -34,11 +34,16 @@ class MemesCog(commands.Cog):
         self.meme_channel_id = 0
         self.message_reactions = {}
 
-        self.get_meme_channel()
-
     async def cog_load(self) -> None:
         # Called when the cog is fully loaded and the bot is ready
+        self.get_meme_channel()
         await self.initialize_meme_messages()
+
+    async def cog_unload(self) -> None:
+        """Called when the cog is unloaded."""
+        logger.info("[Memes Cog] Unloading cog...")
+        self.message_reactions.clear()
+        self.meme_channel_id = 0
 
     def get_meme_channel(self) -> None:
         """

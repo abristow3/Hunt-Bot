@@ -47,27 +47,28 @@ class BountiesCog(commands.Cog):
         self.single_bounty_generator = None
         self.double_bounty_generator = None
 
-        self.bot.loop.create_task(self.initialize())
-
-    async def initialize(self):
+    async def cog_load(self):
+        logger.info("[Bounties Cog] Loading cog and initializing.")
         try:
-            self.start_up()
+            logger.info("[Bounties Cog] Retrieving Bounties data from GDoc config map")
+            self.get_bounties_per_day()
+            self.set_bounty_interval()
+            self.get_bounty_channel()
+            self.get_single_bounties()
+            self.get_double_bounties()
+
+            self.single_bounty_generator = self.yield_next_row(self.single_bounties_df)
+            self.double_bounty_generator = self.yield_next_row(self.double_bounties_df)
             self.configured = True
             self.start_bounties.start()
         except Exception as e:
-            logger.error(f"[Bounties Cog] Bounties Cog Initialization failed: {e}")
+            logger.error(f"[Bounties Cog] Initialization failed: {e}")
             self.configured = False
 
-    def start_up(self):
-        logger.info("[Bounties Cog] Retrieving Bounties data from GDoc config map")
-        self.get_bounties_per_day()
-        self.set_bounty_interval()
-        self.get_bounty_channel()
-        self.get_single_bounties()
-        self.get_double_bounties()
-
-        self.single_bounty_generator = self.yield_next_row(self.single_bounties_df)
-        self.double_bounty_generator = self.yield_next_row(self.double_bounties_df)
+    async def cog_unload(self):
+        logger.info("[Bounties Cog] Unloading cog.")
+        if self.start_bounties.is_running():
+            self.start_bounties.stop()
 
     def get_bounties_per_day(self):
         self.bounties_per_day = int(self.hunt_bot.config_map.get('BOUNTIES_PER_DAY', "0"))
@@ -104,7 +105,10 @@ class BountiesCog(commands.Cog):
 
     @tasks.loop(hours=6)  # Will override this interval after init
     async def start_bounties(self):
-        await self.bot.wait_until_ready()
+        if not self.configured:
+            logger.warning("[Bounties Cog] Cog not configured, skipping bounties.")
+            return
+
         channel = self.bot.get_channel(self.bounty_channel_id)
         if not channel:
             logger.error("[Bounties Cog] Bounties Channel not found.")
@@ -133,8 +137,11 @@ class BountiesCog(commands.Cog):
                 )
 
             if self.message_id:
-                old_message = await channel.fetch_message(self.message_id)
-                await old_message.unpin()
+                try:
+                    old_message = await channel.fetch_message(self.message_id)
+                    await old_message.unpin()
+                except Exception as e:
+                    logger.warning(f"[Bounties Cog] Failed to unpin old message: {e}")
 
             sent_message = await channel.send(self.message)
             self.message_id = sent_message.id

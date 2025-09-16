@@ -3,7 +3,6 @@ import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
-from huntbot import ConfigurationException, TableDataImportException
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,24 +45,27 @@ class DailiesCog(commands.Cog):
         self.single_daily_generator = None
         self.double_daily_generator = None
 
-        self.bot.loop.create_task(self.initialize())
-
-    async def initialize(self):
+    async def cog_load(self):
+        """Called when the cog is loaded and ready."""
+        logger.info("[Dailies Cog] Loading cog and initializing.")
         try:
-            self.start_up()
+            self.get_daily_channel()
+            self.get_single_dailies()
+            self.get_double_dailies()
+
+            self.single_daily_generator = self.yield_next_row(self.single_dailies_df)
+            self.double_daily_generator = self.yield_next_row(self.double_dailies_df)
             self.configured = True
             self.start_dailies.start()
         except Exception as e:
-            print(f"[Dailies] Initialization failed: {e}")
+            logger.error(f"[Dailies Cog] Initialization failed: {e}")
             self.configured = False
 
-    def start_up(self):
-        self.get_daily_channel()
-        self.get_single_dailies()
-        self.get_double_dailies()
-
-        self.single_daily_generator = self.yield_next_row(self.single_dailies_df)
-        self.double_daily_generator = self.yield_next_row(self.double_dailies_df)
+    async def cog_unload(self):
+        """Called when the cog is unloaded to stop tasks."""
+        logger.info("[Dailies Cog] Unloading cog.")
+        if self.start_dailies.is_running():
+            self.start_dailies.stop()
 
     def get_daily_channel(self):
         self.daily_channel_id = int(self.hunt_bot.config_map.get('DAILY_CHANNEL_ID', "0"))
@@ -90,7 +92,10 @@ class DailiesCog(commands.Cog):
 
     @tasks.loop(hours=1) 
     async def start_dailies(self):
-        await self.bot.wait_until_ready()
+        if not self.configured:
+            logger.warning("[Dailies Cog] Cog not configured, skipping dailies.")
+            return
+        
         channel = self.bot.get_channel(self.daily_channel_id)
         if not channel:
             logger.error("[Dailies Cog] Dailies Channel not found.")
@@ -118,8 +123,11 @@ class DailiesCog(commands.Cog):
                 )
 
             if self.message_id:
-                old_message = await channel.fetch_message(self.message_id)
-                await old_message.unpin()
+                try:
+                    old_message = await channel.fetch_message(self.message_id)
+                    await old_message.unpin()
+                except Exception as e:
+                    logger.warning(f"[Dailies Cog] Failed to unpin old message: {e}")
 
             sent_message = await channel.send(self.message)
             self.message_id = sent_message.id

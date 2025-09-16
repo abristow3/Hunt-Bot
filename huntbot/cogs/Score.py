@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands, tasks
 from huntbot.HuntBot import HuntBot
 import pandas as pd
@@ -6,11 +7,6 @@ from huntbot.exceptions import TableDataImportException, ConfigurationException
 import logging
 
 logger = logging.getLogger(__name__)
-
-score_message = Template("""
-The current score is $team1_name: $team1_points $team2_name: $team2_points
-""")
-
 
 class ScoreCog(commands.Cog):
     """
@@ -33,32 +29,48 @@ class ScoreCog(commands.Cog):
         """
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
+
+        # Config values
         self.score_channel_id = 0
+        self.alert_channel_id = 0
+
+        # Score tracking
         self.team1_points = 0
         self.team2_points = 0
         self.score_table_name = "Current Score"
         self.message = None
-        self.configured = False
-        self.alert_channel_id = 0
-        self.alert_sent = False  # Prevent spam
-        self.score_crash_count = 0
         self.lead_message = ""
         self.score_message = ""
 
-        self.setup()
+        # Error handling
+        self.alert_sent = False
+        self.score_crash_count = 0
+
+        self.configured = False
+
+    async def cog_load(self) -> None:
+        """Runs when the cog is loaded and bot is ready."""
+        logger.info("[Score Cog] Loading Score Cog.")
+
+        try:
+            self.get_score_channel()
+            self.get_alert_channel()
+            self.configured = True
+        except ConfigurationException as e:
+            logger.error(f"[Score Cog] Failed configuration: {e}")
+            return
+
+        # Start loops
         self.start_scores.start()
         self.watch_scores.start()
 
-    def setup(self) -> None:
-        """
-        Set up the initial configuration by fetching channels and validating configurations.
-
-        Returns:
-            None
-        """
-        self.get_score_channel()
-        self.get_alert_channel()
-        self.configured = True
+    async def cog_unload(self) -> None:
+        """Cleans up background tasks on cog unload."""
+        logger.info("[Score Cog] Unloading Score Cog.")
+        if self.start_scores.is_running():
+            self.start_scores.stop()
+        if self.watch_scores.is_running():
+            self.watch_scores.stop()
 
     def get_alert_channel(self) -> None:
         """
@@ -137,12 +149,16 @@ class ScoreCog(commands.Cog):
         Returns:
             None
         """
+        if not self.configured:
+            logger.warning("[Score Cog] Cog not properly configured. Skipping score update.")
+            return
+
         try:
             channel = self.discord_bot.get_channel(self.score_channel_id)
             if not channel:
                 logger.warning("Score channel not found.")
                 return
-
+            
             try:
                 self.get_score()
             except TableDataImportException as e:
@@ -158,7 +174,10 @@ class ScoreCog(commands.Cog):
                 f"{self.lead_message}"
             )
             if self.message:
-                await self.message.edit(content=self.score_message)
+                try:
+                    await self.message.edit(content=self.score_message)
+                except discord.NotFound:
+                    self.message = await channel.send(self.score_message)
             else:
                 self.message = await channel.send(self.score_message)
 
@@ -194,9 +213,9 @@ class ScoreCog(commands.Cog):
             logger.error("[Score Cog] Score loop is not running. Restarting...")
             try:
                 self.start_scores.start()
-            except RuntimeError:
-                # Already running or not yet stopped properly
-                pass
+            except RuntimeError as e:
+                logger.warning(f"[Score Cog] Could not restart start_scores: {e}")
+
 
     @watch_scores.before_loop
     async def before_watch_scores(self) -> None:
@@ -227,16 +246,3 @@ class ScoreCog(commands.Cog):
                 )
             except Exception as e:
                 logger.error("[Score Cog] Failed to send crash alert to Discord", exc_info=True)
-
-    async def cog_unload(self) -> None:
-        """
-        Stops the tasks when the cog is unloaded.
-
-        Returns:
-            None
-        """
-        logger.info("[Score Cog] Unloading Score Cog.")
-        if self.start_scores.is_running():
-            self.start_scores.stop()
-        if self.watch_scores.is_running():
-            self.watch_scores.stop()

@@ -3,7 +3,8 @@ from discord import app_commands
 import logging
 import io
 import yaml
-from huntbot.cogs.StarBoard import StarBoardCog
+from huntbot.HuntBot import HuntBot
+from huntbot.GDoc import GDoc
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ async def beep(interaction: discord.Interaction):
     await interaction.response.send_message("Boop")
 
 
-async def start_hunt(interaction: discord.Interaction, gdoc, hunt_bot, state, bot):
+async def start_hunt(interaction: discord.Interaction, gdoc: GDoc, hunt_bot: HuntBot, state, bot):
     try:
         await interaction.response.defer()
     except discord.NotFound:
@@ -59,11 +60,6 @@ async def start_hunt(interaction: discord.Interaction, gdoc, hunt_bot, state, bo
     if not hunt_bot.configured:
         await interaction.followup.send("Failed to configure hunt bot.")
         return
-
-    try:
-        await bot.add_cog(StarBoardCog(discord_bot=bot, hunt_bot=hunt_bot))
-    except Exception as e:
-        logger.error("Error loading StarBoardCog", exc_info=e)
 
     try:
         await state.update_state(bot=True, **hunt_bot.config_map)
