@@ -3,6 +3,8 @@ import asyncio
 import discord
 from discord.ext import commands, tasks
 import logging
+import os
+import traceback
 from huntbot.GDoc import GDoc
 from huntbot.HuntBot import HuntBot
 from huntbot.cogs.Bounties import BountiesCog
@@ -10,9 +12,9 @@ from huntbot.cogs.Dailies import DailiesCog
 from huntbot.cogs.Score import ScoreCog
 from huntbot.cogs.Countdown import CountdownCog
 from huntbot.cogs.Memories import MemoriesCog
+from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.State import State
 from huntbot.cogs.Memes import MemesCog
-import os
 from huntbot.commands.bounty_commands import register_bounty_commands, ItemBounties
 from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
@@ -89,34 +91,28 @@ async def check_start_time():
                                    f"The password is: {hunt_bot.master_password}")
 
             # If we made it this far then we are ready to start loading the cogs
-            # Start bounties plugin
-            try:
-                logger.info("[Main Task Loop] Loading Bounties Cog...")
-                await bot.add_cog(BountiesCog(bot=bot, hunt_bot=hunt_bot))
-                logger.info("[Main Task Loop] Bounties Cog loaded successfully")
+            cogs_to_load = [
+                (BountiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
+                (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
+                (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+            ]
 
-                logger.info("[Main Task Loop] Loading Dailies Cog...")
-                await bot.add_cog(DailiesCog(bot=bot, hunt_bot=hunt_bot))
-                logger.info("[Main Task Loop] Dailies Cog loaded successfully")
+            for cog_cls, params in cogs_to_load:
+                try:
+                    logger.info(f"[Main Task Loop] Loading {cog_cls.__name__}...")
+                    cog = cog_cls(**params)
+                    await bot.add_cog(cog)
+                    await cog.cog_load()
+                    logger.info(f"[Main Task Loop] {cog_cls.__name__} loaded successfully")
+                except Exception as e:
+                    logger.error(f"[Main Task Loop] Error loading {cog_cls.__name__}: {e}")
+                    logger.error(traceback.format_exc())
+                    if channel:
+                        await channel.send(f"Error loading {cog_cls.__name__} Cog.")
 
-                logger.info("[Main Task Loop] Loading Score Cog...")
-                await bot.add_cog(ScoreCog(discord_bot=bot, hunt_bot=hunt_bot))
-                logger.info("[Main Task Loop] Score Cog loaded successfully")
-
-                logger.info("[Main Task Loop] Loading Memories Cog...")
-                memories_cog = MemoriesCog(discord_bot=bot, hunt_bot=hunt_bot)
-                await bot.add_cog(memories_cog)
-                await memories_cog.cog_load()
-                logger.info("[Main Task Loop] Memories Cog loaded successfully")
-
-                logger.info("Loading Memes Cog...")
-                await bot.add_cog(MemesCog(bot=bot, hunt_bot=hunt_bot))
-                logger.info("Memes Cog loaded succesfully")
-            except Exception as e:
-                logger.error(e)
-                logger.error("[Main Task Loop] Error Loading Cogs")
-                await channel.send(f"Error loading Cogs.")
-                return
         else:
             logger.info("[Main Task Loop] Waiting for start time...")
     else:

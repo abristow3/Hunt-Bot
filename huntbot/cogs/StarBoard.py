@@ -1,7 +1,7 @@
 from discord.ext import commands
-from discord import RawReactionActionEvent, Message
+from discord import RawReactionActionEvent
 from huntbot.HuntBot import HuntBot
-from huntbot.exceptions import TableDataImportException, ConfigurationException
+from huntbot.exceptions import ConfigurationException
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,19 +26,24 @@ class StarBoardCog(commands.Cog):
         self.configured: bool = False
         self.starred_messages: dict[int, int] = {}
 
-        self.startup()
+    async def cog_load(self) -> None:
+        """Called when the cog is loaded."""
+        logger.info("[Starboard Cog] Loading cog...")
+        try:
+            self.get_starboard_channel_id()
+            self.get_team1_drop_channel_id()
+            self.get_team2_drop_channel_id()
+            self.configured = True
+            logger.info("[Starboard Cog] Successfully configured.")
+        except ConfigurationException as e:
+            logger.error("[Starboard Cog] Configuration failed: %s", e)
+            raise
 
-    def startup(self) -> None:
-        """
-        Loads and validates channel configuration from the HuntBot config map.
-
-        Returns:
-            None
-        """
-        self.get_starboard_channel_id()
-        self.get_team1_drop_channel_id()
-        self.get_team2_drop_channel_id()
-        self.configured = True
+    async def cog_unload(self) -> None:
+        """Called when the cog is unloaded."""
+        logger.info("[Starboard Cog] Unloading cog...")
+        self.starred_messages.clear()
+        self.configured = False
 
     def get_starboard_channel_id(self) -> None:
         """
