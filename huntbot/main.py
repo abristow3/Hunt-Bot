@@ -64,6 +64,20 @@ hunt_bot = HuntBot()
 state = State()
 item_bounties = ItemBounties(hunt_bot)
 
+async def generate_wom_messages()-> None:
+    # Create WOM Messages for each team chat channel and pin them
+    wom_message = (f"Link to Hunt {hunt_bot.hunt_edition} WiseOldMan Competition:\n"
+                    f"{hunt_bot.wom_hunt_url}")
+    
+    team_one_channel = bot.get_channel(hunt_bot.team_one_chat_channel)
+    team_two_channel = bot.get_channel(hunt_bot.team_two_chat_channel)
+
+    t1_message = await team_one_channel.send(wom_message)
+    await t1_message.pin()
+
+    t2_message = await team_two_channel.send(wom_message)
+    await t2_message.pin()
+
 @tasks.loop(seconds=5)
 async def check_start_time():
     logger.debug("[Main Task Loop] Checking start time task loop....")
@@ -84,11 +98,15 @@ async def check_start_time():
         logger.debug("[Main Task Loop] The Hunt has not started yet... checking start time...")
         # Check if we need to start the hunt or not
         hunt_bot.check_start()
+        
+        # The hunt has started
         if hunt_bot.started:
             logger.info("[Main Task Loop] The Hunt has begun!")
             if channel:
-                await channel.send(f"https://imgur.com/Of4zPcO \n@everyone the {hunt_bot.hunt_edition} Flux Hunt has officially begun!\n"
+                await channel.send(f"https://imgur.com/Of4zPcO \n@everyone Flux Hunt {hunt_bot.hunt_edition} has officially begun!\n"
                                    f"The password is: {hunt_bot.master_password}")
+
+            await generate_wom_messages()
 
             # If we made it this far then we are ready to start loading the cogs
             cogs_to_load = [
