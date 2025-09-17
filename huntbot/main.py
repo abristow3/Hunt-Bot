@@ -82,6 +82,11 @@ async def generate_wom_messages()-> None:
 async def check_start_time():
     logger.debug("[Main Task Loop] Checking start time task loop....")
 
+    # load and start Countdown cog
+    if "CountdownCog" not in bot.cogs:
+        countdown_cog = CountdownCog(discord_bot=bot, hunt_bot=hunt_bot)
+        await bot.add_cog(countdown_cog)
+
     try:
         # Get updated gdoc data rate is 300 reads /per minute
         logger.info("[Main Task Loop] Retrieving GDoc data....")
@@ -123,7 +128,6 @@ async def check_start_time():
                     logger.info(f"[Main Task Loop] Loading {cog_cls.__name__}...")
                     cog = cog_cls(**params)
                     await bot.add_cog(cog)
-                    await cog.cog_load()
                     logger.info(f"[Main Task Loop] {cog_cls.__name__} loaded successfully")
                 except Exception as e:
                     logger.error(f"[Main Task Loop] Error loading {cog_cls.__name__}: {e}")
