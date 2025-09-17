@@ -103,6 +103,28 @@ class BountiesCog(commands.Cog):
         for _, row in df.iterrows():
             yield row
 
+    async def post_team_notif(self) -> None:
+        """
+        Sends a notification message to both team chat channels with a link to a newly posted bounty.
+
+        The message includes a direct URL to the bounty message posted in the bounty channel.
+        It retrieves the appropriate team chat channels from the hunt_bot configuration and sends 
+        the notification to both Team One and Team Two channels.
+        """
+        # Construct the link and message
+        message_url = f"https://discord.com/channels/{self.hunt_bot.guild_id}/{self.bounty_channel_id}/{self.message_id}"
+        message = f"A new bounty has just been posted! See it here: {message_url}"
+
+        # Get team chat channels
+        team_one_channel = self.bot.get_channel(self.hunt_bot.team_one_chat_channel)
+        team_two_channel = self.bot.get_channel(self.hunt_bot.team_two_chat_channel)
+
+        # Send message to each team channel with the link
+        await team_one_channel.send(message)
+        await team_two_channel.send(message)
+
+
+
     @tasks.loop(hours=6)  # Will override this interval after init
     async def start_bounties(self):
         if not self.configured:
@@ -145,6 +167,7 @@ class BountiesCog(commands.Cog):
 
             sent_message = await channel.send(self.message)
             self.message_id = sent_message.id
+            await self.post_team_notif()
             await sent_message.pin()
         except StopIteration:
             logger.info("[Bounties Cog] No more bounties left. Stopping task.")

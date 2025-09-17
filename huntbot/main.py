@@ -155,7 +155,7 @@ async def sync_commands(test: bool = False):
     try:
         # Optional: force sync for a specific guild
         if test:
-            guild = discord.Object(id=699971574689955850)
+            guild = discord.Object(id=hunt_bot.guild_id)
             await bot.tree.sync(guild=guild)
             logger.info("[Main Task Loop] Slash commands have been synced to guild.")
 
