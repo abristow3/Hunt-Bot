@@ -9,7 +9,7 @@ async def current_score(interaction: discord.Interaction, discord_bot) -> None:
     """Displays the current score stored in the Score Cog"""
     cog = discord_bot.get_cog("ScoreCog")
     if not cog:
-        logger.warning("ScoreCog not found when executing /score")
+        logger.warning("[Score Commands] ScoreCog not found when executing /score")
         await interaction.response.send_message("No score to display.", ephemeral=True)
         return
 

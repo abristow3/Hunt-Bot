@@ -20,6 +20,7 @@ from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
 from huntbot.commands.score_commands import register_score_commands
+from huntbot.commands.countdown_commands import register_countdown_commands
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # Capture all logs
@@ -188,6 +189,7 @@ async def on_ready():
     register_daily_commands(bot.tree, bot)
     register_bounty_commands(bot.tree, item_bounties)
     register_score_commands(bot.tree, bot)
+    register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
 
     # Sync and List all commands
     await sync_commands(test=True)
