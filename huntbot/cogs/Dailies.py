@@ -45,7 +45,7 @@ class DailiesCog(commands.Cog):
         self.single_daily_generator = None
         self.double_daily_generator = None
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         """Called when the cog is loaded and ready."""
         logger.info("[Dailies Cog] Loading cog and initializing.")
         try:
@@ -61,25 +61,25 @@ class DailiesCog(commands.Cog):
             logger.error(f"[Dailies Cog] Initialization failed: {e}")
             self.configured = False
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         """Called when the cog is unloaded to stop tasks."""
         logger.info("[Dailies Cog] Unloading cog.")
         if self.start_dailies.is_running():
             self.start_dailies.stop()
 
-    def get_daily_channel(self):
+    def get_daily_channel(self) -> None:
         self.daily_channel_id = int(self.hunt_bot.config_map.get('DAILY_CHANNEL_ID', "0"))
         if self.daily_channel_id == 0:
             logger.error("[Dailies Cog] DAILY_CHANNEL_ID not found")
             raise ConfigurationException(config_key='DAILY_CHANNEL_ID')
 
-    def get_single_dailies(self):
+    def get_single_dailies(self) -> None:
         self.single_dailies_df = self.hunt_bot.pull_table_data(table_name=self.single_dailies_table_name)
         if self.single_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing single dailies data")
             raise TableDataImportException(table_name=self.single_dailies_table_name)
 
-    def get_double_dailies(self):
+    def get_double_dailies(self) -> None:
         self.double_dailies_df = self.hunt_bot.pull_table_data(table_name=self.double_dailies_table_name)
         if self.double_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing double dailies data")
@@ -89,6 +89,26 @@ class DailiesCog(commands.Cog):
     def yield_next_row(df):
         for _, row in df.iterrows():
             yield row
+
+    async def post_team_notif(self) -> None:
+        """
+        Sends a notification message to both team chat channels with a link to a newly posted daily.
+
+        The message includes a direct URL to the daily message posted in the daily channel.
+        It retrieves the appropriate team chat channels from the hunt_bot configuration and sends 
+        the notification to both Team One and Team Two channels.
+        """
+        # Construct the link and message
+        message_url = f"https://discord.com/channels/{self.hunt_bot.guild_id}/{self.daily_channel_id}/{self.message_id}"
+        message = f"A new daily has just been posted! See it here: {message_url}"
+
+        # Get team chat channels
+        team_one_channel = self.bot.get_channel(self.hunt_bot.team_one_chat_channel)
+        team_two_channel = self.bot.get_channel(self.hunt_bot.team_two_chat_channel)
+
+        # Send message to each team channel with the link
+        await team_one_channel.send(message)
+        await team_two_channel.send(message)
 
     @tasks.loop(hours=1) 
     async def start_dailies(self):
@@ -131,6 +151,7 @@ class DailiesCog(commands.Cog):
 
             sent_message = await channel.send(self.message)
             self.message_id = sent_message.id
+            await self.post_team_notif()
             await sent_message.pin()
         except StopIteration:
             logger.info("[Dailies Cog] No more dailies left. Stopping task")

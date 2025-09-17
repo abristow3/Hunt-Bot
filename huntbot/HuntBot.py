@@ -37,6 +37,7 @@ class HuntBot:
         self.team_two_chat_channel = 0
         self.hunt_edition = ""
         self.wom_hunt_url = ""
+        self.guild_id = 699971574689955850
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
