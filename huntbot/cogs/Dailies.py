@@ -4,6 +4,8 @@ from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
 import logging
+import re
+import discord
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,25 @@ $b2_task
 
 """)
 
+IMAGE_URL_PATTERN = re.compile(
+    r"""(?ix)                              # Ignore case, verbose mode
+    \b
+    (https?://                             # Must start with http or https
+        (?:                                # Supported/common image hosts
+            (?:i\.)?imgur\.com |
+            cdn\.discordapp\.com |
+            media\.discordapp\.net |
+            images\.unsplash\.com |
+            gyazo\.com |
+            \S+                            # Fallback: allow other domains
+        )
+        /[\w\-/\.%]+                       # Path
+        \.(?:png|jpe?g|gif|webp|bmp|tiff)  # Image extension
+        (?:\?\S*)?                         # Optional query params
+    )
+    \b
+    """
+)
 
 class DailiesCog(commands.Cog):
     def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
@@ -38,9 +59,10 @@ class DailiesCog(commands.Cog):
         self.double_dailies_df = pd.DataFrame()
         self.single_dailies_table_name = "Single Dailies"
         self.double_dailies_table_name = "Double Dailies"
-        self.message = ""
+        self.daily_description = ""
         self.message_id = 0
         self.configured = False
+        self.embed_message = None
 
         self.single_daily_generator = None
         self.double_daily_generator = None
@@ -107,8 +129,10 @@ class DailiesCog(commands.Cog):
         team_two_channel = self.bot.get_channel(self.hunt_bot.team_two_chat_channel)
 
         # Send message to each team channel with the link
-        await team_one_channel.send(message)
-        await team_two_channel.send(message)
+        if team_one_channel:
+            await team_one_channel.send(message)
+        if team_two_channel:
+            await team_two_channel.send(message)
 
     @tasks.loop(hours=1) 
     async def start_dailies(self):
@@ -122,6 +146,7 @@ class DailiesCog(commands.Cog):
             return
 
         try:
+            logger.info("[Dailies Cog] Attempting to serve daily")
             single_daily = next(self.single_daily_generator)
             single_task = single_daily["Task"]
             single_password = single_daily["Password"]
@@ -130,27 +155,28 @@ class DailiesCog(commands.Cog):
 
             if not is_double:
                 logger.info("[Dailies Cog] Serving single daily")
-                self.message = single_daily_template.substitute(task=single_task, password=single_password)
+                self.daily_description = single_daily_template.substitute(task=single_task, password=single_password)
             else:
                 logger.info("[Dailies Cog] Serving double daily")
                 double_daily = next(self.double_daily_generator)
-                self.message = double_daily_template.substitute(
+                self.daily_description = double_daily_template.substitute(
                     b1_task=single_task,
                     b1_password=single_password,
                     b2_task=double_daily["Task"]
                 )
 
-            if self.message_id:
+            if self.embed_message:
                 try:
-                    old_message = await channel.fetch_message(self.message_id)
-                    await old_message.unpin()
+                    await self.embed_message.unpin()
                 except Exception as e:
                     logger.warning(f"[Dailies Cog] Failed to unpin old message: {e}")
 
-            sent_message = await channel.send(self.message)
-            self.message_id = sent_message.id
+            # Create the embed
+            embed = self.create_embed_message()
+            self.embed_message = await channel.send(embed=embed)
+            self.message_id = self.embed_message.id
             await self.post_team_notif()
-            await sent_message.pin()
+            await self.embed_message.pin()
         except StopIteration:
             logger.info("[Dailies Cog] No more dailies left. Stopping task")
             self.start_dailies.stop()
@@ -161,3 +187,72 @@ class DailiesCog(commands.Cog):
         if self.daily_interval > 0:
             logger.info(f"[Dailies Cog] Dailies interval changed to: {self.daily_interval} hours" )
             self.start_dailies.change_interval(hours=self.daily_interval)
+
+    def is_valid_image_url(self, url: str) -> bool:
+        """Validates if a string is a valid image URL based on regex."""
+        return bool(IMAGE_URL_PATTERN.fullmatch(url.strip()))
+
+    def extract_image_urls(self, text: str) -> list:
+        return IMAGE_URL_PATTERN.findall(text)
+
+    def create_embed_message(self) -> discord.Embed:
+        embed = discord.Embed(title="New Daily!", description=self.daily_description)
+        image_urls = self.extract_image_urls(self.daily_description)
+        
+        if image_urls:
+            embed.set_image(url=image_urls[0])
+        
+        return embed
+    
+    async def update_embed_description(self, new_desc: str) -> str:
+        # Copy the original embed and update the description with the new one
+        if self.embed_message and self.embed_message.embeds:
+            updated_embed = self.embed_message.embeds[0]
+            updated_embed.description = new_desc
+
+            # Edit message
+            await self.embed_message.edit(embed=updated_embed)
+            logger.info("[Dailies Cog] Daily description update succesfully")
+            response_message = "Daily description updated successfully."
+            return response_message
+        else:
+            logger.warning("[Dailies Cog] No Daily Message in memory. Skipping.")
+            response_message = "No Daily message found to update."
+            return response_message
+
+    async def update_embed_url(self, new_url: str) -> str:
+        # Check we have a embed message in memory to update
+        if not self.embed_message or not self.embed_message.embeds:
+            logger.warning("[Dailies Cog] No Daily Message in memory. Skipping.")
+            response_message = "No Daily message found to update."
+            return response_message
+        
+        # Check new URL is accepted format
+        if not self.is_valid_image_url(url=new_url):
+            logger.info("[Dailies Cog] Invalid image URL provided")
+            response_message = "Invalid image URL provided. Daily image not updated."
+            return response_message
+        
+        updated_embed = self.embed_message.embeds[0] # First (and usually only) embed
+        description = updated_embed.description or self.daily_description
+
+        # Get old URL
+        old_urls = self.extract_image_urls(description)
+        
+        if old_urls:
+            old_url = old_urls[0]
+            description = description.replace(old_url, new_url)
+        else:
+            # If no image URL is found, just append the new one
+            description = f"{description.strip()}\n{new_url}".strip()
+
+        # Replace old url in description with new URL and set new image url
+        updated_embed.description = description
+        updated_embed.set_image(url=new_url)
+
+        # Edit message
+        await self.embed_message.edit(embed=updated_embed)
+        logger.info("[Dailies Cog] Image link updated successfully")
+        response_message = "Image link updated succesfully."
+        
+        return response_message

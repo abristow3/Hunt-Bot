@@ -142,8 +142,10 @@ class BountiesCog(commands.Cog):
         team_two_channel = self.bot.get_channel(self.hunt_bot.team_two_chat_channel)
 
         # Send message to each team channel with the link
-        await team_one_channel.send(message)
-        await team_two_channel.send(message)
+        if team_one_channel:
+            await team_one_channel.send(message)
+        if team_two_channel:
+            await team_two_channel.send(message)
 
 
 
