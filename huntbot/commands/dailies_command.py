@@ -15,7 +15,13 @@ async def fetch_cog(interaction: discord.Interaction, discord_bot: Bot) -> Optio
     else:
         return cog
 
-
+async def check_user_roles(interaction: discord.Interaction) -> bool:
+    if not any(role.name.lower() == "admin" for role in getattr(interaction.user, "roles", [])):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return False
+    else:
+        return True
+    
 async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> None:
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
     if cog is None:
@@ -29,7 +35,11 @@ async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot,
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
     if cog is None:
         return
-    
+
+    authorized = await check_user_roles(interaction=interaction)
+    if not authorized:
+        return
+
     response = await cog.update_embed_url(new_url=url)
     await interaction.response.send_message(response, ephemeral=True)
 
@@ -37,7 +47,11 @@ async def update_daily_description(interaction: discord.Interaction, description
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
     if cog is None:
         return
-    
+
+    authorized = await check_user_roles(interaction=interaction)
+    if not authorized:
+        return
+
     response = await cog.update_embed_description(new_desc=description)
     await interaction.response.send_message(response, ephemeral=True)
 
