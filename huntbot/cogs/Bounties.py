@@ -4,19 +4,22 @@ from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
 import logging
+import re
+import discord
 
 logger = logging.getLogger(__name__)
 
-dan_message = "Dan's late. Don't worry boss I'll take care of it..."
-
-
 single_bounty_template = Template("""
+Dan's late. Don't worry boss I'll take care of it...
+                                                              
 @everyone $task
 
 Password: $password
 """)
 
 double_bounty_template = Template("""
+Dan's late. Don't worry boss I'll take care of it...
+                                  
 @everyone $b1_task
 
 Password: $b1_password
@@ -24,9 +27,27 @@ Password: $b1_password
 @@@ DOUBLE BOUNTY @@@
 
 $b2_task
-
 """)
 
+IMAGE_URL_PATTERN = re.compile(
+    r"""(?ix)                              # Ignore case, verbose mode
+    \b
+    (https?://                             # Must start with http or https
+        (?:                                # Supported/common image hosts
+            (?:i\.)?imgur\.com |
+            cdn\.discordapp\.com |
+            media\.discordapp\.net |
+            images\.unsplash\.com |
+            gyazo\.com |
+            \S+                            # Fallback: allow other domains
+        )
+        /[\w\-/\.%]+                       # Path
+        \.(?:png|jpe?g|gif|webp|bmp|tiff)  # Image extension
+        (?:\?\S*)?                         # Optional query params
+    )
+    \b
+    """
+)
 
 class BountiesCog(commands.Cog):
     def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
@@ -40,9 +61,10 @@ class BountiesCog(commands.Cog):
         self.double_bounties_df = pd.DataFrame()
         self.single_bounties_table_name = "Single Bounties"
         self.double_bounties_table_name = "Double Bounties"
-        self.message = ""
+        self.bounty_description = ""
         self.message_id = 0
         self.configured = False
+        self.embed_message = None
 
         self.single_bounty_generator = None
         self.double_bounty_generator = None
@@ -144,31 +166,31 @@ class BountiesCog(commands.Cog):
             self.hunt_bot.bounty_password = single_password
             is_double = not pd.isna(single_bounty.get("Double", None))
 
-            await channel.send(dan_message)
-
             if not is_double:
                 logger.info("[Bounties Cog] Bounty is a single bounty")
-                self.message = single_bounty_template.substitute(task=single_task, password=single_password)
+                self.bounty_description = single_bounty_template.substitute(task=single_task, password=single_password)
             else:
                 logger.info("[Bounties Cog] Bounty is a double bounty")
                 double_bounty = next(self.double_bounty_generator)
-                self.message = double_bounty_template.substitute(
+                self.bounty_description = double_bounty_template.substitute(
                     b1_task=single_task,
                     b1_password=single_password,
                     b2_task=double_bounty["Task"]
                 )
 
-            if self.message_id:
+            # Unpin the old message
+            if self.embed_message:
                 try:
-                    old_message = await channel.fetch_message(self.message_id)
-                    await old_message.unpin()
+                    await self.embed_message.unpin()
                 except Exception as e:
                     logger.warning(f"[Bounties Cog] Failed to unpin old message: {e}")
 
-            sent_message = await channel.send(self.message)
-            self.message_id = sent_message.id
+            # Create the embed
+            embed = self.create_embed_message()
+            self.embed_message = await channel.send(embed=embed)
+            self.message_id = self.embed_message.id
             await self.post_team_notif()
-            await sent_message.pin()
+            await self.embed_message.pin()
         except StopIteration:
             logger.info("[Bounties Cog] No more bounties left. Stopping task.")
             self.start_bounties.stop()
@@ -179,3 +201,72 @@ class BountiesCog(commands.Cog):
         if self.bounty_interval > 0:
             logger.info(f"[Bounties Cog] Updating Bounties task interval to: {self.bounty_interval} hours")
             self.start_bounties.change_interval(hours=self.bounty_interval)
+
+    def is_valid_image_url(self, url: str) -> bool:
+        """Validates if a string is a valid image URL based on regex."""
+        return bool(IMAGE_URL_PATTERN.fullmatch(url.strip()))
+
+    def extract_image_urls(self, text: str) -> list:
+        return IMAGE_URL_PATTERN.findall(text)
+    
+    def create_embed_message(self) -> discord.Embed:
+        embed = discord.Embed(title="New Bounty!", description=self.bounty_description)
+        image_urls = self.extract_image_urls(self.bounty_description)
+        
+        if image_urls:
+            embed.set_image(url=image_urls[0])
+        
+        return embed
+    
+    async def update_embed_url(self, new_url: str) -> str:
+        # Check we have a embed message in memory to update
+        if not self.embed_message or not self.embed_message.embeds:
+            logger.warning("[Bounties Cog] No Bounty Message in memory. Skipping.")
+            response_message = "No bounty message found to update."
+            return response_message
+        
+        # Check new URL is accepted format
+        if not self.is_valid_image_url(url=new_url):
+            logger.info("[Bounties Cog] Invalid image URL provided")
+            response_message = "Invalid image URL provided. Bounty image not updated."
+            return response_message
+        
+        updated_embed = self.embed_message.embeds[0] # First (and usually only) embed
+        description = updated_embed.description or self.bounty_description
+
+        # Get old URL
+        old_urls = self.extract_image_urls(description)
+        
+        if old_urls:
+            old_url = old_urls[0]
+            description = description.replace(old_url, new_url)
+        else:
+            # If no image URL is found, just append the new one
+            description = f"{description.strip()}\n{new_url}".strip()
+
+        # Replace old url in description with new URL and set new image url
+        updated_embed.description = description
+        updated_embed.set_image(url=new_url)
+
+        # Edit message
+        await self.embed_message.edit(embed=updated_embed)
+        logger.info("[Bounties Cog] Image link updated successfully")
+        response_message = "Image link updated succesfully."
+        
+        return response_message
+
+    async def update_embed_description(self, new_desc: str) -> str:
+        # Copy the original embed and update the description with the new one
+        if self.embed_message and self.embed_message.embeds:
+            updated_embed = self.embed_message.embeds[0]
+            updated_embed.description = new_desc
+
+            # Edit message
+            await self.embed_message.edit(embed=updated_embed)
+            logger.info("[Bounties Cog] Bounty description update succesfully")
+            response_message = "Bounty description updated successfully."
+            return response_message
+        else:
+            logger.warning("[Bounties Cog] No Bounty Message in memory. Skipping.")
+            response_message = "No bounty message found to update."
+            return response_message
