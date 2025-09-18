@@ -42,7 +42,7 @@ async def update_bounty_description(interaction: discord.Interaction, descriptio
 
 def register_bounties_commands(tree: app_commands.CommandTree, discord_bot: Bot) -> None:
     @tree.command(name="bounty", description="List current active bounty")
-    async def current_bounty_cmd(interaction: discord.Interaction):
+    async def bounty_cmd(interaction: discord.Interaction):
         await current_bounty(interaction, discord_bot=discord_bot)
 
     @tree.command(name="update_bounty_image", description="Update the embedded image in the Bounty")
