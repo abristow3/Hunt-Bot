@@ -9,15 +9,19 @@ import discord
 
 logger = logging.getLogger(__name__)
 
+daily_complete_template = Template("""
+$team_name Team $placement Place Daily!
+
+$description                                                                      
+""")
+
 single_daily_template = Template("""
-Dan's late. Don't worry boss I'll take care of it...
 @everyone $task
 
 Password: $password
 """)
 
 double_daily_template = Template("""
-Dan's late. Don't worry boss I'll take care of it...
 @everyone $b1_task
 
 Password: $b1_password
@@ -66,6 +70,8 @@ class DailiesCog(commands.Cog):
 
         self.single_daily_generator = None
         self.double_daily_generator = None
+        self.first_place = ""
+        self.second_place = ""
 
     async def cog_load(self) -> None:
         """Called when the cog is loaded and ready."""
@@ -144,6 +150,10 @@ class DailiesCog(commands.Cog):
         if not channel:
             logger.error("[Dailies Cog] Dailies Channel not found.")
             return
+
+        # Reset first and second place 
+        self.first_place = ""
+        self.second_place = ""
 
         try:
             logger.info("[Dailies Cog] Attempting to serve daily")
@@ -256,3 +266,17 @@ class DailiesCog(commands.Cog):
         response_message = "Image link updated succesfully."
         
         return response_message
+
+    async def post_daily_complete_message(self, team_name: str, placement: str) -> None:
+        channel = self.bot.get_channel(self.daily_channel_id)
+        if not channel:
+            logger.error("[Dailies Cog] Dailies Channel not found.")
+            return
+        
+        try:
+            clean_desc = self.daily_description.replace("@everyone ", "") 
+            message = daily_complete_template.substitute(team_name=team_name, placement=placement, description=clean_desc)
+            await channel.send(message)
+        except Exception as e:
+            logger.error("[Dailies Cog] Error when posting daily complete message", exc_info=e)
+            return
