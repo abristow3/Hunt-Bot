@@ -4,6 +4,7 @@ import logging
 from discord.ext.commands import Bot
 from typing import Optional
 from huntbot.cogs.Dailies import DailiesCog
+from huntbot.HuntBot import HuntBot
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +16,15 @@ async def fetch_cog(interaction: discord.Interaction, discord_bot: Bot) -> Optio
     else:
         return cog
 
-async def check_user_roles(interaction: discord.Interaction) -> bool:
-    if not any(role.name.lower() == "admin" for role in getattr(interaction.user, "roles", [])):
+async def check_user_roles(interaction: discord.Interaction, authorized_roles: list) -> bool:
+    user_roles = [role.name.lower() for role in getattr(interaction.user, "roles", [])]
+    authorized_roles = [role.lower() for role in authorized_roles]
+
+    if any(role in user_roles for role in authorized_roles):
+        return True
+    else:
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
         return False
-    else:
-        return True
     
 async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> None:
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
@@ -36,7 +40,8 @@ async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot,
     if cog is None:
         return
 
-    authorized = await check_user_roles(interaction=interaction)
+    authorized_roles = ["admin", "helper", "staff"]
+    authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
     if not authorized:
         return
 
@@ -48,14 +53,42 @@ async def update_daily_description(interaction: discord.Interaction, description
     if cog is None:
         return
 
-    authorized = await check_user_roles(interaction=interaction)
+    authorized_roles = ["admin"]
+    authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
     if not authorized:
         return
 
     response = await cog.update_embed_description(new_desc=description)
     await interaction.response.send_message(response, ephemeral=True)
 
-def register_daily_commands(tree: app_commands.CommandTree, discord_bot) -> None:
+async def complete_daily(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot, team_color: str) -> None:
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
+    if cog is None:
+        return
+
+    authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader", "admin", "helper"]
+    authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
+    if not authorized:
+        return
+    
+    # Check if first place has been claimed yet
+    if cog.first_place == "":
+        # if it is empty, then it hasn't so associate team color with it
+        cog.first_place = team_color
+        placement= "First"
+    elif cog.first_place != "" and cog.second_place == "":
+        # Otherwise it has been claimed so take second place instead
+        cog.second_place = team_color
+        placement="Second"
+    elif cog.first_place != "" and cog.second_place != "":
+        await interaction.response.send_message("First and Second place already claimed for the daily", ephemeral=True)
+        return
+    
+    await cog.post_daily_complete_message(team_name=team_color, placement=placement)
+    await interaction.response.send_message(f"{placement} place completion message posted succesfully for {team_color}", ephemeral=True)
+    
+
+def register_daily_commands(tree: app_commands.CommandTree, discord_bot, hunt_bot: HuntBot) -> None:
     @tree.command(name="daily", description="List current active daily")
     async def daily_cmd(interaction: discord.Interaction):
         await current_daily(interaction, discord_bot=discord_bot)
@@ -69,4 +102,8 @@ def register_daily_commands(tree: app_commands.CommandTree, discord_bot) -> None
     @app_commands.describe(new_description="The new daily description")
     async def update_daily_description_cmd(interaction: discord.Interaction, new_description: str):
         await update_daily_description(interaction, discord_bot=discord_bot, description=new_description)
+
+    @tree.command(name="complete_daily", description="Submits the daily complete and place message for the team")
+    async def complete_daily_cmd(interaction: discord.Interaction):
+        await complete_daily(interaction, discord_bot=discord_bot, hunt_bot=hunt_bot)
 

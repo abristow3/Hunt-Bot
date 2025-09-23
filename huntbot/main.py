@@ -185,8 +185,8 @@ async def on_ready():
     logger.info("[Main Task Loop] Assets Loaded")
 
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
-    register_bounties_commands(bot.tree, bot)
-    register_daily_commands(bot.tree, bot)
+    register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
+    register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     register_bounty_commands(bot.tree, item_bounties)
     register_score_commands(bot.tree, bot)
     register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)

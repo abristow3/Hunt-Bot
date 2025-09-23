@@ -9,17 +9,19 @@ import discord
 
 logger = logging.getLogger(__name__)
 
-single_bounty_template = Template("""
-Dan's late. Don't worry boss I'll take care of it...
-                                                              
+bounty_complete_template = Template("""
+$team_name Team $placement Place Bounty!
+
+$description                                                                      
+""")
+
+single_bounty_template = Template("""                                                           
 @everyone $task
 
 Password: $password
 """)
 
-double_bounty_template = Template("""
-Dan's late. Don't worry boss I'll take care of it...
-                                  
+double_bounty_template = Template("""                             
 @everyone $b1_task
 
 Password: $b1_password
@@ -68,6 +70,10 @@ class BountiesCog(commands.Cog):
 
         self.single_bounty_generator = None
         self.double_bounty_generator = None
+        self.first_place = ""
+        self.second_place = ""
+
+
 
     async def cog_load(self):
         logger.info("[Bounties Cog] Loading cog and initializing.")
@@ -148,7 +154,6 @@ class BountiesCog(commands.Cog):
             await team_two_channel.send(message)
 
 
-
     @tasks.loop(hours=6)  # Will override this interval after init
     async def start_bounties(self):
         if not self.configured:
@@ -159,6 +164,10 @@ class BountiesCog(commands.Cog):
         if not channel:
             logger.error("[Bounties Cog] Bounties Channel not found.")
             return
+
+        # Reset first and second place 
+        self.first_place = ""
+        self.second_place = ""
 
         try:
             logger.info("[Bounties Cog] Attempting to serve bounty")
@@ -272,3 +281,17 @@ class BountiesCog(commands.Cog):
             logger.warning("[Bounties Cog] No Bounty Message in memory. Skipping.")
             response_message = "No bounty message found to update."
             return response_message
+
+    async def post_bounty_complete_message(self, team_name: str, placement: str) -> None:
+        channel = self.bot.get_channel(self.bounty_channel_id)
+        if not channel:
+            logger.error("[Bounties Cog] Bounties Channel not found.")
+            return
+        
+        try:
+            clean_desc = self.bounty_description.replace("@everyone ", "") 
+            message = bounty_complete_template.substitute(team_name=team_name, placement=placement, description=clean_desc)
+            await channel.send(message)
+        except Exception as e:
+            logger.error("[Bounties Cog] Error when posting bounty complete message", exc_info=e)
+            return
