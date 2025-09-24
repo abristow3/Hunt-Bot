@@ -42,17 +42,18 @@ def mock_cog():
 @pytest.mark.asyncio
 async def test_fetch_cog_success(mock_interaction, mock_bot, mock_cog):
     mock_bot.get_cog.return_value = mock_cog
-    result = await fetch_cog(mock_interaction, mock_bot)
+    result = await fetch_cog(mock_interaction, mock_bot, cog_name="DailiesCog")
     assert result == mock_cog
 
 
 @pytest.mark.asyncio
 async def test_fetch_cog_failure(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
-    result = await fetch_cog(mock_interaction, mock_bot)
+    result = await fetch_cog(mock_interaction, mock_bot, cog_name="DailiesCog")
+
     assert result is None
     mock_interaction.response.send_message.assert_called_once_with(
-        "Daily Cog is not loaded or active.", ephemeral=True
+        "DailiesCog is not loaded or active.", ephemeral=True
     )
 
 
@@ -93,7 +94,7 @@ async def test_current_daily_no_cog(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
     await current_daily(mock_interaction, mock_bot)
     mock_interaction.response.send_message.assert_called_once_with(
-        "Daily Cog is not loaded or active.", ephemeral=True
+        "DailiesCog is not loaded or active.", ephemeral=True
     )
 
 
@@ -124,7 +125,7 @@ async def test_update_daily_image_no_cog(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
     await update_daily_image(mock_interaction, mock_bot, url="https://img.com/image.png")
     mock_interaction.response.send_message.assert_called_once_with(
-        "Daily Cog is not loaded or active.", ephemeral=True
+        "DailiesCog is not loaded or active.", ephemeral=True
     )
 
 
@@ -155,7 +156,7 @@ async def test_update_daily_description_no_cog(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
     await update_daily_description(mock_interaction, "New description", mock_bot)
     mock_interaction.response.send_message.assert_called_once_with(
-        "Daily Cog is not loaded or active.", ephemeral=True
+        "DailiesCog is not loaded or active.", ephemeral=True
     )
 
 @pytest.mark.asyncio

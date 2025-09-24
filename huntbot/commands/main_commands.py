@@ -7,10 +7,10 @@ from huntbot.HuntBot import HuntBot
 from huntbot.GDoc import GDoc
 from discord.ext.commands import Bot
 from State import State
+from huntbot.commands.command_utils import check_user_roles
 
 logger = logging.getLogger(__name__)
-
-
+    
 async def beep(interaction: discord.Interaction):
     logger.info("/beep command ran")
     await interaction.response.send_message("Boop")
@@ -23,8 +23,9 @@ async def start_hunt(interaction: discord.Interaction, gdoc: GDoc, hunt_bot: Hun
         logger.error("Failed to defer interaction: already expired")
         return
 
-    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
-        await interaction.followup.send("You do not have permission to use this command.", ephemeral=True)
+    authorized_roles = ["admin"]
+    authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
+    if not authorized:
         return
 
     logger.info(f"/start-hunt command ran")
@@ -49,8 +50,9 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
         logger.error("[SHEET COMMAND] Failed to defer interaction: already expired")
         return
 
-    if not any(role.name.lower() == "admin" for role in interaction.user.roles):
-        await interaction.followup.send("You do not have permission to use this command.", ephemeral=True)
+    authorized_roles = ["admin"]
+    authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
+    if not authorized:
         return
 
     logger.info(f"/sheet command ran") 
