@@ -16,7 +16,7 @@ async def test_current_score_no_cog():
 
     mock_bot.get_cog.assert_called_once_with("ScoreCog")
     mock_interaction.response.send_message.assert_awaited_once_with(
-        "No score to display.", ephemeral=True
+        "ScoreCog is not loaded or active.", ephemeral=True
     )
 
 

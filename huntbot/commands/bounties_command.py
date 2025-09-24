@@ -2,33 +2,13 @@ import discord
 from discord import app_commands
 import logging
 from discord.ext.commands import Bot
-from typing import Optional
-from huntbot.cogs.Bounties import BountiesCog
 from huntbot.HuntBot import HuntBot
+from huntbot.commands.command_utils import fetch_cog, check_user_roles
 
 logger = logging.getLogger(__name__)
 
-async def fetch_cog(interaction: discord.Interaction, discord_bot: Bot) -> Optional[BountiesCog]:
-    cog: Optional[BountiesCog] = discord_bot.get_cog("BountiesCog")
-    if not cog:
-        await interaction.response.send_message("Bounty Cog is not loaded or active.", ephemeral=True)
-        return
-    else:
-        return cog
-
-async def check_user_roles(interaction: discord.Interaction, authorized_roles: list) -> bool:
-    user_roles = [role.name.lower() for role in getattr(interaction.user, "roles", [])]
-    authorized_roles = [role.lower() for role in authorized_roles]
-
-    if any(role in user_roles for role in authorized_roles):
-        return True
-    else:
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return False
-
-
 async def current_bounty(interaction: discord.Interaction, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
     if cog is None:
         return
     
@@ -37,7 +17,7 @@ async def current_bounty(interaction: discord.Interaction, discord_bot: Bot) -> 
     await interaction.response.send_message(f"**Current Bounty:**\n{clean_message}", ephemeral=True)
 
 async def update_bounty_image(interaction: discord.Interaction, discord_bot: Bot, url: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
     if cog is None:
         return
     
@@ -50,7 +30,7 @@ async def update_bounty_image(interaction: discord.Interaction, discord_bot: Bot
     await interaction.response.send_message(response, ephemeral=True)
 
 async def update_bounty_description(interaction: discord.Interaction, description: str, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
     if cog is None:
         return
     
@@ -63,7 +43,7 @@ async def update_bounty_description(interaction: discord.Interaction, descriptio
     await interaction.response.send_message(response, ephemeral=True)
 
 async def complete_bounty(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot, team_color: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot)
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
     if cog is None:
         return
 

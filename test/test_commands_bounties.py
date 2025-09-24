@@ -45,16 +45,16 @@ def mock_cog():
 @pytest.mark.asyncio
 async def test_fetch_cog_success(mock_interaction, mock_bot, mock_cog):
     mock_bot.get_cog.return_value = mock_cog
-    result = await fetch_cog(mock_interaction, mock_bot)
+    result = await fetch_cog(mock_interaction, mock_bot, cog_name="BountiesCog")
     assert result == mock_cog
 
 @pytest.mark.asyncio
 async def test_fetch_cog_failure(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
-    result = await fetch_cog(mock_interaction, mock_bot)
+    result = await fetch_cog(mock_interaction, mock_bot, cog_name="BountiesCog")
     assert result is None
     mock_interaction.response.send_message.assert_called_with(
-        "Bounty Cog is not loaded or active.", ephemeral=True
+        "BountiesCog is not loaded or active.", ephemeral=True
     )
 
 @pytest.mark.asyncio
@@ -86,7 +86,7 @@ async def test_current_bounty_no_cog(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
     await current_bounty(mock_interaction, mock_bot)
     mock_interaction.response.send_message.assert_called_with(
-        "Bounty Cog is not loaded or active.", ephemeral=True
+        "BountiesCog is not loaded or active.", ephemeral=True
     )
 
 @pytest.mark.asyncio

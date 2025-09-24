@@ -7,6 +7,13 @@ from huntbot.commands.countdown_commands import current_countdown
 import logging
 import re
 
+@pytest.fixture
+def mock_interaction():
+    interaction = AsyncMock()
+    interaction.user.roles = [MagicMock(name='admin', spec=['name'])]
+    interaction.user.roles[0].name = "Admin"
+    return interaction
+
 @pytest.mark.asyncio
 async def test_cog_missing():
     # Setup mocks
@@ -24,7 +31,7 @@ async def test_cog_missing():
     # Should warn and send ephemeral message about no countdown
     discord_bot.get_cog.assert_called_once_with("CountdownCog")
     interaction.response.send_message.assert_awaited_once_with(
-        "No countdown to display.", ephemeral=True
+        "CountdownCog is not loaded or active.", ephemeral=True
     )
 
 @pytest.mark.asyncio
@@ -211,17 +218,3 @@ async def test_countdown_message_format():
 
     assert hours == 1
     assert 9 <= minutes <= 10  # Allow 1-minute clock drift
-
-@pytest.mark.asyncio
-async def test_logging_when_cog_missing(caplog):
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
-
-    hunt_bot = MagicMock()
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = None
-
-    with caplog.at_level(logging.WARNING):
-        await current_countdown(interaction, hunt_bot, discord_bot)
-
-    assert "CountdownCog not found" in caplog.text

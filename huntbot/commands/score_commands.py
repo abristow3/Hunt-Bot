@@ -1,16 +1,15 @@
 import discord
 from discord import app_commands
 import logging
+from discord.ext.commands import Bot
+from huntbot.commands.command_utils import fetch_cog
 
 logger = logging.getLogger(__name__)
 
-
-async def current_score(interaction: discord.Interaction, discord_bot) -> None:
+async def current_score(interaction: discord.Interaction, discord_bot: Bot) -> None:
     """Displays the current score stored in the Score Cog"""
-    cog = discord_bot.get_cog("ScoreCog")
-    if not cog:
-        logger.warning("[Score Commands] ScoreCog not found when executing /score")
-        await interaction.response.send_message("No score to display.", ephemeral=True)
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="ScoreCog")
+    if cog is None:
         return
 
     message = getattr(cog, 'score_message', None)
@@ -20,8 +19,7 @@ async def current_score(interaction: discord.Interaction, discord_bot) -> None:
 
     await interaction.response.send_message(message, ephemeral=True)
 
-
-def register_score_commands(tree: app_commands.CommandTree, discord_bot) -> None:
+def register_score_commands(tree: app_commands.CommandTree, discord_bot: Bot) -> None:
     @tree.command(name="score", description="List current score")
     async def score_cmd(interaction: discord.Interaction):
         logger.info("[Score Commands] /score command called")
