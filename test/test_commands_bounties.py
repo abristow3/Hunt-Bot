@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from huntbot.commands.bounties_command import complete_bounty, fetch_cog, current_bounty, update_bounty_image, update_bounty_description, check_user_roles
 import discord
-from unittest.mock import AsyncMock, MagicMock
 from huntbot.HuntBot import HuntBot
+from huntbot.cogs.Bounties import BountiesCog
 
 
 @pytest.fixture
@@ -20,42 +20,66 @@ def mock_admin_role():
     return role
 
 @pytest.fixture
-def mock_bot():
-    return MagicMock()
+def mock_hunt_bot():
+    # Provide minimal mock HuntBot with needed attributes and methods
+    hunt_bot = MagicMock(spec=HuntBot)
+    hunt_bot.config_map = {
+        'BOUNTIES_PER_DAY': '1',
+        'BOUNTY_CHANNEL_ID': '123456789',
+    }
+    hunt_bot.pull_table_data.return_value = MagicMock(empty=False)
+    hunt_bot.guild_id = 999999999
+    hunt_bot.team_one_chat_channel_id = 111111111
+    hunt_bot.team_two_chat_channel_id = 222222222
+    hunt_bot.bounty_password = "fake_password"
+    hunt_bot.team_one_name = "Red"
+    hunt_bot.team_two_name = "Blue"
+    return hunt_bot
 
 @pytest.fixture
-def mock_hunt_bot():
-    bot = MagicMock(spec=HuntBot)
-    bot.team_one_name = "Red"
-    bot.team_two_name = "Blue"
+def mock_bot():
+    bot = MagicMock()
+    # We'll override get_cog in the mock_cog fixture, so no get_cog here
+    bot.get_channel.return_value = MagicMock()
+    bot.wait_until_ready = AsyncMock()
     return bot
 
 @pytest.fixture
-def mock_cog():
-    cog = AsyncMock()
+def mock_cog(mock_bot, mock_hunt_bot):
+    # Create a real BountiesCog instance with the mocks
+    cog = BountiesCog(mock_bot, mock_hunt_bot)
+
+    # Mock async methods to avoid actual discord calls
+    cog.update_embed_url = AsyncMock(return_value="Image updated")
+    cog.update_embed_description = AsyncMock(return_value="Description updated")
+    cog.post_bounty_complete_message = AsyncMock()
+
     cog.bounty_description = "@everyone Test bounty"
-    cog.update_embed_url.return_value = "Image updated"
-    cog.update_embed_description.return_value = "Description updated"
     cog.first_place = ""
     cog.second_place = ""
+
     return cog
+
+# Now override the mock_bot.get_cog to return the real cog from mock_cog fixture
+@pytest.fixture(autouse=True)
+def patch_bot_get_cog(mock_bot, mock_cog):
+    mock_bot.get_cog.return_value = mock_cog
+    yield
 
 # -------------------- Tests --------------------
 
 @pytest.mark.asyncio
 async def test_fetch_cog_success(mock_interaction, mock_bot, mock_cog):
-    mock_bot.get_cog.return_value = mock_cog
-    result = await fetch_cog(mock_interaction, mock_bot, cog_name="BountiesCog")
+    result = await fetch_cog(mock_interaction, mock_bot, cog_name="BountiesCog", cog_type=BountiesCog)
     assert result == mock_cog
+
 
 @pytest.mark.asyncio
 async def test_fetch_cog_failure(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
-    result = await fetch_cog(mock_interaction, mock_bot, cog_name="BountiesCog")
+    result = await fetch_cog(mock_interaction, mock_bot, cog_name="BountiesCog", cog_type=BountiesCog)
     assert result is None
-    mock_interaction.response.send_message.assert_called_with(
-        "BountiesCog is not loaded or active.", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("BountiesCog is not loaded or active.", ephemeral=True)
 
 @pytest.mark.asyncio
 async def test_check_user_roles_success(mock_interaction, mock_admin_role):
@@ -68,26 +92,20 @@ async def test_check_user_roles_failure(mock_interaction):
     mock_interaction.user.roles = []
     result = await check_user_roles(mock_interaction, authorized_roles=["admin"])
     assert result is False
-    mock_interaction.response.send_message.assert_called_with(
-        "You do not have permission to use this command.", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("You do not have permission to use this command.", ephemeral=True)
 
 
 @pytest.mark.asyncio
 async def test_current_bounty_success(mock_interaction, mock_bot, mock_cog):
     mock_bot.get_cog.return_value = mock_cog
     await current_bounty(mock_interaction, mock_bot)
-    mock_interaction.response.send_message.assert_called_with(
-        "**Current Bounty:**\nTest bounty", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("**Current Bounty:**\nTest bounty", ephemeral=True)
 
 @pytest.mark.asyncio
 async def test_current_bounty_no_cog(mock_interaction, mock_bot):
     mock_bot.get_cog.return_value = None
     await current_bounty(mock_interaction, mock_bot)
-    mock_interaction.response.send_message.assert_called_with(
-        "BountiesCog is not loaded or active.", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("BountiesCog is not loaded or active.", ephemeral=True)
 
 @pytest.mark.asyncio
 async def test_update_bounty_image_success(mock_interaction, mock_bot, mock_cog, mock_admin_role):
@@ -102,9 +120,7 @@ async def test_update_bounty_image_permission_denied(mock_interaction, mock_bot,
     mock_interaction.user.roles = []
     mock_bot.get_cog.return_value = mock_cog
     await update_bounty_image(mock_interaction, mock_bot, url="https://example.com/image.png")
-    mock_interaction.response.send_message.assert_called_with(
-        "You do not have permission to use this command.", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("You do not have permission to use this command.", ephemeral=True)
 
 @pytest.mark.asyncio
 async def test_update_bounty_description_success(mock_interaction, mock_bot, mock_cog, mock_admin_role):
@@ -119,9 +135,7 @@ async def test_update_bounty_description_permission_denied(mock_interaction, moc
     mock_interaction.user.roles = []
     mock_bot.get_cog.return_value = mock_cog
     await update_bounty_description(mock_interaction, "New description", mock_bot)
-    mock_interaction.response.send_message.assert_called_with(
-        "You do not have permission to use this command.", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("You do not have permission to use this command.", ephemeral=True)
 
 @pytest.mark.asyncio
 async def test_complete_bounty_first_place(mock_interaction, mock_bot, mock_hunt_bot, mock_cog):
@@ -140,9 +154,7 @@ async def test_complete_bounty_first_place(mock_interaction, mock_bot, mock_hunt
 
     assert mock_cog.first_place == "Red"
     mock_cog.post_bounty_complete_message.assert_awaited_with(team_name="Red", placement="First")
-    mock_interaction.response.send_message.assert_called_with(
-        "First place completion message posted succesfully for Red", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("First place completion message posted succesfully for Red", ephemeral=True)
 
 
 @pytest.mark.asyncio
@@ -169,9 +181,7 @@ async def test_complete_bounty_second_place(mock_interaction, mock_bot, mock_hun
 
     # Check the correct message was sent to channel
     mock_cog.post_bounty_complete_message.assert_awaited_with(team_name="Blue", placement="Second")
-    mock_interaction.response.send_message.assert_called_with(
-        "Second place completion message posted succesfully for Blue", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("Second place completion message posted succesfully for Blue", ephemeral=True)
 
 @pytest.mark.asyncio
 async def test_complete_bounty_already_claimed(mock_interaction, mock_bot, mock_hunt_bot, mock_cog):
@@ -200,6 +210,4 @@ async def test_complete_bounty_already_claimed(mock_interaction, mock_bot, mock_
     mock_cog.post_bounty_complete_message.assert_not_awaited()
 
     # It should respond with the already-claimed message
-    mock_interaction.response.send_message.assert_called_with(
-        "First and Second place already claimed for the bounty", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("First and Second place already claimed for the bounty", ephemeral=True)

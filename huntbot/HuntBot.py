@@ -33,8 +33,8 @@ class HuntBot:
         self.announcements_channel_id = 0
         self.team_one_name = ""
         self.team_two_name = ""
-        self.team_one_chat_channel = 0
-        self.team_two_chat_channel = 0
+        self.team_one_chat_channel_id = 0
+        self.team_two_chat_channel_id = 0
         self.hunt_edition = ""
         self.wom_hunt_url = ""
         self.guild_id = 699971574689955850
@@ -137,8 +137,8 @@ class HuntBot:
             self.admin_channel_id = int(self.config_map.get("ADMIN_CHANNEL_ID", "0"))
             self.team_one_name = self.config_map.get("TEAM_ONE_NAME", "")
             self.team_two_name = self.config_map.get("TEAM_TWO_NAME", "")
-            self.team_one_chat_channel = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
-            self.team_two_chat_channel = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
+            self.team_one_chat_channel_id = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
+            self.team_two_chat_channel_id = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
             self.hunt_edition = self.config_map.get("HUNT_EDITION", "")
             self.wom_hunt_url = self.config_map.get("WOM_HUNT_URL", "")
         except ValueError as e:
@@ -163,9 +163,9 @@ class HuntBot:
             missing_fields.append("TEAM_ONE_NAME")
         if not self.team_two_name:
             missing_fields.append("TEAM_TWO_NAME")
-        if self.team_one_chat_channel == 0:
+        if self.team_one_chat_channel_id == 0:
             missing_fields.append("TEAM_1_CHAT_CHANNEL_ID")
-        if self.team_two_chat_channel == 0:
+        if self.team_two_chat_channel_id == 0:
             missing_fields.append("TEAM_2_CHAT_CHANNEL_ID")
         if not self.hunt_edition:
             missing_fields.append("HUNT_EDITION")

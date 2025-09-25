@@ -4,11 +4,12 @@ import logging
 from discord.ext.commands import Bot
 from huntbot.HuntBot import HuntBot
 from huntbot.commands.command_utils import fetch_cog, check_user_roles
+from huntbot.cogs.Bounties import BountiesCog
 
 logger = logging.getLogger(__name__)
 
 async def current_bounty(interaction: discord.Interaction, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog", cog_type=BountiesCog)
     if cog is None:
         return
     
@@ -17,7 +18,7 @@ async def current_bounty(interaction: discord.Interaction, discord_bot: Bot) -> 
     await interaction.response.send_message(f"**Current Bounty:**\n{clean_message}", ephemeral=True)
 
 async def update_bounty_image(interaction: discord.Interaction, discord_bot: Bot, url: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog", cog_type=BountiesCog)
     if cog is None:
         return
     
@@ -30,7 +31,7 @@ async def update_bounty_image(interaction: discord.Interaction, discord_bot: Bot
     await interaction.response.send_message(response, ephemeral=True)
 
 async def update_bounty_description(interaction: discord.Interaction, description: str, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog", cog_type=BountiesCog)
     if cog is None:
         return
     
@@ -43,7 +44,7 @@ async def update_bounty_description(interaction: discord.Interaction, descriptio
     await interaction.response.send_message(response, ephemeral=True)
 
 async def complete_bounty(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot, team_color: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog", cog_type=BountiesCog)
     if cog is None:
         return
 
