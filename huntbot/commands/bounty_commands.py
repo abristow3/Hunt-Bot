@@ -31,6 +31,12 @@ class ItemBounties:
 
     async def create_bounty(self, interaction: discord.Interaction, item_name: str, reward_amount: str,
                             time_limit_hours: int = 48):
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[Item Bounty COMMAND] Failed to defer interaction: already expired")
+            return
+        
         # Check correct channel
         if not await self._check_channel_id(interaction):
             return
@@ -46,7 +52,7 @@ class ItemBounties:
                 return
 
         if time_limit_hours <= 0:
-            await interaction.response.send_message("Time limit must be greater than 0.", ephemeral=True)
+            await interaction.followup.send("Time limit must be greater than 0.", ephemeral=True)
             return
 
         logger.info(f"[ITEM BOUNTIES] create bounty arguments validated: {item_name} {reward_val} {time_limit_hours}")
@@ -57,16 +63,14 @@ class ItemBounties:
         elif interaction.channel_id == self.hunt_bot.team_two_chat_channel:
             team_name = self.hunt_bot.team_two_name
         else:
-            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
+            await interaction.followup.send("Error: Could not determine the correct team.", ephemeral=True)
             return
 
         # Check for duplicate bounty
         if self._is_duplicate_bounty(team_name=team_name, item_name=item_name):
-            await interaction.response.send_message("Error: Your team already has a bounty out for this item.",
+            await interaction.followup.send("Error: Your team already has a bounty out for this item.",
                                                     ephemeral=True)
             return
-
-        await interaction.response.defer()
 
         # Create and add bounty
         new_bounty = Bounty(item_name=item_name.lower(), reward_amount=reward_val, time_limit_hours=time_limit_hours)
@@ -122,6 +126,12 @@ class ItemBounties:
         await interaction.followup.send(formatted_message)
 
     async def list_bounties(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[Item Bounty COMMAND] Failed to defer interaction: already expired")
+            return
+        
         # Check correct channel
         if not await self._check_channel_id(interaction=interaction):
             return
@@ -129,7 +139,7 @@ class ItemBounties:
         # Determine team and embed color
         team_name = await self._get_team_name(interaction=interaction)
         if not team_name:
-            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
+            await interaction.followup.send("Error: Could not determine the correct team.", ephemeral=True)
             return
 
         # Only update when command is used (uses less resources and clock)
@@ -137,9 +147,14 @@ class ItemBounties:
 
         # Generate table
         message = await self._create_bounty_table(team_name)
-        await interaction.response.send_message(f"```\n{message}\n```")
+        await interaction.followup.send(f"```\n{message}\n```")
 
     async def close_bounty(self, interaction: discord.Interaction, item_name: str, completed_by: str):
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[Item Bounty COMMAND] Failed to defer interaction: already expired")
+            return
         # Check correct channel
         if not await self._check_channel_id(interaction=interaction):
             return
@@ -151,7 +166,7 @@ class ItemBounties:
         # Determine team
         team_name = await self._get_team_name(interaction=interaction)
         if not team_name:
-            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
+            await interaction.followup.send("Error: Could not determine the correct team.", ephemeral=True)
             return
 
         # Find the bounty
@@ -169,14 +184,19 @@ class ItemBounties:
 
         if not closed:
             logger.error(f"Error closing {team_name} team bounty for {item_name}")
-            await interaction.response.send_message("Error closing bounty.", ephemeral=True)
+            await interaction.followup.send("Error closing bounty.", ephemeral=True)
             return
 
         logger.info(f"{team_name} team bounty for {item_name} closed successfully")
-        await interaction.response.send_message(f"Bounty for {item_name} closed successfully", ephemeral=True)
+        await interaction.followup.send(f"Bounty for {item_name} closed successfully", ephemeral=True)
 
     async def update_bounty(self, interaction: discord.Interaction, item_name: str, reward_amount: str = "",
                             time_limit_hours: int = -100):
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[Item Bounty COMMAND] Failed to defer interaction: already expired")
+            return
         # Check correct channel
         if not await self._check_channel_id(interaction):
             return
@@ -189,11 +209,11 @@ class ItemBounties:
         team_name = await self._get_team_name(interaction=interaction)
 
         if not team_name:
-            await interaction.response.send_message("Error: Could not determine the correct team.", ephemeral=True)
+            await interaction.followup.send("Error: Could not determine the correct team.", ephemeral=True)
             return
 
         if reward_amount == "" and time_limit_hours == -100:
-            await interaction.response.send_message("Error: You must update either the reward amount, or the time "
+            await interaction.followup.send("Error: You must update either the reward amount, or the time "
                                                     "remaining.", ephemeral=True)
             return
 
@@ -204,7 +224,7 @@ class ItemBounties:
                 return
 
         if time_limit_hours != -100 and time_limit_hours <= 0:
-            await interaction.response.send_message("Time limit must be greater than 0.", ephemeral=True)
+            await interaction.followup.send("Time limit must be greater than 0.", ephemeral=True)
             return
 
         item_name = item_name.lower()
@@ -226,11 +246,11 @@ class ItemBounties:
                 break
 
         if not updated:
-            await interaction.response.send_message(f"Error: Could not find bounty item '{item_name}' and update it.",
+            await interaction.followup.send(f"Error: Could not find bounty item '{item_name}' and update it.",
                                                     ephemeral=True)
             return
 
-        await interaction.response.send_message(f"Bounty for {item_name} updated successfully!", ephemeral=True)
+        await interaction.followup.send(f"Bounty for {item_name} updated successfully!", ephemeral=True)
         return
 
     async def _get_team_name(self, interaction: discord.Interaction) -> str | None:
