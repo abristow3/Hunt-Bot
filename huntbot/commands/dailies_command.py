@@ -4,11 +4,12 @@ import logging
 from discord.ext.commands import Bot
 from huntbot.HuntBot import HuntBot
 from huntbot.commands.command_utils import check_user_roles, fetch_cog
+from huntbot.cogs.Dailies import DailiesCog
 
 logger = logging.getLogger(__name__)
     
 async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
         return
 
@@ -17,7 +18,7 @@ async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> N
     await interaction.response.send_message(f"**Current Daily:**\n{clean_message}", ephemeral=True)
 
 async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot, url: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
         return
 
@@ -30,7 +31,7 @@ async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot,
     await interaction.response.send_message(response, ephemeral=True)
 
 async def update_daily_description(interaction: discord.Interaction, description: str, discord_bot: Bot):
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
         return
 
@@ -43,7 +44,7 @@ async def update_daily_description(interaction: discord.Interaction, description
     await interaction.response.send_message(response, ephemeral=True)
 
 async def complete_daily(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot, team_color: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
         return
 

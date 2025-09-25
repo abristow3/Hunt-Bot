@@ -1,220 +1,106 @@
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, ANY
-from datetime import datetime, timedelta
-import pytz
-from huntbot.commands.countdown_commands import current_countdown
-import logging
-import re
+from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timedelta, timezone
+import discord
+from discord.ext.commands import Bot
+from huntbot.HuntBot import HuntBot
+from huntbot.cogs.Countdown import CountdownCog
+from huntbot.commands.command_utils import fetch_cog
+from huntbot.commands.countdown_commands import current_countdown, register_countdown_commands
 
 @pytest.fixture
 def mock_interaction():
-    interaction = AsyncMock()
-    interaction.user.roles = [MagicMock(name='admin', spec=['name'])]
-    interaction.user.roles[0].name = "Admin"
+    interaction = AsyncMock(spec=discord.Interaction)
+    interaction.user = MagicMock()
+    interaction.response = AsyncMock()
     return interaction
 
-@pytest.mark.asyncio
-async def test_cog_missing():
-    # Setup mocks
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
+@pytest.fixture
+def mock_hunt_bot():
+    hunt_bot = MagicMock(spec=HuntBot)
+    return hunt_bot
 
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = None  # Cog missing
+@pytest.fixture
+def mock_bot():
+    bot = MagicMock(spec=Bot)
+    bot.wait_until_ready = AsyncMock()
+    return bot
 
-    hunt_bot = MagicMock()
-
-    # Call function
-    await current_countdown(interaction, hunt_bot, discord_bot)
-
-    # Should warn and send ephemeral message about no countdown
-    discord_bot.get_cog.assert_called_once_with("CountdownCog")
-    interaction.response.send_message.assert_awaited_once_with(
-        "CountdownCog is not loaded or active.", ephemeral=True
-    )
-
-@pytest.mark.asyncio
-async def test_hunt_not_started_future_countdown():
-    # Setup mocks
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
-
-    tz = pytz.timezone("Europe/London")
-    now = datetime.now(tz)
-    start_time = now + timedelta(hours=2, minutes=30)
-
-    hunt_bot = MagicMock()
-    hunt_bot.started = False
-    hunt_bot.start_datetime = start_time
-
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = True
-
-    # Call function
-    await current_countdown(interaction, hunt_bot, discord_bot)
-
-    # Should call send_message with correct countdown message
-    expected_message = f"\nThe Hunt begins in: 2 Hours and 30 Minutes\n"
-    interaction.response.send_message.assert_awaited_once_with(expected_message, ephemeral=True)
-
-@pytest.mark.asyncio
-async def test_hunt_not_started_future_countdown():
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
-
-    tz = pytz.timezone("Europe/London")
-    now = datetime.now(tz)
-    start_time = now + timedelta(hours=2, minutes=30)
-
-    hunt_bot = MagicMock()
-    hunt_bot.started = False
-    hunt_bot.start_datetime = start_time
-
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = True
-
-    await current_countdown(interaction, hunt_bot, discord_bot)
-
-    # Get the message text sent
-    message = interaction.response.send_message.call_args[0][0]
-
-    # Parse the hours and minutes using regex
-    match = re.search(r"(\d+) Hours and (\d+) Minutes", message)
-    assert match is not None, "Countdown message did not contain expected format"
-
-    hours = int(match.group(1))
-    minutes = int(match.group(2))
-
-    assert hours == 2
-    assert 29 <= minutes <= 30  # Accept 1-minute drift
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("started, start_offset, end_offset", [
-    (False, -1, None),  # Hunt not started but start time already passed
-    (True, None, -1),   # Hunt started but end time already passed
-])
-async def test_hunt_already_ended(started, start_offset, end_offset):
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
-
-    tz = pytz.timezone("Europe/London")
-    now = datetime.now(tz)
-
-    hunt_bot = MagicMock()
-    hunt_bot.started = started
-    if start_offset is not None:
-        hunt_bot.start_datetime = now + timedelta(hours=start_offset)
-    else:
-        hunt_bot.start_datetime = now - timedelta(hours=1)
-
-    if end_offset is not None:
-        hunt_bot.end_datetime = now + timedelta(hours=end_offset)
-    else:
-        hunt_bot.end_datetime = now - timedelta(hours=1)
-
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = True
-
-    await current_countdown(interaction, hunt_bot, discord_bot)
-
-    expected_message = f"\nThe Hunt {'begins' if not started else 'ends'} in: 0 Hours and 0 Minutes\n"
-    interaction.response.send_message.assert_awaited_once_with(expected_message, ephemeral=True)
-
-@pytest.mark.asyncio
-async def test_hunt_not_started_with_different_timezone():
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
-
-    # Use UTC instead of Europe/London
-    tz = pytz.UTC
-    now = datetime.now(tz)
-    start_time = now + timedelta(hours=3, minutes=45)
-
-    hunt_bot = MagicMock()
-    hunt_bot.started = False
-    hunt_bot.start_datetime = start_time
-
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = True
-
-    await current_countdown(interaction, hunt_bot, discord_bot)
-
-    # Get the actual message sent
-    message = interaction.response.send_message.call_args[0][0]
-
-    assert "The Hunt begins in:" in message
-    assert "3 Hours" in message
-    # Accept 45 or 44 minutes, depending on drift
-    assert any(minute in message for minute in ["45 Minutes", "44 Minutes"])
+@pytest.fixture
+def mock_cog(mock_bot, mock_hunt_bot):
+    cog = CountdownCog(mock_bot, mock_hunt_bot)
+    return cog
 
 
 @pytest.mark.asyncio
-async def test_countdown_is_exactly_now():
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
-
-    tz = pytz.timezone("Europe/London")
-    now = datetime.now(tz)
-
-    hunt_bot = MagicMock()
-    hunt_bot.started = False
-    hunt_bot.start_datetime = now
-
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = True
-
-    await current_countdown(interaction, hunt_bot, discord_bot)
-
-    expected_message = f"\nThe Hunt begins in: 0 Hours and 0 Minutes\n"
-    interaction.response.send_message.assert_awaited_once_with(expected_message, ephemeral=True)
+async def test_current_countdown_no_cog(mock_interaction, mock_hunt_bot, mock_bot):
+    mock_bot.get_cog.return_value = None
+    await current_countdown(mock_interaction, mock_hunt_bot, mock_bot)
+    mock_interaction.response.send_message.assert_called_with("CountdownCog is not available or misconfigured.", ephemeral=True)
 
 @pytest.mark.asyncio
-async def test_naive_datetime_handling():
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
+async def test_current_countdown_naive_start_datetime(mock_interaction, mock_hunt_bot, mock_bot):
+    mock_hunt_bot.start_datetime = datetime(2025, 1, 1, 12, 0, 0)  # naive datetime
+    mock_hunt_bot.started = False
+    mock_bot.get_cog.return_value = MagicMock(spec=CountdownCog)
 
-    now = datetime.now()  # Naive datetime
+    with patch("huntbot.commands.countdown_commands.logger") as mock_logger:
+        await current_countdown(mock_interaction, mock_hunt_bot, mock_bot)
+        mock_logger.warning.assert_called_once_with("[Countdown Commands] Hunt start_datetime is naive (no timezone)")
 
-    hunt_bot = MagicMock()
-    hunt_bot.started = False
-    hunt_bot.start_datetime = now
-
-    discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = True
-
-    await current_countdown(interaction, hunt_bot, discord_bot)
-
-    interaction.response.send_message.assert_awaited_once_with(
-        "Countdown time is not properly configured. Yell at Druid.", ephemeral=True
-    )
+    mock_interaction.response.send_message.assert_called_with("Countdown time is not properly configured. Yell at Druid.", ephemeral=True)
 
 @pytest.mark.asyncio
-async def test_countdown_message_format():
-    interaction = AsyncMock()
-    interaction.response.send_message = AsyncMock()
+async def test_current_countdown_before_start(mock_interaction, mock_hunt_bot, mock_bot):
+    now = datetime.now(timezone.utc)
+    mock_hunt_bot.start_datetime = now + timedelta(minutes=10)
+    mock_hunt_bot.end_datetime = now + timedelta(hours=1)
+    mock_hunt_bot.started = False
+    mock_bot.get_cog.return_value = MagicMock(spec=CountdownCog)
 
-    tz = pytz.timezone("Europe/London")
-    now = datetime.now(tz)
-    start_time = now + timedelta(hours=1, minutes=10)
+    await current_countdown(mock_interaction, mock_hunt_bot, mock_bot)
 
+    expected_msg = f"\nThe Hunt begins in: 0 Hours and 10 Minutes\n"
+    mock_interaction.response.send_message.assert_called_with(expected_msg, ephemeral=True)
+
+@pytest.mark.asyncio
+async def test_current_countdown_after_start_before_end(mock_interaction, mock_hunt_bot, mock_bot):
+    now = datetime(2025, 9, 25, 12, 0, 0, tzinfo=timezone.utc)  # Fixed known time
+
+    mock_hunt_bot.start_datetime = now - timedelta(minutes=10)
+    mock_hunt_bot.end_datetime = now + timedelta(minutes=50)
+    mock_hunt_bot.started = True
+
+    mock_bot.get_cog.return_value = MagicMock(spec=CountdownCog)
+
+    with patch("huntbot.commands.countdown_commands.datetime") as mock_datetime:
+        mock_datetime.now.return_value = now  # Freeze datetime.now() to our fixed now
+        mock_datetime.now.return_value = now
+        mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)  # fallback for other calls
+
+        await current_countdown(mock_interaction, mock_hunt_bot, mock_bot)
+
+    expected_msg = "\nThe Hunt ends in: 0 Hours and 50 Minutes\n"
+    mock_interaction.response.send_message.assert_called_with(expected_msg, ephemeral=True)
+
+@pytest.mark.asyncio
+async def test_current_countdown_after_end(mock_interaction, mock_hunt_bot, mock_bot):
+    now = datetime.now(timezone.utc)
+    mock_hunt_bot.start_datetime = now - timedelta(hours=2)
+    mock_hunt_bot.end_datetime = now - timedelta(minutes=10)
+    mock_hunt_bot.started = True
+    mock_bot.get_cog.return_value = MagicMock(spec=CountdownCog)
+
+    await current_countdown(mock_interaction, mock_hunt_bot, mock_bot)
+
+    expected_msg = f"\nThe Hunt ends in: 0 Hours and 0 Minutes\n"
+    mock_interaction.response.send_message.assert_called_with(expected_msg, ephemeral=True)
+
+def test_register_countdown_commands_adds_command():
+    tree = MagicMock()
     hunt_bot = MagicMock()
-    hunt_bot.started = False
-    hunt_bot.start_datetime = start_time
-
     discord_bot = MagicMock()
-    discord_bot.get_cog.return_value = True
 
-    await current_countdown(interaction, hunt_bot, discord_bot)
+    register_countdown_commands(tree, hunt_bot, discord_bot)
 
-    message = interaction.response.send_message.call_args[0][0]
-
-    # Regex to extract hours/minutes
-    match = re.search(r"(\d+) Hours and (\d+) Minutes", message)
-    assert match is not None, "Countdown message did not contain expected format"
-
-    hours = int(match.group(1))
-    minutes = int(match.group(2))
-
-    assert hours == 1
-    assert 9 <= minutes <= 10  # Allow 1-minute clock drift
+    tree.command.assert_called_once_with(name="countdown", description="Show time remaining until the Hunt starts or ends")

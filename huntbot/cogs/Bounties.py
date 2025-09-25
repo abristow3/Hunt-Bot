@@ -144,8 +144,8 @@ class BountiesCog(commands.Cog):
         message = f"A new bounty has just been posted! See it here: {message_url}"
 
         # Get team chat channels
-        team_one_channel = self.bot.get_channel(self.hunt_bot.team_one_chat_channel)
-        team_two_channel = self.bot.get_channel(self.hunt_bot.team_two_chat_channel)
+        team_one_channel = self.bot.get_channel(self.hunt_bot.team_one_chat_channel_id)
+        team_two_channel = self.bot.get_channel(self.hunt_bot.team_two_chat_channel_id)
 
         # Send message to each team channel with the link
         if team_one_channel:

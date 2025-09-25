@@ -1,14 +1,22 @@
 from typing import Optional
 import discord
-from discord.ext.commands import Bot, Cog
+from discord.ext.commands import Bot
+from typing import TypeVar, Type, Optional
+from discord.ext import commands
+from discord import Interaction
+from discord.ext.commands import Bot
 
-async def fetch_cog(interaction: discord.Interaction, discord_bot: Bot, cog_name: str) -> Optional[Cog]:
-    cog: Optional[Cog] = discord_bot.get_cog(cog_name)
+T = TypeVar("T", bound=commands.Cog)
+
+async def fetch_cog(interaction: Interaction,discord_bot: Bot,cog_name: str,cog_type: Type[T]) -> Optional[T]:
+    cog = discord_bot.get_cog(cog_name)
     if not cog:
         await interaction.response.send_message(f"{cog_name} is not loaded or active.", ephemeral=True)
-        return
-    else:
-        return cog
+        return None
+    if not isinstance(cog, cog_type):
+        await interaction.response.send_message(f"{cog_name} is not the expected cog type.", ephemeral=True)
+        return None
+    return cog
     
 async def check_user_roles(interaction: discord.Interaction, authorized_roles: list) -> bool:
     user_roles = [role.name.lower() for role in getattr(interaction.user, "roles", [])]

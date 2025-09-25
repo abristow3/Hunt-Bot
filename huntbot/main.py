@@ -13,14 +13,15 @@ from huntbot.cogs.Score import ScoreCog
 from huntbot.cogs.Countdown import CountdownCog
 from huntbot.cogs.Memories import MemoriesCog
 from huntbot.cogs.StarBoard import StarBoardCog
+from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
 from huntbot.State import State
 from huntbot.cogs.Memes import MemesCog
-from huntbot.commands.bounty_commands import register_bounty_commands, ItemBounties
 from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
 from huntbot.commands.score_commands import register_score_commands
 from huntbot.commands.countdown_commands import register_countdown_commands
+from huntbot.commands.team_item_bounty_commands import register_team_item_bounty_commands
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # Capture all logs
@@ -63,15 +64,14 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 gdoc = GDoc()
 hunt_bot = HuntBot()
 state = State()
-item_bounties = ItemBounties(hunt_bot)
 
 async def generate_wom_messages()-> None:
     # Create WOM Messages for each team chat channel and pin them
     wom_message = (f"Link to Hunt {hunt_bot.hunt_edition} WiseOldMan Competition:\n"
                     f"{hunt_bot.wom_hunt_url}")
     
-    team_one_channel = bot.get_channel(hunt_bot.team_one_chat_channel)
-    team_two_channel = bot.get_channel(hunt_bot.team_two_chat_channel)
+    team_one_channel = bot.get_channel(hunt_bot.team_one_chat_channel_id)
+    team_two_channel = bot.get_channel(hunt_bot.team_two_chat_channel_id)
 
     t1_message = await team_one_channel.send(wom_message)
     await t1_message.pin()
@@ -122,6 +122,7 @@ async def check_start_time():
                 (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (TeamItemBountyCog, {'hunt_bot': hunt_bot})
             ]
 
             for cog_cls, params in cogs_to_load:
@@ -187,7 +188,7 @@ async def on_ready():
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
     register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
-    register_bounty_commands(bot.tree, item_bounties)
+    register_team_item_bounty_commands(bot.tree, hunt_bot=hunt_bot)
     register_score_commands(bot.tree, bot)
     register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
 

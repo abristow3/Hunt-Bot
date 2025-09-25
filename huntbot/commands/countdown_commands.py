@@ -7,6 +7,7 @@ from string import Template
 from discord.ext.commands import Bot
 from datetime import datetime
 from huntbot.commands.command_utils import fetch_cog
+from huntbot.cogs.Countdown import CountdownCog
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +17,11 @@ The Hunt $action in: $hours Hours and $minutes Minutes
 
 async def current_countdown(interaction: discord.Interaction, hunt_bot: HuntBot, discord_bot: Bot) -> None:
     """Displays the current time until the Hunt begins or ends, stored in the Countdown Cog"""
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog")
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog", cog_type=CountdownCog)
     if cog is None:
+        await interaction.response.send_message("CountdownCog is not available or misconfigured.", ephemeral=True)
         return
+
     
     if hunt_bot.start_datetime.tzinfo is None:
         logger.warning("[Countdown Commands] Hunt start_datetime is naive (no timezone)")
