@@ -73,8 +73,6 @@ class BountiesCog(commands.Cog):
         self.first_place = ""
         self.second_place = ""
 
-
-
     async def cog_load(self):
         logger.info("[Bounties Cog] Loading cog and initializing.")
         try:
