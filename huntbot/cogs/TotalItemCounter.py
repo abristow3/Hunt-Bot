@@ -21,8 +21,9 @@ A total of $total_items items were acquired for this challenge!
 sticky_msg_template = Template("""
 $team_one_name team: $team_one_total items
 $team_two_name team: $team_two_total items
-                               
-$leading_team_name leads with $leading_team_total items!                                                               
+
+$leading_team_name leads with $leading_team_total items!     
+The last valid drop counted for the challenge is here: $message_url                                                           
 """)
 
 class TotalItemCounterCog(commands.Cog):
@@ -40,7 +41,11 @@ class TotalItemCounterCog(commands.Cog):
         self.winning_team_name = ""
         self.losing_team_name = ""
         self.counting_complete_msg_str = ""
-        self.message_list = []
+        self.message_list = [discord.Message]
+        self.last_valid_drop_msg_id = 0
+        self.valid_submission_emoji = "✅"
+        self.invalid_submission_emoji = "❌"
+        self.total_item_emoji = "⬆️"
     
     async def cog_load(self) -> None:
         logger.info("[TotalItemCounter Cog] Loading cog and initializing.")
@@ -101,11 +106,12 @@ class TotalItemCounterCog(commands.Cog):
             team1_total = self.team_totals[team1_name]
             team2_total = self.team_totals[team2_name]
             leading_team_total = self.team_totals[self.winning_team_name]
+            message_url = f"https://discord.com/channels/{self.hunt_bot.guild_id}/{self.drop_channel_id}/{self.last_valid_drop_msg_id}"    
 
             self.sticky_message_string = sticky_msg_template.substitute(team_one_name=team1_name, team_one_total=team1_total, 
                                                                         team_two_name=team2_name, team_two_total=team2_total, 
                                                                         leading_team_name=self.winning_team_name, 
-                                                                        leading_team_total=leading_team_total)
+                                                                        leading_team_total=leading_team_total, message_url=message_url)
         except Exception as e:
             logger.error("[TotalItemCounter Cog] Error when updating sticky message string", exc_info=e)
     
@@ -155,6 +161,7 @@ class TotalItemCounterCog(commands.Cog):
         self.losing_team_name = ""
         self.counting_complete_msg_str = ""
         self.message_list = []
+        self.last_valid_drop_msg_id = 0
 
     def update_total_items(self) -> None:
         logger.debug("[TotalItemCounter Cog] Updating total items.")
@@ -171,15 +178,14 @@ class TotalItemCounterCog(commands.Cog):
             # Team 1 is in the lead so use their name
             self.winning_team_name = self.hunt_bot.team_one_name
             self.losing_team_name = self.hunt_bot.team_two_name
-        else:
+        elif team1_total < team2_total:
             # Team 2 is in the lead so use their name
             self.winning_team_name = self.hunt_bot.team_two_name
             self.losing_team_name = self.hunt_bot.team_one_name
-
-    def count_valid_drops(self) -> None:
-        logger.debug("[TotalItemCounter Cog] Tallying up scores based on drop submissions.")
-        ...
-
+        elif team1_total == team2_total:
+            # It is a tie and since you  must win by 1, the team that was winning before the tie is technically still winning, so do nothing.
+            return
+        
     async def get_messages_from_channel(self) -> None:
         logger.debug("[TotalItemCounter Cog] Retrieving message history from drop channel.")
         # Get list of messages in channel since self.starting_msg_id
@@ -193,25 +199,46 @@ class TotalItemCounterCog(commands.Cog):
         except Exception as e:
             logger.error("[TotalItemCounter Cog] Error when retrieving message history from drop channel.", exc_info=e)
 
-    
+    def count_valid_drops(self) -> None:
+        logger.debug("[TotalItemCounter Cog] Tallying up scores based on drop submissions.")
+        self.filter_messages()
+        self.update_total_items()
+
     def filter_messages(self) -> None:
         # Iterates over messages and checks if they have the valid screenie reaction
         valid = False
-        # TODO conditional logic for finding valid images
-        if valid:
-            self.allocate_point()
+        is_total = False
 
-    def allocate_point(self) -> None:
-        # Determines which team to give a point to for valid drop submission
-        self.get_msg_author_roles()
-        # Check if team one name or team 2 name
-        # TODO conditional logic here for checking the authors role
-        team_name = ""
-        self.update_team_total(team_name=team_name)
+        for message in self.message_list:
+            # Check all reactions to see if it is a drop we need to process
+            for reaction in message.reactions:
+                if reaction == self.invalid_submission_emoji:
+                    valid = False
+                    break
 
-    def get_msg_author_roles(self) -> None:
-        # Get the roles from the autor of the message
-        ...
+                if reaction == self.valid_submission_emoji:
+                    valid = True
+                
+                if reaction == self.total_item_emoji:
+                    is_total = True
+
+            if valid and is_total:
+                self.allocate_point(message=message)
+                self.determine_team_placements()
+
+    def allocate_point(self, message: discord.Message) -> None:
+        msg_id = message.id
+        author = message.author
+
+        # Check if they are a member of team 1, if not, then they are team 2
+        for role in author.roles:
+            if self.hunt_bot.team_one_name in role:
+                self.update_team_total(team_name=self.hunt_bot.team_one_name)
+            else:
+                self.update_team_total(team_name=self.hunt_bot.team_two_name)
+
+        # Update last valid drop msg ID pointer
+        self.last_valid_drop_msg_id = msg_id
     
     def update_team_total(self, team_name: str) -> None:
         # Increments the total for a team name
@@ -223,15 +250,12 @@ class TotalItemCounterCog(commands.Cog):
             # Do nothing
             return 
         
-        # Time to run
+        # Flag is active, so run main logic
         self.get_messages_from_channel()
-        self.filter_messages()
-        self.update_total_items()
+        self.count_valid_drops()
 
         # Once a drop has been submitted and tallied, then post the first sticky message and the other processes
         if self.total_items > 0:
-            self.determine_team_placements()
-
             # Check if any new messages since last sticky was posted
             latest_msg_id = self.get_newest_msg_id()
 
@@ -247,50 +271,6 @@ class TotalItemCounterCog(commands.Cog):
                 # otherwise it is - update sticky msg string
                 self.edit_sticky_msg_content()
 
-
     @count_items.before_loop
     async def before_count_items(self) -> None:
         await self.discord_bot.wait_until_ready()
-
-
-"""
-Purpose: Automates Item counting for the total Items obtained daily and bounty
-
-TODO: sticky message "last counted image <link to comment id>"
-TODO: Check both embed and attchments for each message for an image
-
-Flow:
-- Total item counter cog is always running and listens for start / end function calls
-- when bounty or daily is served that is a total drops one
-    - call totaldrop cog start(), pass in params
-    - once new challenge is sent by bot, call totaldrop end() method and cleanup before ret of loop
-    
-    --- Main loop ---
-    Every X seconds:
-        Check if current time >= end time:
-            if so kill process
-
-        Reset team1 and team2 totals to 0
-        Search starting from the bot message for messages containing image attachments
-            If a message doesn't:
-                skip
-            If a message does:
-                Check if it has a 'X' reaction
-                    if it does then skip
-                Check if it has a "Check" reaction
-                    if it does, check the author's roles to determine what team they are on
-                    increment team total respectivley
-            
-        Update sticky message string in memory
-        Check if we have a sticky message ID in memory or not yet
-            If not:
-                then post sticky message
-                Update sticky message ID in memory
-            If we do:
-                Check that the last message ID we retrieved matches the sticky ID in memory
-                If not:
-                    delete and repost message
-                If so:
-                    Update the message string
-                    continue
-"""
