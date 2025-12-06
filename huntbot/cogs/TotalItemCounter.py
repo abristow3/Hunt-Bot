@@ -129,13 +129,13 @@ class TotalItemCounterCog(commands.Cog):
         except Exception as e:
             logger.error("[TotalItemCounter Cog] Error posting counting complete message.", exc_info=e)
 
-    def start_counter(self, start_msg_id: int, drop_channel_id: int) -> None:
+    async def start_counter(self, start_msg_id: int, drop_channel_id: int) -> None:
         logger.info("[TotalItemCounter Cog] Starting item counter for challenge.")
         self.update_start_msg_id(start_msg_id=start_msg_id)
         self.update_drop_channel_id(channel_id=drop_channel_id)
         self.active = True
     
-    def stop_counter(self) -> None:
+    async def stop_counter(self) -> None:
         logger.info("[TotalItemCounter Cog] Ending item counter for challenge.")
         self.active = False
         self.update_counting_complete_msg()
@@ -256,8 +256,6 @@ class TotalItemCounterCog(commands.Cog):
 """
 Purpose: Automates Item counting for the total Items obtained daily and bounty
 
-TODO: Have the bounty and daily plugin spawn and kill this process from their respective ones? Or should there be a help function elsewhere in bot maybe?
-TODO: Update config sheet so that there is another column labelled (Total Drops?) and check if a X in it so we can distinguish the challenges without needing slash commands
 TODO: sticky message "last counted image <link to comment id>"
 TODO: Check both embed and attchments for each message for an image
 
@@ -266,13 +264,6 @@ Flow:
 - when bounty or daily is served that is a total drops one
     - call totaldrop cog start(), pass in params
     - once new challenge is sent by bot, call totaldrop end() method and cleanup before ret of loop
-
-Total Drop challenge detected in config sheet
-    Search for the most recent bounty or daily message posted by the bot
-    store the message ID in memory once found so we can use it on subsequent loops as a starting point
-    Set process end time in memory
-        if daily set for 24 hours from bot message post
-        if bounty set for 8 hours from bot message post
     
     --- Main loop ---
     Every X seconds:

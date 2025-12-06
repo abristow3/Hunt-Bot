@@ -157,11 +157,20 @@ class DailiesCog(commands.Cog):
 
         try:
             logger.info("[Dailies Cog] Attempting to serve daily")
+            counter_cog = self.bot.get_cog("TotalItemCounterCog")
+            is_total = False
+
+            # If process is still running, go ahead and end it before next continuing
+            if counter_cog.active:
+                logger.info("[Dailies Cog] Total drop challenge over. Stopping TotalItemCounter Cog.")
+                await counter_cog.stop_counter()
+
             single_daily = next(self.single_daily_generator)
             single_task = single_daily["Task"]
             single_password = single_daily["Password"]
             self.hunt_bot.daily_password = single_password
             is_double = not pd.isna(single_daily.get("Double", None))
+            is_total = not pd.isna(single_daily.get("Total Drop", None))
 
             if not is_double:
                 logger.info("[Dailies Cog] Serving single daily")
@@ -169,6 +178,11 @@ class DailiesCog(commands.Cog):
             else:
                 logger.info("[Dailies Cog] Serving double daily")
                 double_daily = next(self.double_daily_generator)
+
+                # Assumes there will never be two total drop challenges for a double
+                if not is_total:
+                    is_total = not pd.isna(double_daily.get("Total Drop", None))
+
                 self.daily_description = double_daily_template.substitute(
                     b1_task=single_task,
                     b1_password=single_password,
@@ -187,6 +201,13 @@ class DailiesCog(commands.Cog):
             self.message_id = self.embed_message.id
             await self.post_team_notif()
             await self.embed_message.pin()
+
+            if is_total:
+                logger.info("[Dailies Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")
+
+                # There is a total item challenge, so we start the couner cog process
+                await counter_cog.start_counter(start_msg_id=self.message_id, drop_channel_id=self.daily_channel_id)
+
         except StopIteration:
             logger.info("[Dailies Cog] No more dailies left. Stopping task")
             self.start_dailies.stop()

@@ -169,11 +169,20 @@ class BountiesCog(commands.Cog):
 
         try:
             logger.info("[Bounties Cog] Attempting to serve bounty")
+            counter_cog = self.bot.get_cog("TotalItemCounterCog")
+            is_total = False
+
+            # If process is still running, go ahead and end it before next continuing
+            if counter_cog.active:
+                logger.info("[Bounties Cog] Total drop challenge over. Stopping TotalItemCounter Cog.")
+                await counter_cog.stop_counter()
+
             single_bounty = next(self.single_bounty_generator)
             single_task = single_bounty["Task"]
             single_password = single_bounty["Password"]
             self.hunt_bot.bounty_password = single_password
             is_double = not pd.isna(single_bounty.get("Double", None))
+            is_total = not pd.isna(single_bounty.get("Total Drop", None))
 
             if not is_double:
                 logger.info("[Bounties Cog] Bounty is a single bounty")
@@ -181,6 +190,11 @@ class BountiesCog(commands.Cog):
             else:
                 logger.info("[Bounties Cog] Bounty is a double bounty")
                 double_bounty = next(self.double_bounty_generator)
+
+                # Assumes there will never be two total drop challenges for a double
+                if not is_total:
+                    is_total = not pd.isna(double_bounty.get("Total Drop", None))
+
                 self.bounty_description = double_bounty_template.substitute(
                     b1_task=single_task,
                     b1_password=single_password,
@@ -200,6 +214,12 @@ class BountiesCog(commands.Cog):
             self.message_id = self.embed_message.id
             await self.post_team_notif()
             await self.embed_message.pin()
+
+            if is_total:
+                logger.info("[Bounties Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")
+                # There is a total item challenge, so we start the couner cog process
+                await counter_cog.start_counter(start_msg_id=self.message_id, drop_channel_id=self.bounty_channel_id)
+
         except StopIteration:
             logger.info("[Bounties Cog] No more bounties left. Stopping task.")
             self.start_bounties.stop()
