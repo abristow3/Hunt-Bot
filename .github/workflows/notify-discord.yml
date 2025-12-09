@@ -29,6 +29,7 @@ jobs:
           EMBED_DESCRIPTION=""
           EMBED_URL=""
 
+          # Pull request closed into main
           if [ "$EVENT_NAME" = "pull_request" ]; then
             ACTION=$(jq -r '.action' "$EVENT_PATH")
             TITLE=$(jq -r '.pull_request.title // "No title"' "$EVENT_PATH")
@@ -43,6 +44,7 @@ jobs:
             fi
           fi
 
+          # New issue opened
           if [ "$EVENT_NAME" = "issues" ]; then
             ACTION=$(jq -r '.action' "$EVENT_PATH")
             TITLE=$(jq -r '.issue.title // "No title"' "$EVENT_PATH")
@@ -56,18 +58,26 @@ jobs:
             fi
           fi
 
+          # Comments on issues or PRs
           if [ "$EVENT_NAME" = "issue_comment" ]; then
             ACTION=$(jq -r '.action' "$EVENT_PATH")
             COMMENT=$(jq -r '.comment.body // "No comment"' "$EVENT_PATH")
             URL=$(jq -r '.comment.html_url // "No URL"' "$EVENT_PATH")
-            PR_NUMBER=$(jq -r '.issue.pull_request.url // ""' "$EVENT_PATH" | awk -F'/' '{print $NF}')
-            if [ "$ACTION" = "created" ] && [ -n "$PR_NUMBER" ]; then
-              EMBED_TITLE="[${REPO}] New comment on pull request #${PR_NUMBER}"
+            ISSUE_NUMBER=$(jq -r '.issue.number // "unknown"' "$EVENT_PATH")
+            PR_URL=$(jq -r '.issue.pull_request.url // ""' "$EVENT_PATH")
+
+            if [ "$ACTION" = "created" ]; then
+              if [ -n "$PR_URL" ]; then
+                EMBED_TITLE="[${REPO}] New comment on pull request #${ISSUE_NUMBER}"
+              else
+                EMBED_TITLE="[${REPO}] New comment on issue #${ISSUE_NUMBER}"
+              fi
               EMBED_DESCRIPTION="$COMMENT"
               EMBED_URL="$URL"
             fi
           fi
 
+          # New branch created
           if [ "$EVENT_NAME" = "create" ]; then
             TYPE=$(jq -r '.ref_type // "unknown"' "$EVENT_PATH")
             NAME=$(jq -r '.ref // "unknown"' "$EVENT_PATH")
