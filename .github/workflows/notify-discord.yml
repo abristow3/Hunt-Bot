@@ -28,6 +28,7 @@ jobs:
           EMBED_TITLE=""
           EMBED_DESCRIPTION=""
           EMBED_URL=""
+          EMBED_COLOR=0 # default color
 
           # Pull request closed into main
           if [ "$EVENT_NAME" = "pull_request" ]; then
@@ -41,6 +42,7 @@ jobs:
               EMBED_TITLE="[${REPO}] Pull request closed: #${NUMBER} ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
+              EMBED_COLOR=65280       # green for merges
             fi
           fi
 
@@ -55,6 +57,7 @@ jobs:
               EMBED_TITLE="[${REPO}] New issue #${NUMBER}: ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
+              EMBED_COLOR=9474192      # lighter green for new issues
             fi
           fi
 
@@ -64,16 +67,18 @@ jobs:
             COMMENT=$(jq -r '.comment.body // "No comment"' "$EVENT_PATH")
             URL=$(jq -r '.comment.html_url // "No URL"' "$EVENT_PATH")
             ISSUE_NUMBER=$(jq -r '.issue.number // "unknown"' "$EVENT_PATH")
+            ISSUE_TITLE=$(jq -r '.issue.title // "No title"' "$EVENT_PATH")
             PR_URL=$(jq -r '.issue.pull_request.url // ""' "$EVENT_PATH")
 
             if [ "$ACTION" = "created" ]; then
               if [ -n "$PR_URL" ]; then
-                EMBED_TITLE="[${REPO}] New comment on pull request #${ISSUE_NUMBER}"
+                EMBED_TITLE="[${REPO}] New comment on pull request #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
               else
-                EMBED_TITLE="[${REPO}] New comment on issue #${ISSUE_NUMBER}"
+                EMBED_TITLE="[${REPO}] New comment on issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
               fi
               EMBED_DESCRIPTION="$COMMENT"
               EMBED_URL="$URL"
+              EMBED_COLOR=16776960      # yellow for comments
             fi
           fi
 
@@ -85,6 +90,7 @@ jobs:
               EMBED_TITLE="[${REPO}] New branch created: ${NAME}"
               EMBED_DESCRIPTION=""
               EMBED_URL=""
+              EMBED_COLOR=9474192      # lighter green for new branches
             fi
           fi
 
@@ -93,6 +99,7 @@ jobs:
           echo "Description: $EMBED_DESCRIPTION"
           echo "URL: $EMBED_URL"
           echo "Author: $ACTOR, Avatar: $ACTOR_AVATAR"
+          echo "Color: $EMBED_COLOR"
 
           curl -H "Content-Type: application/json" \
                -X POST \
@@ -104,7 +111,8 @@ jobs:
                    },
                    \"title\": \"$EMBED_TITLE\",
                    \"description\": \"$EMBED_DESCRIPTION\",
-                   \"url\": \"$EMBED_URL\"
+                   \"url\": \"$EMBED_URL\",
+                   \"color\": $EMBED_COLOR
                  }]
                }" \
                "$DISCORD_WEBHOOK"
