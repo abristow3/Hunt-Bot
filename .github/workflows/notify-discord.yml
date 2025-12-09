@@ -7,8 +7,7 @@ on:
     types: [closed]
   issue_comment:
     types: [created]
-  create:
-    types: [branch]
+  create: # temporarily catch all create events for debugging
 
 jobs:
   notify:
@@ -84,8 +83,13 @@ jobs:
 
           # New branch created
           if [ "$EVENT_NAME" = "create" ]; then
+            echo "DEBUG: Create event JSON:"
+            cat "$EVENT_PATH"  # Log full create event JSON
+
             TYPE=$(jq -r '.ref_type // "unknown"' "$EVENT_PATH")
             NAME=$(jq -r '.ref // "unknown"' "$EVENT_PATH")
+            echo "DEBUG: type=$TYPE, name=$NAME"
+
             if [ "$TYPE" = "branch" ]; then
               EMBED_TITLE="[${REPO}] New branch created: ${NAME}"
               EMBED_DESCRIPTION=""
