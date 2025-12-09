@@ -57,7 +57,7 @@ jobs:
               EMBED_TITLE="[${REPO}] New issue #${NUMBER}: ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
-              EMBED_COLOR=9474192      # lighter green for new issues
+              EMBED_COLOR=3329330      # soft green for new issues
             fi
           fi
 
@@ -78,7 +78,7 @@ jobs:
               fi
               EMBED_DESCRIPTION="$COMMENT"
               EMBED_URL="$URL"
-              EMBED_COLOR=16776960      # yellow for comments
+              EMBED_COLOR=16766720      # softer gold for comments
             fi
           fi
 
@@ -90,7 +90,7 @@ jobs:
               EMBED_TITLE="[${REPO}] New branch created: ${NAME}"
               EMBED_DESCRIPTION=""
               EMBED_URL=""
-              EMBED_COLOR=9474192      # lighter green for new branches
+              EMBED_COLOR=3329330      # soft green for new branches
             fi
           fi
 
