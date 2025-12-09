@@ -7,7 +7,7 @@ on:
     types: [closed]
   issue_comment:
     types: [created]
-  create: # temporarily catch all create events for debugging
+  create: # catch all create events for branches (debug)
 
 jobs:
   notify:
@@ -41,7 +41,7 @@ jobs:
               EMBED_TITLE="[${REPO}] Pull request closed: #${NUMBER} ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
-              EMBED_COLOR=65280       # green for merges
+              EMBED_COLOR=25600       # dark green for merges
             fi
           fi
 
@@ -56,7 +56,7 @@ jobs:
               EMBED_TITLE="[${REPO}] New issue #${NUMBER}: ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
-              EMBED_COLOR=3329330      # soft green for new issues
+              EMBED_COLOR=2263842      # dark olive green for new issues
             fi
           fi
 
@@ -84,17 +84,19 @@ jobs:
           # New branch created
           if [ "$EVENT_NAME" = "create" ]; then
             echo "DEBUG: Create event JSON:"
-            cat "$EVENT_PATH"  # Log full create event JSON
+            cat "$EVENT_PATH"
 
             TYPE=$(jq -r '.ref_type // "unknown"' "$EVENT_PATH")
             NAME=$(jq -r '.ref // "unknown"' "$EVENT_PATH")
-            echo "DEBUG: type=$TYPE, name=$NAME"
+            REPO_URL=$(jq -r '.repository.html_url // ""' "$EVENT_PATH")
+            BRANCH_URL="$REPO_URL/tree/$NAME"
+            echo "DEBUG: type=$TYPE, name=$NAME, url=$BRANCH_URL"
 
             if [ "$TYPE" = "branch" ]; then
               EMBED_TITLE="[${REPO}] New branch created: ${NAME}"
               EMBED_DESCRIPTION=""
-              EMBED_URL=""
-              EMBED_COLOR=3329330      # soft green for new branches
+              EMBED_URL="$BRANCH_URL"
+              EMBED_COLOR=2263842      # dark olive green for new branches
             fi
           fi
 
