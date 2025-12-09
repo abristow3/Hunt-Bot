@@ -24,7 +24,9 @@ jobs:
           REF=${{ github.ref }}
           EVENT_PATH="$GITHUB_EVENT_PATH"
 
-          MESSAGE="GitHub Event: \`${EVENT_NAME}\` in \`${REPO}\` by \`${ACTOR}\`. Ref: \`${REF}\`"
+          EMBED_TITLE=""
+          EMBED_DESCRIPTION=""
+          EMBED_URL=""
 
           if [ "$EVENT_NAME" = "pull_request" ]; then
             ACTION=$(jq -r '.action' "$EVENT_PATH")
@@ -32,8 +34,11 @@ jobs:
             URL=$(jq -r '.pull_request.html_url // "No URL"' "$EVENT_PATH")
             NUMBER=$(jq -r '.pull_request.number // "unknown"' "$EVENT_PATH")
             BASE_BRANCH=$(jq -r '.pull_request.base.ref // "unknown"' "$EVENT_PATH")
+            BODY=$(jq -r '.pull_request.body // ""' "$EVENT_PATH")
             if [ "$ACTION" = "closed" ] && [ "$BASE_BRANCH" = "main" ]; then
-              MESSAGE="[${REPO}] Pull request closed: #${NUMBER} ${TITLE}\n🔗 $URL"
+              EMBED_TITLE="[${REPO}] Pull request closed: #${NUMBER} ${TITLE}"
+              EMBED_DESCRIPTION="$BODY"
+              EMBED_URL="$URL"
             fi
           fi
 
@@ -42,8 +47,11 @@ jobs:
             TITLE=$(jq -r '.issue.title // "No title"' "$EVENT_PATH")
             NUMBER=$(jq -r '.issue.number // "unknown"' "$EVENT_PATH")
             URL=$(jq -r '.issue.html_url // "No URL"' "$EVENT_PATH")
+            BODY=$(jq -r '.issue.body // ""' "$EVENT_PATH")
             if [ "$ACTION" = "opened" ]; then
-              MESSAGE="[${REPO}] New issue #${NUMBER}: ${TITLE}\n🔗 $URL"
+              EMBED_TITLE="[${REPO}] New issue #${NUMBER}: ${TITLE}"
+              EMBED_DESCRIPTION="$BODY"
+              EMBED_URL="$URL"
             fi
           fi
 
@@ -53,7 +61,9 @@ jobs:
             URL=$(jq -r '.comment.html_url // "No URL"' "$EVENT_PATH")
             PR_NUMBER=$(jq -r '.issue.pull_request.url // ""' "$EVENT_PATH" | awk -F'/' '{print $NF}')
             if [ "$ACTION" = "created" ] && [ -n "$PR_NUMBER" ]; then
-              MESSAGE="[${REPO}] New comment on pull request #${PR_NUMBER}: ${COMMENT}\n🔗 $URL"
+              EMBED_TITLE="[${REPO}] New comment on pull request #${PR_NUMBER}"
+              EMBED_DESCRIPTION="$COMMENT"
+              EMBED_URL="$URL"
             fi
           fi
 
@@ -61,14 +71,24 @@ jobs:
             TYPE=$(jq -r '.ref_type // "unknown"' "$EVENT_PATH")
             NAME=$(jq -r '.ref // "unknown"' "$EVENT_PATH")
             if [ "$TYPE" = "branch" ]; then
-              MESSAGE="[${REPO}] New branch created: ${NAME}"
+              EMBED_TITLE="[${REPO}] New branch created: ${NAME}"
+              EMBED_DESCRIPTION=""
+              EMBED_URL=""
             fi
           fi
 
           echo "Sending to Discord:"
-          echo "$MESSAGE"
+          echo "Title: $EMBED_TITLE"
+          echo "Description: $EMBED_DESCRIPTION"
+          echo "URL: $EMBED_URL"
 
           curl -H "Content-Type: application/json" \
                -X POST \
-               -d "{\"content\": \"$MESSAGE\"}" \
+               -d "{
+                 \"embeds\": [{
+                   \"title\": \"$EMBED_TITLE\",
+                   \"description\": \"$EMBED_DESCRIPTION\",
+                   \"url\": \"$EMBED_URL\"
+                 }]
+               }" \
                "$DISCORD_WEBHOOK"
