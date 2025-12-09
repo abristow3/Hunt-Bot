@@ -23,6 +23,7 @@ jobs:
           REPO=${{ github.repository }}
           REF=${{ github.ref }}
           EVENT_PATH="$GITHUB_EVENT_PATH"
+          ACTOR_AVATAR=$(jq -r '.sender.avatar_url // ""' "$EVENT_PATH")
 
           EMBED_TITLE=""
           EMBED_DESCRIPTION=""
@@ -81,11 +82,16 @@ jobs:
           echo "Title: $EMBED_TITLE"
           echo "Description: $EMBED_DESCRIPTION"
           echo "URL: $EMBED_URL"
+          echo "Author: $ACTOR, Avatar: $ACTOR_AVATAR"
 
           curl -H "Content-Type: application/json" \
                -X POST \
                -d "{
                  \"embeds\": [{
+                   \"author\": {
+                     \"name\": \"$ACTOR\",
+                     \"icon_url\": \"$ACTOR_AVATAR\"
+                   },
                    \"title\": \"$EMBED_TITLE\",
                    \"description\": \"$EMBED_DESCRIPTION\",
                    \"url\": \"$EMBED_URL\"
