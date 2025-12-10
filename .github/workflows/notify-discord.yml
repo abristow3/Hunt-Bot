@@ -19,7 +19,10 @@ jobs:
         run: |
           EVENT_NAME=${{ github.event_name }}
           ACTOR=${{ github.actor }}
-          REPO=${{ github.repository }}
+
+          # Strip username from "username/repo"
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+
           REF=${{ github.ref }}
           EVENT_PATH="$GITHUB_EVENT_PATH"
           ACTOR_AVATAR=$(jq -r '.sender.avatar_url // ""' "$EVENT_PATH")
@@ -39,7 +42,7 @@ jobs:
             BODY=$(jq -r '.pull_request.body // ""' "$EVENT_PATH")
 
             if [ "$ACTION" = "closed" ] && [ "$BASE_BRANCH" = "main" ]; then
-              EMBED_TITLE="[${REPO}] Pull request closed: #${NUMBER} ${TITLE}"
+              EMBED_TITLE="[${REPO_NAME}] Pull request closed: #${NUMBER} ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
               EMBED_COLOR=25600
@@ -55,7 +58,7 @@ jobs:
             BODY=$(jq -r '.issue.body // ""' "$EVENT_PATH")
 
             if [ "$ACTION" = "opened" ]; then
-              EMBED_TITLE="[${REPO}] New issue #${NUMBER}: ${TITLE}"
+              EMBED_TITLE="[${REPO_NAME}] New issue #${NUMBER}: ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
               EMBED_COLOR=2263842
@@ -73,9 +76,9 @@ jobs:
 
             if [ "$ACTION" = "created" ]; then
               if [ -n "$PR_URL" ]; then
-                EMBED_TITLE="[${REPO}] New comment on pull request #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
+                EMBED_TITLE="[${REPO_NAME}] New comment on pull request #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
               else
-                EMBED_TITLE="[${REPO}] New comment on issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
+                EMBED_TITLE="[${REPO_NAME}] New comment on issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
               fi
               EMBED_DESCRIPTION="$COMMENT"
               EMBED_URL="$URL"
@@ -91,7 +94,7 @@ jobs:
             BRANCH_URL="$REPO_URL/tree/$NAME"
 
             if [ "$TYPE" = "branch" ]; then
-              EMBED_TITLE="[${REPO}] New branch created: ${NAME}"
+              EMBED_TITLE="[${REPO_NAME}] New branch created: ${NAME}"
               EMBED_DESCRIPTION=""
               EMBED_URL="$BRANCH_URL"
               EMBED_COLOR=2263842
