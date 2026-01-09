@@ -8,9 +8,9 @@ on:
   issue_comment:
     types: [created]
   create:
-  push:   # <-- NEW: triggers on commits to all branches
+  push:
   release:
-    types: [published]   # <-- NEW: triggers on release publications
+    types: [published]
 
 jobs:
   notify:
@@ -31,6 +31,7 @@ jobs:
           EMBED_DESCRIPTION=""
           EMBED_URL=""
           EMBED_COLOR=0
+          LABEL_FIELDS="[]"
 
           ########## PULL REQUEST CLOSED ##########
           if [ "$EVENT_NAME" = "pull_request" ]; then
@@ -56,12 +57,35 @@ jobs:
             NUMBER=$(jq -r '.issue.number // "unknown"' "$EVENT_PATH")
             URL=$(jq -r '.issue.html_url // "No URL"' "$EVENT_PATH")
             BODY=$(jq -r '.issue.body // ""' "$EVENT_PATH")
-
+          
+            # Build label string with colored dot emojis
+            LABELS=$(jq -r '[.issue.labels[].name] | map(
+              if .=="bug" then "🔴 bug"
+              elif .=="good first issue" then "🟢 good first issue"
+              elif .=="enhancement" then "🟣 enhancement"
+              elif .=="documentation" then "🔵 documentation"
+              elif .=="unit-tests" then "🟡 unit-tests"
+              else "⚪ "+. end) | join(", ")' "$EVENT_PATH")
+          
+            # Append labels with a real line break
+            if [ -n "$LABELS" ]; then
+              BODY="$BODY
+          
+          Labels: $LABELS"
+            fi
+          
+            # Use first label color for embed if available
+            FIRST_LABEL_COLOR=$(jq -r '.issue.labels[0].color // empty' "$EVENT_PATH")
+            if [ -n "$FIRST_LABEL_COLOR" ]; then
+              EMBED_COLOR=$((16#${FIRST_LABEL_COLOR}))
+            else
+              EMBED_COLOR=2263842
+            fi
+          
             if [ "$ACTION" = "opened" ]; then
               EMBED_TITLE="[${REPO_NAME}] New issue #${NUMBER}: ${TITLE}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
-              EMBED_COLOR=2263842
             fi
           fi
 
@@ -106,7 +130,6 @@ jobs:
             BRANCH=$(jq -r '.ref' "$EVENT_PATH" | sed 's|refs/heads/||')
             COMMITS_COUNT=$(jq '.commits | length' "$EVENT_PATH")
 
-            # Only send if there are actual commits (not tag moves, branch deletions, etc.)
             if [ "$COMMITS_COUNT" -gt 0 ]; then
               COMMIT_MSG=$(jq -r '.commits[0].message // "No message"' "$EVENT_PATH")
               COMMIT_URL=$(jq -r '.commits[0].url // ""' "$EVENT_PATH")
@@ -130,13 +153,12 @@ jobs:
               EMBED_TITLE="[${REPO_NAME}] New release published: ${TAG_NAME}"
               EMBED_DESCRIPTION="$BODY"
               EMBED_URL="$URL"
-              EMBED_COLOR=65280  # Green color for releases
+              EMBED_COLOR=65280
             fi
           fi
 
           ########## ONLY SEND IF EMBED IS NOT EMPTY ##########
           if [ -n "$EMBED_TITLE" ] && [ -n "$EMBED_DESCRIPTION" ]; then
-            ########## BUILD JSON SAFELY WITH jq ##########
             payload=$(jq -n \
               --arg actor "$ACTOR" \
               --arg avatar "$ACTOR_AVATAR" \
@@ -144,13 +166,15 @@ jobs:
               --arg desc "$EMBED_DESCRIPTION" \
               --arg url "$EMBED_URL" \
               --argjson color "$EMBED_COLOR" \
+              --argjson labels "$LABEL_FIELDS" \
               '{
                 embeds: [{
                   author: { name: $actor, icon_url: $avatar },
                   title: $title,
                   description: $desc,
                   url: $url,
-                  color: $color
+                  color: $color,
+                  fields: $labels
                 }]
               }'
             )
