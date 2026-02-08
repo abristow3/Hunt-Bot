@@ -3,6 +3,8 @@ import pytz
 import pandas as pd
 import logging
 
+import requests
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,13 +38,17 @@ class HuntBot:
         self.team_one_chat_channel_id = 0
         self.team_two_chat_channel_id = 0
         self.hunt_edition = ""
-        self.wom_hunt_url = ""
+        self.wom_competition_id = 0
         self.guild_id = 699971574689955850
+        self.participant_whitelist: set[str] = set()
+
+        # Comp ID gets appended onto URLs later after config is retrieved
+        self.wom_event_api_url = "https://api.wiseoldman.net/v2/competitions/"
+        self.wom_event_website_url = "https://wiseoldman.net/competitions/"
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
         self.admin_channel_id = 0
-
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -140,7 +146,7 @@ class HuntBot:
             self.team_one_chat_channel_id = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
             self.team_two_chat_channel_id = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
             self.hunt_edition = self.config_map.get("HUNT_EDITION", "")
-            self.wom_hunt_url = self.config_map.get("WOM_HUNT_URL", "")
+            self.wom_competition_id = self.config_map.get("WOM_COMPETITION_ID", "")
         except ValueError as e:
             logger.exception("Invalid type in config values (expected integer for channel IDs).", exc_info=e)
             raise InvalidConfig("Invalid type in config values: expected integers for channel IDs.")
@@ -169,12 +175,15 @@ class HuntBot:
             missing_fields.append("TEAM_2_CHAT_CHANNEL_ID")
         if not self.hunt_edition:
             missing_fields.append("HUNT_EDITION")
-        if not self.wom_hunt_url:
-            missing_fields.append("WOM_HUNT_URL")
+        if not self.wom_competition_id:
+            missing_fields.append("WOM_COMPETITION_ID")
 
         if missing_fields:
             logger.error(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
             raise InvalidConfig(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
+
+        # Generate the WOM Competition URLs using the Comp ID from the configuration
+        self.generate_wom_competition_urls()
 
         # Combine the date and time strings
         start_datetime_str = f"{self.start_date} {self.start_time}"
@@ -227,3 +236,34 @@ class HuntBot:
         self.config_map['BOUNTY_PASSWORD'] = self.bounty_password
         self.config_map['DAILY_PASSWORD'] = self.daily_password
         self.config_map['ENDED'] = self.ended
+
+    def generate_participant_whitelist(self) -> None:
+        """
+        Iterates over the participations array in the JSON payload received from the WOM Hunt Competition query
+        and saves the whitelist in memory.
+        """
+        url = "https://api.wiseoldman.net/v2/competitions/100262"
+        r = requests.get(url)
+        data = r.json()
+
+        for player in data.get("participations", []):
+            player_name = player.get("player", {}).get("displayName", "")
+            if player_name:
+                self.participant_whitelist.add(player_name)
+
+    def print_whitelist(self) -> None:
+        print(sorted(self.participant_whitelist))
+
+    def generate_wom_competition_urls(self) -> None:
+        """
+        Appends the WOM Competition ID from the configuration to the end of the WOM event URls
+        """
+        self.wom_event_api_url = self.wom_event_api_url + str(self.wom_competition_id)
+        self.wom_event_website_url = self.wom_event_website_url + str(self.wom_competition_id)
+
+
+if __name__ == "__main__":
+    hunt_bot = HuntBot()
+    hunt_bot.generate_participant_whitelist()
+    hunt_bot.print_whitelist()
+    hunt_bot.generate_wom_competition_urls()

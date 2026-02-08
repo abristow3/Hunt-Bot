@@ -65,11 +65,12 @@ gdoc = GDoc()
 hunt_bot = HuntBot()
 state = State()
 
-async def generate_wom_messages()-> None:
+
+async def generate_wom_messages() -> None:
     # Create WOM Messages for each team chat channel and pin them
     wom_message = (f"Link to Hunt {hunt_bot.hunt_edition} WiseOldMan Competition:\n"
-                    f"{hunt_bot.wom_hunt_url}")
-    
+                   f"{hunt_bot.wom_event_website_url}")
+
     team_one_channel = bot.get_channel(hunt_bot.team_one_chat_channel_id)
     team_two_channel = bot.get_channel(hunt_bot.team_two_chat_channel_id)
 
@@ -78,6 +79,7 @@ async def generate_wom_messages()-> None:
 
     t2_message = await team_two_channel.send(wom_message)
     await t2_message.pin()
+
 
 @tasks.loop(seconds=5)
 async def check_start_time():
@@ -104,13 +106,14 @@ async def check_start_time():
         logger.debug("[Main Task Loop] The Hunt has not started yet... checking start time...")
         # Check if we need to start the hunt or not
         hunt_bot.check_start()
-        
+
         # The hunt has started
         if hunt_bot.started:
             logger.info("[Main Task Loop] The Hunt has begun!")
             if channel:
-                await channel.send(f"https://imgur.com/Of4zPcO \n@everyone Flux Hunt {hunt_bot.hunt_edition} has officially begun!\n"
-                                   f"The password is: {hunt_bot.master_password}")
+                await channel.send(
+                    f"https://imgur.com/Of4zPcO \n@everyone Flux Hunt {hunt_bot.hunt_edition} has officially begun!\n"
+                    f"The password is: {hunt_bot.master_password}")
 
             await generate_wom_messages()
 
@@ -140,7 +143,7 @@ async def check_start_time():
         else:
             logger.info("[Main Task Loop] Waiting for start time...")
     else:
-                # Check if we need to end the hunt
+        # Check if we need to end the hunt
         logger.debug("[Main Task Loop] Checking Hunt End Date and Time...")
         hunt_bot.check_end()
         if hunt_bot.ended:
@@ -188,7 +191,7 @@ async def on_ready():
     register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
     register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
-    register_team_item_bounty_commands(bot.tree, hunt_bot=hunt_bot)
+    register_team_item_bounty_commands(bot.tree, discord_bot=bot)
     register_score_commands(bot.tree, bot)
     register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
 
@@ -204,7 +207,9 @@ async def main():
         await state.load_state()
         logger.info("[Main Task Loop] State loaded successfully.")
     except Exception as e:
-        logger.error("[Main Task Loop] Exception encountered when updating state during startup when loading existing state", exc_info=e)
+        logger.error(
+            "[Main Task Loop] Exception encountered when updating state during startup when loading existing state",
+            exc_info=e)
 
     await bot.start(TOKEN)
 

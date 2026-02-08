@@ -1,10 +1,6 @@
 import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timedelta
 from huntbot.cogs.Countdown import CountdownCog
-
-import pytz
 
 @pytest.fixture
 def mock_hunt_bot():
