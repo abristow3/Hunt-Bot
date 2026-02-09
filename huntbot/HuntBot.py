@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
@@ -41,6 +42,10 @@ class HuntBot:
         self.wom_competition_id = 0
         self.guild_id = 699971574689955850
         self.participant_whitelist: set[str] = set()
+        self.monster_whitelist: set[str] = set()
+        self.item_whitelist: set[str] = set()
+        self.monster_whitelist_fp = "../conf/monster_whitelist.json"
+        self.item_whitelist_fp = "../conf/item_whitelist.json"
 
         # Comp ID gets appended onto URLs later after config is retrieved
         self.wom_event_api_url = "https://api.wiseoldman.net/v2/competitions/"
@@ -261,9 +266,30 @@ class HuntBot:
         self.wom_event_api_url = self.wom_event_api_url + str(self.wom_competition_id)
         self.wom_event_website_url = self.wom_event_website_url + str(self.wom_competition_id)
 
+    def read_monster_whitelist_file(self) -> None:
+        with open(self.monster_whitelist_fp, "r", encoding="utf-8") as f:
+            monsters = json.load(f)
+
+        # Convert the list to a set
+        self.monster_whitelist = set(monsters)
+
+    def read_item_whitelist_file(self) -> None:
+        with open(self.item_whitelist_fp, "r", encoding="utf-8") as f:
+            items = json.load(f)
+
+        # Convert the list to a set
+        self.item_whitelist = set(items)
+
+    def generate_plugin_config_monster_list(self) -> None:
+        ...
+
+    def generate_plugin_config_item_list(self) -> None:
+        ...
+
 
 if __name__ == "__main__":
     hunt_bot = HuntBot()
-    hunt_bot.generate_participant_whitelist()
-    hunt_bot.print_whitelist()
-    hunt_bot.generate_wom_competition_urls()
+    hunt_bot.read_monster_whitelist_file()
+    hunt_bot.read_item_whitelist_file()
+    print(hunt_bot.monster_whitelist)
+    print(hunt_bot.item_whitelist)
