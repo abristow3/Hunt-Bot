@@ -1,6 +1,5 @@
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,9 @@ class GDoc:
     def on_startup(self) -> None:
         try:
             # Load the service account credentials from the JSON file
-            self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "")
+            # self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "")
+            self.creds_path = "google_auth.json"
+
             logger.info(f"[GDoc] GOOGLE CREDS PATH: {self.creds_path}")
 
             if not self.creds_path:
@@ -70,3 +71,19 @@ class GDoc:
         except Exception as e:
             logger.error("[Gdoc] Unable to write to Flux RL Plugin Config GDoc sheet", exc_info=e)
             return False
+
+
+if __name__ == "__main__":
+    gdoc = GDoc()
+
+    gdoc.set_sheet_id("1GkD8uJsI2TCgx50ZXwf7DZiB3zwOxd6MvOkJfpER2oE")
+    data = gdoc.get_data_from_sheet("BotConfig")
+
+    WRITE_SHEET_ID = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+
+    gdoc.write_to_sheet(
+        spreadsheet_id=WRITE_SHEET_ID,
+        sheet_name="Hunt",
+        cell="O3",
+        value="Hi from HuntBot"
+    )
