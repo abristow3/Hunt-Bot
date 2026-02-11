@@ -62,14 +62,6 @@ class FluxRLPluginCog(commands.Cog):
             logger.error("[FluxRLPlugin Cog] No FLUX_RL_PLUGIN_GDOC_SHEET_ID found in configuration.")
             raise ConfigurationException(config_key='FLUX_RL_PLUGIN_GDOC_SHEET_ID')
 
-    def write_to_flux_rl_plugin_config_gdoc(self, cell: str, value: str) -> None:
-        self.gdoc.write_to_sheet(
-            spreadsheet_id=self.flux_rl_plugin_sheet_id,
-            sheet_name=self.sheet_name,
-            cell=cell,  # like O3
-            value=value
-        )
-
     def generate_participant_whitelist(self) -> None:
         """
         Iterates over the participations array in the JSON payload received from the WOM Hunt Competition query
