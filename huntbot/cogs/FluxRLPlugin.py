@@ -27,6 +27,7 @@ class FluxRLPluginCog(commands.Cog):
         self.sheet_data = pd.DataFrame()
         self.sheet_name = "Hunt"
 
+
     async def cog_load(self) -> None:
         """Runs when the cog is loaded and bot is ready."""
         logger.info("[FluxRLPlugin Cog] Loading Score Cog.")
