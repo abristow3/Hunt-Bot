@@ -10,6 +10,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
+
 class MemoriesCog(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot):
         self.discord_bot = discord_bot
@@ -21,10 +22,11 @@ class MemoriesCog(commands.Cog):
         # Empty iterator fornow, will populate during setup
         self.memory_iterator = iter(self.memories)
 
-        self.minimum_memory_age_ms = 28800000 # 8 hours in milliseconds
+        self.minimum_memory_age_ms = 28800000  # 8 hours in milliseconds
         self.maximum_memory_age_ms = 43200000  # 12 hours in milliseconds
         self.current_time_ms = int(time.time() * 1000)
-        self.next_memory_post_time_ms = self.current_time_ms + random.randint(self.minimum_memory_age_ms, self.maximum_memory_age_ms)
+        self.next_memory_post_time_ms = self.current_time_ms + random.randint(self.minimum_memory_age_ms,
+                                                                              self.maximum_memory_age_ms)
 
     async def cog_load(self) -> None:
         """
@@ -100,11 +102,11 @@ class MemoriesCog(commands.Cog):
 
             memory_message = f'"{memory_text}"\n\n— {player}'
             return memory_message
-        
+
         except StopIteration:
             logger.info("[Memories Cog] No more memories to load.")
             return None
-        
+
         except Exception as e:
             logger.error("[Memories Cog] Error loading next memory.", exc_info=e)
             return None
@@ -121,7 +123,7 @@ class MemoriesCog(commands.Cog):
         self.current_time_ms = int(time.time() * 1000)
 
         channel = self.discord_bot.get_channel(self.general_channel_id)
-        
+
         if not channel:
             logger.error("[Memories Cog] General Channel not found.")
             return
@@ -130,7 +132,7 @@ class MemoriesCog(commands.Cog):
             # Current time is less than the next memory posting time, so do nothing this iteration
             if self.current_time_ms < self.next_memory_post_time_ms:
                 return
-            
+
             # Otherwise it is time to post the memory and fetch the next one
             else:
                 memory_message = self.load_next_memory()
@@ -140,11 +142,12 @@ class MemoriesCog(commands.Cog):
                     # Stop the process loop
                     self.start_memories.stop()
                     return
-                
+
                 # Otherwise we did get a memory. post it, and generate next memory posting time
                 else:
                     await channel.send(memory_message)
-                    self.next_memory_post_time_ms = self.current_time_ms + random.randint(self.minimum_memory_age_ms, self.maximum_memory_age_ms)
+                    self.next_memory_post_time_ms = self.current_time_ms + random.randint(self.minimum_memory_age_ms,
+                                                                                          self.maximum_memory_age_ms)
 
         except Exception as e:
             logger.error("[Memories Cog] Error during task loop", exc_info=e)

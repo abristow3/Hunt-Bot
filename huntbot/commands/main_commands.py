@@ -6,11 +6,12 @@ import yaml
 from huntbot.HuntBot import HuntBot
 from huntbot.GDoc import GDoc
 from discord.ext.commands import Bot
-from State import State
+from huntbot.State import State
 from huntbot.commands.command_utils import check_user_roles
 
 logger = logging.getLogger(__name__)
-    
+
+
 async def beep(interaction: discord.Interaction):
     logger.info("/beep command ran")
     await interaction.response.send_message("Boop")
@@ -30,7 +31,7 @@ async def start_hunt(interaction: discord.Interaction, gdoc: GDoc, hunt_bot: Hun
 
     logger.info(f"/start-hunt command ran")
 
-    if gdoc.sheet_id == "":
+    if hunt_bot.sheet_id == "":
         await interaction.followup.send("No GDoc sheet ID set. Use the command '/sheet' to set one.")
         return
 
@@ -43,7 +44,8 @@ async def start_hunt(interaction: discord.Interaction, gdoc: GDoc, hunt_bot: Hun
         discord_bot.check_start_time.start()
 
 
-async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str, config_table: str, gdoc: GDoc, hunt_bot: HuntBot, state: State):
+async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str, config_table: str, gdoc: GDoc,
+                hunt_bot: HuntBot, state: State):
     try:
         await interaction.response.defer()
     except discord.NotFound:
@@ -55,9 +57,9 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
     if not authorized:
         return
 
-    logger.info(f"/sheet command ran") 
+    logger.info(f"/sheet command ran")
 
-    gdoc.set_sheet_id(sheet_id=sheet_id)
+    hunt_bot.set_sheet_id(sheet_id=sheet_id)
     hunt_bot.set_sheet_name(sheet_name=sheet_name)
     hunt_bot.set_config_table_name(table_name=config_table)
 
@@ -65,7 +67,8 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
 
     # Retrieve the configuration from the GDoc
     try:
-        hunt_bot.set_sheet_data(data=gdoc.get_data_from_sheet(sheet_name=hunt_bot.sheet_name))
+        hunt_bot.set_sheet_data(
+            data=gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name))
     except Exception as e:
         logger.error(f"[SHEET COMMAND] Error retrieving sheet data", exc_info=e)
         await interaction.followup.send("Error retrieving sheet data.")
@@ -94,9 +97,10 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
         await state.update_state(bot=True, **hunt_bot.config_map)
     except Exception as e:
         logger.error("Error updating state", exc_info=e)
-    
+
     await interaction.followup.send(
-        f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}. Next, if you want to start the hunt, run the /start-hunt command"
+        f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}. Next, if you want to "
+        f"start the hunt, run the /start-hunt command"
     )
 
 
@@ -127,7 +131,8 @@ async def show_state(interaction: discord.Interaction, hunt_bot: HuntBot, state:
     )
 
 
-def register_main_commands(tree: app_commands.CommandTree, gdoc: GDoc, hunt_bot:HuntBot, state:State, discord_bot:Bot):
+def register_main_commands(tree: app_commands.CommandTree, gdoc: GDoc, hunt_bot: HuntBot, state: State,
+                           discord_bot: Bot):
     logger.info("Registering main commands")
 
     @tree.command(name="beep")
@@ -143,7 +148,8 @@ def register_main_commands(tree: app_commands.CommandTree, gdoc: GDoc, hunt_bot:
                            config_table="Name of the discord configuration table in the sheet")
     async def sheet_cmd(interaction: discord.Interaction, state: State, sheet_id: str, sheet_name: str = "BotConfig",
                         config_table: str = "Discord Conf"):
-        await sheet(interaction=interaction, sheet_id=sheet_id, sheet_name=sheet_name, config_table=config_table, gdoc=gdoc, hunt_bot=hunt_bot, state=state)
+        await sheet(interaction=interaction, sheet_id=sheet_id, sheet_name=sheet_name, config_table=config_table,
+                    gdoc=gdoc, hunt_bot=hunt_bot, state=state)
 
     @tree.command(name="passwords", description="Display the current hunt passwords.")
     async def passwords_cmd(interaction: discord.Interaction):

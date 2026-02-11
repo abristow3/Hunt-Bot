@@ -1,17 +1,13 @@
-import json
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
 import logging
-
-import requests
 
 logger = logging.getLogger(__name__)
 
 
 class InvalidConfig(Exception):
     def __init__(self, message="Error reading configuration file"):
-        # Call the base class constructor
         super().__init__(message)
 
 
@@ -39,7 +35,11 @@ class HuntBot:
         self.team_one_chat_channel_id = 0
         self.team_two_chat_channel_id = 0
         self.hunt_edition = ""
+        self.wom_competition_id = 0
+        self.wom_event_api_url = "https://api.wiseoldman.net/v2/competitions/"
+        self.wom_event_website_url = "https://wiseoldman.net/competitions/"
         self.guild_id = 699971574689955850
+        self.sheet_id = ""
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
@@ -54,6 +54,9 @@ class HuntBot:
     def set_sheet_name(self, sheet_name: str):
         self.sheet_name = sheet_name
 
+    def set_sheet_id(self, sheet_id: str) -> None:
+        self.sheet_id = sheet_id
+
     def set_sheet_data(self, data):
         try:
             df = pd.DataFrame(data)
@@ -61,7 +64,7 @@ class HuntBot:
             self.sheet_data = df
         except Exception as e:
             logger.error(e)
-            logger.error("Error creating Dataframe")
+            logger.error("[Hunt Bot] Error creating Dataframe")
             self.sheet_data = pd.DataFrame()
 
     def build_table_map(self):
@@ -141,6 +144,7 @@ class HuntBot:
             self.team_one_chat_channel_id = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
             self.team_two_chat_channel_id = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
             self.hunt_edition = self.config_map.get("HUNT_EDITION", "")
+            self.wom_competition_id = self.config_map.get("WOM_COMPETITION_ID", "0")
         except ValueError as e:
             logger.exception("Invalid type in config values (expected integer for channel IDs).", exc_info=e)
             raise InvalidConfig("Invalid type in config values: expected integers for channel IDs.")
@@ -169,6 +173,8 @@ class HuntBot:
             missing_fields.append("TEAM_2_CHAT_CHANNEL_ID")
         if not self.hunt_edition:
             missing_fields.append("HUNT_EDITION")
+        if not self.hunt_edition:
+            missing_fields.append("WOM_COMPETITION_ID")
 
         if missing_fields:
             logger.error(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
@@ -225,3 +231,10 @@ class HuntBot:
         self.config_map['BOUNTY_PASSWORD'] = self.bounty_password
         self.config_map['DAILY_PASSWORD'] = self.daily_password
         self.config_map['ENDED'] = self.ended
+
+    def generate_wom_competition_urls(self) -> None:
+        """
+        Appends the WOM Competition ID from the configuration to the end of the WOM event URls
+        """
+        self.wom_event_api_url = self.wom_event_api_url + str(self.wom_competition_id)
+        self.wom_event_website_url = self.wom_event_website_url + str(self.wom_competition_id)

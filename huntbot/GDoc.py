@@ -9,7 +9,6 @@ class GDoc:
     def __init__(self) -> None:
         self.service = None
         self.sheets = None
-        self.sheet_id = ""
         self.creds_path = ""
         self.credentials = ""
         self.on_startup()
@@ -35,23 +34,17 @@ class GDoc:
         except Exception as e:
             logger.error("[GDoc] Error during GDoc object setup", exc_info=e)
 
-    def set_sheet_id(self, sheet_id: str) -> None:
-        self.sheet_id = sheet_id
-
-    def get_data_from_sheet(self, sheet_name: str, cell_range: str = None) -> list:
-        logger.info("[GDoc] Retrieving data from GDoc sheet...")
+    def get_data_from_sheet(self, spreadsheet_id: str, sheet_name: str, cell_range: str = None) -> list:
         try:
             if not cell_range:
-                data = self.sheets.values().get(spreadsheetId=self.sheet_id, range=sheet_name).execute()
+                data = self.sheets.values().get(spreadsheetId=spreadsheet_id, range=sheet_name).execute()
             else:
-                a1_range = self.a1notation_builder(sheet_name=sheet_name, cell_range=cell_range)
-                data = self.sheets.values().get(spreadsheetId=self.sheet_id, range=a1_range).execute()
+                a1_range = self.a1notation_builder(sheet_name, cell_range)
+                data = self.sheets.values().get(spreadsheetId=spreadsheet_id, range=a1_range).execute()
 
-            data = data.get('values', [])
-
-            return data
+            return data.get('values', [])
         except Exception as e:
-            logger.error("[GDoc] Unable to get data from GDoc sheet", exc_info=e)
+            logger.error("Unable to get data", exc_info=e)
             return []
 
     @staticmethod
@@ -71,19 +64,3 @@ class GDoc:
         except Exception as e:
             logger.error("[Gdoc] Unable to write to Flux RL Plugin Config GDoc sheet", exc_info=e)
             return False
-
-
-if __name__ == "__main__":
-    gdoc = GDoc()
-
-    gdoc.set_sheet_id("1GkD8uJsI2TCgx50ZXwf7DZiB3zwOxd6MvOkJfpER2oE")
-    data = gdoc.get_data_from_sheet("BotConfig")
-
-    WRITE_SHEET_ID = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
-
-    gdoc.write_to_sheet(
-        spreadsheet_id=WRITE_SHEET_ID,
-        sheet_name="Hunt",
-        cell="O3",
-        value="Hi from HuntBot"
-    )

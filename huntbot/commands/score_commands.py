@@ -7,6 +7,7 @@ from huntbot.cogs.Score import ScoreCog
 
 logger = logging.getLogger(__name__)
 
+
 async def current_score(interaction: discord.Interaction, discord_bot: Bot) -> None:
     """
     Sends the current score to the user via an ephemeral message.
@@ -48,6 +49,7 @@ def register_score_commands(tree: app_commands.CommandTree, discord_bot: Bot) ->
     Returns:
         None
     """
+
     @tree.command(name="score", description="List current score")
     async def score_cmd(interaction: discord.Interaction):
         """
