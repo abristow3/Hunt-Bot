@@ -57,69 +57,11 @@ class HuntBot:
     def set_sheet_id(self, sheet_id: str) -> None:
         self.sheet_id = sheet_id
 
-    def set_sheet_data(self, data):
-        try:
-            df = pd.DataFrame(data)
-            df.iloc[0] = df.iloc[0].replace({"": None})
-            self.sheet_data = df
-        except Exception as e:
-            logger.error(e)
-            logger.error("[Hunt Bot] Error creating Dataframe")
-            self.sheet_data = pd.DataFrame()
+    def set_sheet_data(self, sheet_data: pd.DataFrame()) -> None:
+        self.sheet_data = sheet_data
 
-    def build_table_map(self):
-        logger.info("Building table map...")
-        start_col = None
-        end_col = None
-        name = ""
-
-        try:
-            # Dynamically find the cells that fall under the merged cell table name
-            for col in range(len(self.sheet_data.columns)):
-                header_value = self.sheet_data.iloc[0, col]
-
-                if header_value is not None:
-                    name = header_value
-                    start_col = col
-
-                    self.table_map[name] = {"start_col": start_col}
-
-                if header_value is None:
-                    end_col = col
-                    self.table_map.setdefault(name, {})['end_col'] = end_col
-        except Exception as e:
-            logger.error(e)
-            logger.error("Error building table map")
-            self.table_map = {}
-
-    def pull_table_data(self, table_name: str):
-        logger.info("Pulling Table Data...")
-        table_metadata = self.table_map.get(table_name, {})
-        if not table_metadata:
-            return []
-
-        logger.info(f"Data located between columns {table_metadata['start_col']} and {table_metadata['end_col']}")
-
-        # Get the data between columns
-        df = self.sheet_data.iloc[:, table_metadata['start_col']:table_metadata['end_col'] + 1].copy()
-
-        # Drop the header row (merged cell label)
-        df = df.drop(index=0).reset_index(drop=True)
-
-        # Replace empty strings with pd.NA
-        df = df.replace("", pd.NA)
-
-        # Drop completely empty columns
-        df = df.dropna(axis=1, how='all')
-
-        # Drop completely empty rows
-        df = df.dropna(how='all')
-
-        # Set the second row (index 0 now) as column headers
-        df.columns = df.iloc[0]
-        df = df.drop(index=0).reset_index(drop=True)
-
-        return df
+    def set_table_map(self, table_map: dict):
+        self.table_map = table_map
 
     def load_config(self, df):
         try:

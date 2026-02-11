@@ -67,8 +67,8 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
 
     # Retrieve the configuration from the GDoc
     try:
-        hunt_bot.set_sheet_data(
-            data=gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name))
+        data = gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name)
+        hunt_bot.set_sheet_data(sheet_data=data)
     except Exception as e:
         logger.error(f"[SHEET COMMAND] Error retrieving sheet data", exc_info=e)
         await interaction.followup.send("Error retrieving sheet data.")
@@ -78,12 +78,13 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
         await interaction.followup.send("Sheet is empty or not configured properly.")
         return
 
-    hunt_bot.build_table_map()
+    hunt_bot.table_map = gdoc.build_table_map(df=hunt_bot.sheet_data)
     if not hunt_bot.table_map:
         await interaction.followup.send("Error building sheet table map.")
         return
 
-    config_df = hunt_bot.pull_table_data(table_name=hunt_bot.config_table_name)
+    config_df = gdoc.extract_table(df=hunt_bot.sheet_data, table_map=hunt_bot.table_map,
+                                   table_name=hunt_bot.config_table_name)
     if config_df.empty:
         await interaction.followup.send("Error retrieving config data.")
         return

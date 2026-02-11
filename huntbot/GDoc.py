@@ -192,9 +192,7 @@ if __name__ == "__main__":
 
     gdoc = GDoc()
     raw_data = gdoc.get_data_from_sheet(SPREADSHEET_ID, SHEET_NAME)
-
     df = GDoc.build_dataframe(raw_data)
-
     table_map = GDoc.build_table_map(df)
 
     hunt_table = GDoc.extract_table(df, table_map, "Plugin Config")
