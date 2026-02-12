@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands, tasks
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
@@ -19,14 +18,21 @@ class FluxRLPluginCog(commands.Cog):
         self.plugin_drops_channel_id = 0
         self.configured = False
         self.participant_whitelist: set[str] = set()
-        self.monster_whitelist: set[str] = set()
-        self.item_whitelist: set[str] = set()
+        self.monster_whitelist = [str]
+        self.item_whitelist = [str]
         self.monster_whitelist_fp = "../conf/monster_whitelist.json"
         self.item_whitelist_fp = "../conf/item_whitelist.json"
         self.flux_rl_plugin_sheet_id = ""
         self.sheet_data = pd.DataFrame()
         self.sheet_name = "Hunt"
-
+        self.config_table_name = "Hunt Config"
+        self.score_table_name = "Current Score"
+        self.monster_list_table_name = "Monster List"
+        self.item_list_table_name = "Item List"
+        self.white_list_table_name = "White List"
+        self.black_list_table_name = "Black List"
+        self.bounty_password_table_name = "Bounty Passwords"
+        self.daily_password_table_name = "Daily Passwords"
 
     async def cog_load(self) -> None:
         """Runs when the cog is loaded and bot is ready."""
@@ -80,26 +86,32 @@ class FluxRLPluginCog(commands.Cog):
 
     def read_monster_whitelist_file(self) -> None:
         with open(self.monster_whitelist_fp, "r", encoding="utf-8") as f:
-            monsters = json.load(f)
-
-        # Convert the list to a set
-        self.monster_whitelist = set(monsters)
+            self.monster_whitelist = json.load(f)
 
     def read_item_whitelist_file(self) -> None:
         with open(self.item_whitelist_fp, "r", encoding="utf-8") as f:
-            items = json.load(f)
+            self.item_whitelist = json.load(f)
 
-        # Convert the list to a set
-        self.item_whitelist = set(items)
-
+    # TODO add Exception handling to all of these
     def write_monster_whitelist_to_plugin_config_gdoc(self) -> None:
-        ...
+        self.gdoc.write_column(spreadsheet_id=self.flux_rl_plugin_sheet_id, sheet_name=self.sheet_name,
+                               values=self.monster_whitelist, start_cell="G3")
 
     def write_item_whitelist_to_plugin_config_gdoc(self) -> None:
-        ...
+        self.gdoc.write_column(spreadsheet_id=self.flux_rl_plugin_sheet_id, sheet_name=self.sheet_name,
+                               values=self.item_whitelist, start_cell="I3")
 
     def write_player_whitelist_to_plugin_config_gdoc(self) -> None:
-        ...
+        self.gdoc.write_column(spreadsheet_id=self.flux_rl_plugin_sheet_id, sheet_name=self.sheet_name,
+                               values=list(self.participant_whitelist), start_cell="K3")
+
+    def write_bounty_password_to_plugin_config_doc(self, bounty_password: str) -> None:
+        self.gdoc.write_column(spreadsheet_id=self.flux_rl_plugin_sheet_id, sheet_name=self.sheet_name,
+                               values=[bounty_password], start_cell="K3")
+
+    def write_daily_password_to_plugin_config_doc(self, daily_password: str) -> None:
+        self.gdoc.write_column(spreadsheet_id=self.flux_rl_plugin_sheet_id, sheet_name=self.sheet_name,
+                               values=[daily_password], start_cell="Q3")
 
     # TODO Determine how long interval should be
     @tasks.loop(seconds=10)
