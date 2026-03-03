@@ -174,10 +174,12 @@ class ScoreCog(commands.Cog):
             if self.message:
                 try:
                     await self.message.edit(content=self.score_message)
+                    await self.update_plugin_gdoc_scores()
                 except discord.NotFound:
                     self.message = await channel.send(self.score_message)
             else:
                 self.message = await channel.send(self.score_message)
+                await self.update_plugin_gdoc_scores()
 
         except Exception as e:
             logger.error("[Score Cog] Error hit in score loop.", exc_info=e)
