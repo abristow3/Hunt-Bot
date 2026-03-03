@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 from huntbot.HuntBot import HuntBot
 import pandas as pd
 from huntbot.exceptions import TableDataImportException, ConfigurationException
+from huntbot.GDoc import GDoc
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class ScoreCog(commands.Cog):
     update the score message on Discord, and handle failure recovery mechanisms.
     """
 
-    def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot) -> None:
+    def __init__(self, discord_bot: commands.Bot, hunt_bot: HuntBot, gdoc: GDoc) -> None:
         """
         Initialize the ScoreCog with necessary bot and huntbot instances.
 
@@ -29,6 +30,7 @@ class ScoreCog(commands.Cog):
         """
         self.discord_bot = discord_bot
         self.hunt_bot = hunt_bot
+        self.gdoc = gdoc
         self.configured = False
         self.score_channel_id = 0
 
@@ -88,7 +90,7 @@ class ScoreCog(commands.Cog):
         """
         logger.info("[Score Cog] Attempting to fetch score.")
         # Use table map to find score table and pull data
-        score_df = self.hunt_bot.pull_table_data(table_name=self.score_table_name)
+        score_df = self._load_table(self.score_table_name)
 
         if score_df.empty:
             logger.error("[Score Cog] Error retrieving score data from GDoc table.")
@@ -97,6 +99,14 @@ class ScoreCog(commands.Cog):
         score_dict = pd.Series(score_df['Total Points'].values, index=score_df['Team Name']).to_dict()
         self.team1_points = score_dict.get(f"Team {self.hunt_bot.team_one_name}", 0)
         self.team2_points = score_dict.get(f"Team {self.hunt_bot.team_two_name}", 0)
+
+    def _load_table(self, table_name: str) -> pd.DataFrame:
+        raw_data = self.gdoc.get_data_from_sheet(spreadsheet_id=self.hunt_bot.sheet_id,
+                                                 sheet_name=self.hunt_bot.sheet_name)
+        df = self.gdoc.build_dataframe(raw_data)
+        table_map = self.gdoc.build_table_map(df)
+
+        return self.gdoc.extract_table(df, table_map, table_name)
 
     def determine_lead(self) -> None:
         # Calculate lead
@@ -110,6 +120,24 @@ class ScoreCog(commands.Cog):
             self.lead_message = f"Team {lead_team} is ahead by {lead_points} point{'s' if lead_points != 1 else ''}!"
         else:
             self.lead_message = "It's a tie!"
+
+    async def update_plugin_gdoc_scores(self) -> None:
+        team_1_score_cell = "B13"
+        team_2_score_cell = "B14"
+        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        plugin_sheet_name = "Config"
+
+        try:
+            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                                cell=team_1_score_cell, value=self.team1_points)
+            logger.info(f"[Score Cog] Single cell write success ({self.team1_points}): {success_cell}")
+
+            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                                cell=team_2_score_cell, value=self.team2_points)
+            logger.info(f"[Score Cog] Single cell write success ({self.team2_points}): {success_cell}")
+
+        except Exception as e:
+            logger.error(f"[Score Cog] Error updating daily password cell in RL Plugin GDoc", exc_info=e)
 
     @tasks.loop(seconds=10)
     async def start_scores(self) -> None:
