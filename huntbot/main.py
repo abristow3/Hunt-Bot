@@ -94,7 +94,7 @@ async def check_start_time():
         # Get updated gdoc data rate is 300 reads /per minute
         logger.info("[Main Task Loop] Retrieving GDoc data....")
         hunt_bot.set_sheet_data(
-            data=gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name))
+            sheet_data=gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name))
     except Exception as e:
         logger.error(e)
         logger.error("[Main Task Loop] Failed to retrieve GDoc data")

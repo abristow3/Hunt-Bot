@@ -3,6 +3,7 @@ import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
+from huntbot.GDoc import GDoc
 import logging
 import re
 import discord
@@ -54,9 +55,10 @@ IMAGE_URL_PATTERN = re.compile(
 
 
 class DailiesCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
+    def __init__(self, bot: commands.Bot, hunt_bot: HuntBot, gdoc: GDoc):
         self.bot = bot
         self.hunt_bot = hunt_bot
+        self.gdoc = gdoc
 
         self.daily_channel_id = 0
         self.daily_interval = 24
@@ -119,13 +121,15 @@ class DailiesCog(commands.Cog):
         )
 
     def get_single_dailies(self) -> None:
-        self.single_dailies_df = self.hunt_bot.pull_table_data(table_name=self.single_dailies_table_name)
+        self.single_dailies_df = self._load_table(self.single_dailies_table_name)
+
         if self.single_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing single dailies data")
             raise TableDataImportException(table_name=self.single_dailies_table_name)
 
     def get_double_dailies(self) -> None:
-        self.double_dailies_df = self.hunt_bot.pull_table_data(table_name=self.double_dailies_table_name)
+        self.double_dailies_df = self._load_table(self.double_dailies_table_name)
+
         if self.double_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing double dailies data")
             raise TableDataImportException(table_name=self.double_dailies_table_name)
@@ -204,6 +208,7 @@ class DailiesCog(commands.Cog):
             self.message_id = self.embed_message.id
             await self.post_team_notif()
             await self.embed_message.pin()
+            await self.update_plugin_gdoc_passwords(password=single_password)
         except StopIteration:
             logger.info("[Dailies Cog] No more dailies left. Stopping task")
             self.start_dailies.stop()
@@ -215,11 +220,13 @@ class DailiesCog(commands.Cog):
             logger.info(f"[Dailies Cog] Dailies interval changed to: {self.daily_interval} hours")
             self.start_dailies.change_interval(hours=self.daily_interval)
 
-    def is_valid_image_url(self, url: str) -> bool:
+    @staticmethod
+    def is_valid_image_url(url: str) -> bool:
         """Validates if a string is a valid image URL based on regex."""
         return bool(IMAGE_URL_PATTERN.fullmatch(url.strip()))
 
-    def extract_image_urls(self, text: str) -> list:
+    @staticmethod
+    def extract_image_urls(text: str) -> list:
         return IMAGE_URL_PATTERN.findall(text)
 
     def create_embed_message(self) -> discord.Embed:
@@ -298,3 +305,22 @@ class DailiesCog(commands.Cog):
         except Exception as e:
             logger.error("[Dailies Cog] Error when posting daily complete message", exc_info=e)
             return
+
+    async def update_plugin_gdoc_passwords(self, password: str) -> None:
+        daily_pass_cell = "B11"
+        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        plugin_sheet_name = "Config"
+        try:
+            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                                cell=daily_pass_cell, value=password)
+            logger.info(f"[Dailies Cog] Single cell write success (B11): {success_cell}")
+        except Exception as e:
+            logger.error(f"[Dailies Cog] Error updating daily password cell in RL Plugin GDoc", exc_info=e)
+
+    def _load_table(self, table_name: str) -> pd.DataFrame:
+        raw_data = self.gdoc.get_data_from_sheet(spreadsheet_id=self.hunt_bot.sheet_id,
+                                                 sheet_name=self.hunt_bot.sheet_name)
+        df = self.gdoc.build_dataframe(raw_data)
+        table_map = self.gdoc.build_table_map(df)
+
+        return self.gdoc.extract_table(df, table_map, table_name)
