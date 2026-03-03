@@ -121,14 +121,16 @@ class DailiesCog(commands.Cog):
         )
 
     def get_single_dailies(self) -> None:
-        self.single_dailies_df = self._load_table(self.single_dailies_table_name)
+        self.single_dailies_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                    table_name=self.single_dailies_table_name)
 
         if self.single_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing single dailies data")
             raise TableDataImportException(table_name=self.single_dailies_table_name)
 
     def get_double_dailies(self) -> None:
-        self.double_dailies_df = self._load_table(self.double_dailies_table_name)
+        self.double_dailies_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                    table_name=self.double_dailies_table_name)
 
         if self.double_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing double dailies data")
@@ -316,11 +318,3 @@ class DailiesCog(commands.Cog):
             logger.info(f"[Dailies Cog] Single cell write success (B11): {success_cell}")
         except Exception as e:
             logger.error(f"[Dailies Cog] Error updating daily password cell in RL Plugin GDoc", exc_info=e)
-
-    def _load_table(self, table_name: str) -> pd.DataFrame:
-        raw_data = self.gdoc.get_data_from_sheet(spreadsheet_id=self.hunt_bot.sheet_id,
-                                                 sheet_name=self.hunt_bot.sheet_name)
-        df = self.gdoc.build_dataframe(raw_data)
-        table_map = self.gdoc.build_table_map(df)
-
-        return self.gdoc.extract_table(df, table_map, table_name)

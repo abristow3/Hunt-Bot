@@ -3,7 +3,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 import discord
 from discord.ext import commands, tasks
-
+import pandas as pd
 from huntbot.cogs.Score import ScoreCog, ConfigurationException, TableDataImportException
 
 
@@ -28,8 +28,16 @@ def mock_hunt_bot():
 
 
 @pytest.fixture
-def score_cog(mock_discord_bot, mock_hunt_bot):
-    cog = ScoreCog(mock_discord_bot, mock_hunt_bot)
+def mock_gdoc():
+    gdoc = MagicMock()
+    gdoc.wait_until_ready = AsyncMock()
+    gdoc.get_channel = MagicMock()
+    return gdoc
+
+
+@pytest.fixture
+def score_cog(mock_discord_bot, mock_hunt_bot, mock_gdoc):
+    cog = ScoreCog(mock_discord_bot, mock_hunt_bot, mock_gdoc)
     return cog
 
 
@@ -78,15 +86,19 @@ def test_get_score_channel_failure(score_cog):
 
 
 def test_get_score_success(score_cog):
-    # Setup dataframe mock
-    import pandas as pd
-    data = {
-        'Team Name': [f"Team {score_cog.hunt_bot.team_one_name}", f"Team {score_cog.hunt_bot.team_two_name}"],
-        'Total Points': [100, 200],
-    }
+    # Mock dataframe as GDoc.extract_table expects
+    data = [
+        ["Current Score", None],                 # merged header row
+        ["Team Name", "Total Points"],           # column headers
+        [f"Team {score_cog.hunt_bot.team_one_name}", 100],
+        [f"Team {score_cog.hunt_bot.team_two_name}", 200]
+    ]
     df = pd.DataFrame(data)
 
-    score_cog.hunt_bot.pull_table_data.return_value = df
+    score_cog.hunt_bot.sheet_data = df.copy()
+    score_cog.hunt_bot.table_map = {
+        "Current Score": {"start_col": 0, "end_col": len(df[0]) - 1}
+    }
 
     score_cog.get_score()
 
@@ -95,9 +107,17 @@ def test_get_score_success(score_cog):
 
 
 def test_get_score_empty_dataframe_raises(score_cog):
-    import pandas as pd
-    empty_df = pd.DataFrame()
-    score_cog.hunt_bot.pull_table_data.return_value = empty_df
+    # Mock dataframe with only header row (no data)
+    df = pd.DataFrame([
+        ["Current Score", None],
+        ["Team Name", "Total Points"]
+    ])
+
+    score_cog.hunt_bot.sheet_data = df
+    score_cog.hunt_bot.table_map = {
+        "Current Score": {"start_col": 0, "end_col": len(df[0]) - 1}
+    }
+
     with pytest.raises(TableDataImportException):
         score_cog.get_score()
 

@@ -132,25 +132,20 @@ class BountiesCog(commands.Cog):
         )
 
     def get_single_bounties(self):
-        self.single_bounties_df = self._load_table(self.single_bounties_table_name)
+        self.single_bounties_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                     table_name=self.single_bounties_table_name)
 
         if self.single_bounties_df.empty:
             logger.error("[Bounties Cog] Error parsing single bounties from config map")
             raise TableDataImportException(table_name=self.single_bounties_table_name)
 
     def get_double_bounties(self):
-        self.double_bounties_df = self._load_table(self.double_bounties_table_name)
+        self.double_bounties_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                     table_name=self.double_bounties_table_name)
 
         if self.double_bounties_df.empty:
             logger.error("[Bounties Cog] Error parsing double bounties from config map")
             raise TableDataImportException(table_name=self.double_bounties_table_name)
-
-    def _load_table(self, table_name: str) -> pd.DataFrame:
-        raw_data = self.gdoc.get_data_from_sheet(spreadsheet_id=self.hunt_bot.sheet_id,sheet_name=self.hunt_bot.sheet_name)
-        df = self.gdoc.build_dataframe(raw_data)
-        table_map = self.gdoc.build_table_map(df)
-
-        return self.gdoc.extract_table(df, table_map, table_name)
 
     @staticmethod
     def yield_next_row(df):

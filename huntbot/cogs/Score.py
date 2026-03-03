@@ -90,7 +90,8 @@ class ScoreCog(commands.Cog):
         """
         logger.info("[Score Cog] Attempting to fetch score.")
         # Use table map to find score table and pull data
-        score_df = self._load_table(self.score_table_name)
+        score_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                      table_name=self.score_table_name)
 
         if score_df.empty:
             logger.error("[Score Cog] Error retrieving score data from GDoc table.")
@@ -99,14 +100,6 @@ class ScoreCog(commands.Cog):
         score_dict = pd.Series(score_df['Total Points'].values, index=score_df['Team Name']).to_dict()
         self.team1_points = score_dict.get(f"Team {self.hunt_bot.team_one_name}", 0)
         self.team2_points = score_dict.get(f"Team {self.hunt_bot.team_two_name}", 0)
-
-    def _load_table(self, table_name: str) -> pd.DataFrame:
-        raw_data = self.gdoc.get_data_from_sheet(spreadsheet_id=self.hunt_bot.sheet_id,
-                                                 sheet_name=self.hunt_bot.sheet_name)
-        df = self.gdoc.build_dataframe(raw_data)
-        table_map = self.gdoc.build_table_map(df)
-
-        return self.gdoc.extract_table(df, table_map, table_name)
 
     def determine_lead(self) -> None:
         # Calculate lead
