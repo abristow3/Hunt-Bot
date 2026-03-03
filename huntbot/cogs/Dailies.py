@@ -3,6 +3,7 @@ import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
+from huntbot.GDoc import GDoc
 import logging
 import re
 import discord
@@ -52,15 +53,18 @@ IMAGE_URL_PATTERN = re.compile(
     """
 )
 
+
 class DailiesCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
+    def __init__(self, bot: commands.Bot, hunt_bot: HuntBot, gdoc: GDoc):
         self.bot = bot
         self.hunt_bot = hunt_bot
+        self.gdoc = gdoc
 
         self.daily_channel_id = 0
         self.daily_interval = 24
         self.single_dailies_df = pd.DataFrame()
         self.double_dailies_df = pd.DataFrame()
+        self.daily_passwords: set[str] = set()
         self.single_dailies_table_name = "Single Dailies"
         self.double_dailies_table_name = "Double Dailies"
         self.daily_description = ""
@@ -80,6 +84,7 @@ class DailiesCog(commands.Cog):
             self.get_daily_channel()
             self.get_single_dailies()
             self.get_double_dailies()
+            self.save_daily_passwords()
 
             self.single_daily_generator = self.yield_next_row(self.single_dailies_df)
             self.double_daily_generator = self.yield_next_row(self.double_dailies_df)
@@ -101,14 +106,32 @@ class DailiesCog(commands.Cog):
             logger.error("[Dailies Cog] DAILY_CHANNEL_ID not found")
             raise ConfigurationException(config_key='DAILY_CHANNEL_ID')
 
+    def save_daily_passwords(self) -> None:
+        if self.single_dailies_df.empty:
+            self.daily_passwords = set()
+            return
+
+        self.daily_passwords = set(
+            self.single_dailies_df["Password"].dropna()
+        )
+
+        logger.info(
+            "[Dailies Cog] Loaded %d bounty passwords into memory",
+            len(self.daily_passwords)
+        )
+
     def get_single_dailies(self) -> None:
-        self.single_dailies_df = self.hunt_bot.pull_table_data(table_name=self.single_dailies_table_name)
+        self.single_dailies_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                    table_name=self.single_dailies_table_name)
+
         if self.single_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing single dailies data")
             raise TableDataImportException(table_name=self.single_dailies_table_name)
 
     def get_double_dailies(self) -> None:
-        self.double_dailies_df = self.hunt_bot.pull_table_data(table_name=self.double_dailies_table_name)
+        self.double_dailies_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                    table_name=self.double_dailies_table_name)
+
         if self.double_dailies_df.empty:
             logger.error("[Dailies Cog] Error parsing double dailies data")
             raise TableDataImportException(table_name=self.double_dailies_table_name)
@@ -140,12 +163,12 @@ class DailiesCog(commands.Cog):
         if team_two_channel:
             await team_two_channel.send(message)
 
-    @tasks.loop(hours=1) 
+    @tasks.loop(hours=1)
     async def start_dailies(self):
         if not self.configured:
             logger.warning("[Dailies Cog] Cog not configured, skipping dailies.")
             return
-        
+
         channel = self.bot.get_channel(self.daily_channel_id)
         if not channel:
             logger.error("[Dailies Cog] Dailies Channel not found.")
@@ -187,6 +210,7 @@ class DailiesCog(commands.Cog):
             self.message_id = self.embed_message.id
             await self.post_team_notif()
             await self.embed_message.pin()
+            await self.update_plugin_gdoc_passwords(password=single_password)
         except StopIteration:
             logger.info("[Dailies Cog] No more dailies left. Stopping task")
             self.start_dailies.stop()
@@ -195,25 +219,27 @@ class DailiesCog(commands.Cog):
     async def before_dailies(self):
         await self.bot.wait_until_ready()
         if self.daily_interval > 0:
-            logger.info(f"[Dailies Cog] Dailies interval changed to: {self.daily_interval} hours" )
+            logger.info(f"[Dailies Cog] Dailies interval changed to: {self.daily_interval} hours")
             self.start_dailies.change_interval(hours=self.daily_interval)
 
-    def is_valid_image_url(self, url: str) -> bool:
+    @staticmethod
+    def is_valid_image_url(url: str) -> bool:
         """Validates if a string is a valid image URL based on regex."""
         return bool(IMAGE_URL_PATTERN.fullmatch(url.strip()))
 
-    def extract_image_urls(self, text: str) -> list:
+    @staticmethod
+    def extract_image_urls(text: str) -> list:
         return IMAGE_URL_PATTERN.findall(text)
 
     def create_embed_message(self) -> discord.Embed:
         embed = discord.Embed(title="New Daily!", description=self.daily_description)
         image_urls = self.extract_image_urls(self.daily_description)
-        
+
         if image_urls:
             embed.set_image(url=image_urls[0])
-        
+
         return embed
-    
+
     async def update_embed_description(self, new_desc: str) -> str:
         # Copy the original embed and update the description with the new one
         if self.embed_message and self.embed_message.embeds:
@@ -236,19 +262,19 @@ class DailiesCog(commands.Cog):
             logger.warning("[Dailies Cog] No Daily Message in memory. Skipping.")
             response_message = "No Daily message found to update."
             return response_message
-        
+
         # Check new URL is accepted format
         if not self.is_valid_image_url(url=new_url):
             logger.info("[Dailies Cog] Invalid image URL provided")
             response_message = "Invalid image URL provided. Daily image not updated."
             return response_message
-        
-        updated_embed = self.embed_message.embeds[0] # First (and usually only) embed
+
+        updated_embed = self.embed_message.embeds[0]  # First (and usually only) embed
         description = updated_embed.description or self.daily_description
 
         # Get old URL
         old_urls = self.extract_image_urls(description)
-        
+
         if old_urls:
             old_url = old_urls[0]
             description = description.replace(old_url, new_url)
@@ -264,7 +290,7 @@ class DailiesCog(commands.Cog):
         await self.embed_message.edit(embed=updated_embed)
         logger.info("[Dailies Cog] Image link updated successfully")
         response_message = "Image link updated succesfully."
-        
+
         return response_message
 
     async def post_daily_complete_message(self, team_name: str, placement: str) -> None:
@@ -272,11 +298,23 @@ class DailiesCog(commands.Cog):
         if not channel:
             logger.error("[Dailies Cog] Dailies Channel not found.")
             return
-        
+
         try:
-            clean_desc = self.daily_description.replace("@everyone ", "") 
-            message = daily_complete_template.substitute(team_name=team_name, placement=placement, description=clean_desc)
+            clean_desc = self.daily_description.replace("@everyone ", "")
+            message = daily_complete_template.substitute(team_name=team_name, placement=placement,
+                                                         description=clean_desc)
             await channel.send(message)
         except Exception as e:
             logger.error("[Dailies Cog] Error when posting daily complete message", exc_info=e)
             return
+
+    async def update_plugin_gdoc_passwords(self, password: str) -> None:
+        daily_pass_cell = "B11"
+        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        plugin_sheet_name = "Config"
+        try:
+            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                                cell=daily_pass_cell, value=password)
+            logger.info(f"[Dailies Cog] Single cell write success (B11): {success_cell}")
+        except Exception as e:
+            logger.error(f"[Dailies Cog] Error updating daily password cell in RL Plugin GDoc", exc_info=e)

@@ -27,7 +27,6 @@ def mock_hunt_bot():
         'BOUNTIES_PER_DAY': '1',
         'BOUNTY_CHANNEL_ID': '123456789',
     }
-    hunt_bot.pull_table_data.return_value = MagicMock(empty=False)
     hunt_bot.guild_id = 999999999
     hunt_bot.team_one_chat_channel_id = 111111111
     hunt_bot.team_two_chat_channel_id = 222222222

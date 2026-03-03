@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 class InvalidConfig(Exception):
     def __init__(self, message="Error reading configuration file"):
-        # Call the base class constructor
         super().__init__(message)
 
 
@@ -36,13 +35,15 @@ class HuntBot:
         self.team_one_chat_channel_id = 0
         self.team_two_chat_channel_id = 0
         self.hunt_edition = ""
-        self.wom_hunt_url = ""
+        self.wom_competition_id = 0
+        self.wom_event_api_url = "https://api.wiseoldman.net/v2/competitions/"
+        self.wom_event_website_url = "https://wiseoldman.net/competitions/"
         self.guild_id = 699971574689955850
+        self.sheet_id = ""
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
         self.admin_channel_id = 0
-
 
     def set_config_table_name(self, table_name: str):
         self.config_table_name = table_name
@@ -53,69 +54,14 @@ class HuntBot:
     def set_sheet_name(self, sheet_name: str):
         self.sheet_name = sheet_name
 
-    def set_sheet_data(self, data):
-        try:
-            df = pd.DataFrame(data)
-            df.iloc[0] = df.iloc[0].replace({"": None})
-            self.sheet_data = df
-        except Exception as e:
-            logger.error(e)
-            logger.error("Error creating Dataframe")
-            self.sheet_data = pd.DataFrame()
+    def set_sheet_id(self, sheet_id: str) -> None:
+        self.sheet_id = sheet_id
 
-    def build_table_map(self):
-        logger.info("Building table map...")
-        start_col = None
-        end_col = None
-        name = ""
+    def set_sheet_data(self, sheet_data: pd.DataFrame()) -> None:
+        self.sheet_data = sheet_data
 
-        try:
-            # Dynamically find the cells that fall under the merged cell table name
-            for col in range(len(self.sheet_data.columns)):
-                header_value = self.sheet_data.iloc[0, col]
-
-                if header_value is not None:
-                    name = header_value
-                    start_col = col
-
-                    self.table_map[name] = {"start_col": start_col}
-
-                if header_value is None:
-                    end_col = col
-                    self.table_map.setdefault(name, {})['end_col'] = end_col
-        except Exception as e:
-            logger.error(e)
-            logger.error("Error building table map")
-            self.table_map = {}
-
-    def pull_table_data(self, table_name: str):
-        logger.info("Pulling Table Data...")
-        table_metadata = self.table_map.get(table_name, {})
-        if not table_metadata:
-            return []
-
-        logger.info(f"Data located between columns {table_metadata['start_col']} and {table_metadata['end_col']}")
-
-        # Get the data between columns
-        df = self.sheet_data.iloc[:, table_metadata['start_col']:table_metadata['end_col'] + 1].copy()
-
-        # Drop the header row (merged cell label)
-        df = df.drop(index=0).reset_index(drop=True)
-
-        # Replace empty strings with pd.NA
-        df = df.replace("", pd.NA)
-
-        # Drop completely empty columns
-        df = df.dropna(axis=1, how='all')
-
-        # Drop completely empty rows
-        df = df.dropna(how='all')
-
-        # Set the second row (index 0 now) as column headers
-        df.columns = df.iloc[0]
-        df = df.drop(index=0).reset_index(drop=True)
-
-        return df
+    def set_table_map(self, table_map: dict):
+        self.table_map = table_map
 
     def load_config(self, df):
         try:
@@ -140,7 +86,7 @@ class HuntBot:
             self.team_one_chat_channel_id = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
             self.team_two_chat_channel_id = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
             self.hunt_edition = self.config_map.get("HUNT_EDITION", "")
-            self.wom_hunt_url = self.config_map.get("WOM_HUNT_URL", "")
+            self.wom_competition_id = self.config_map.get("WOM_COMPETITION_ID", "0")
         except ValueError as e:
             logger.exception("Invalid type in config values (expected integer for channel IDs).", exc_info=e)
             raise InvalidConfig("Invalid type in config values: expected integers for channel IDs.")
@@ -169,8 +115,8 @@ class HuntBot:
             missing_fields.append("TEAM_2_CHAT_CHANNEL_ID")
         if not self.hunt_edition:
             missing_fields.append("HUNT_EDITION")
-        if not self.wom_hunt_url:
-            missing_fields.append("WOM_HUNT_URL")
+        if not self.hunt_edition:
+            missing_fields.append("WOM_COMPETITION_ID")
 
         if missing_fields:
             logger.error(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
@@ -227,3 +173,10 @@ class HuntBot:
         self.config_map['BOUNTY_PASSWORD'] = self.bounty_password
         self.config_map['DAILY_PASSWORD'] = self.daily_password
         self.config_map['ENDED'] = self.ended
+
+    def generate_wom_competition_urls(self) -> None:
+        """
+        Appends the WOM Competition ID from the configuration to the end of the WOM event URls
+        """
+        self.wom_event_api_url = self.wom_event_api_url + str(self.wom_competition_id)
+        self.wom_event_website_url = self.wom_event_website_url + str(self.wom_competition_id)

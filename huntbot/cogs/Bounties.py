@@ -3,6 +3,7 @@ import pandas as pd
 from string import Template
 from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import TableDataImportException, ConfigurationException
+from huntbot.GDoc import GDoc
 import logging
 import re
 import discord
@@ -51,14 +52,17 @@ IMAGE_URL_PATTERN = re.compile(
     """
 )
 
+
 class BountiesCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, hunt_bot: HuntBot):
+    def __init__(self, bot: commands.Bot, hunt_bot: HuntBot, gdoc: GDoc):
         self.bot = bot
         self.hunt_bot = hunt_bot
+        self.gdoc = gdoc
 
         self.bounties_per_day = 0
         self.bounty_channel_id = 0
         self.bounty_interval = 0
+        self.bounty_passwords: set[str] = set()
         self.single_bounties_df = pd.DataFrame()
         self.double_bounties_df = pd.DataFrame()
         self.single_bounties_table_name = "Single Bounties"
@@ -73,8 +77,6 @@ class BountiesCog(commands.Cog):
         self.first_place = ""
         self.second_place = ""
 
-
-
     async def cog_load(self):
         logger.info("[Bounties Cog] Loading cog and initializing.")
         try:
@@ -84,6 +86,7 @@ class BountiesCog(commands.Cog):
             self.get_bounty_channel()
             self.get_single_bounties()
             self.get_double_bounties()
+            self.save_bounty_passwords()
 
             self.single_bounty_generator = self.yield_next_row(self.single_bounties_df)
             self.double_bounty_generator = self.yield_next_row(self.double_bounties_df)
@@ -114,14 +117,32 @@ class BountiesCog(commands.Cog):
             logger.error("[Bounties Cog] No BOUNTY_CHANNEL_ID data found in config")
             raise ConfigurationException(config_key='BOUNTY_CHANNEL_ID')
 
+    def save_bounty_passwords(self) -> None:
+        if self.single_bounties_df.empty:
+            self.bounty_passwords = set()
+            return
+
+        self.bounty_passwords = set(
+            self.single_bounties_df["Password"].dropna()
+        )
+
+        logger.info(
+            "[Bounties Cog] Loaded %d bounty passwords into memory",
+            len(self.bounty_passwords)
+        )
+
     def get_single_bounties(self):
-        self.single_bounties_df = self.hunt_bot.pull_table_data(table_name=self.single_bounties_table_name)
+        self.single_bounties_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                     table_name=self.single_bounties_table_name)
+
         if self.single_bounties_df.empty:
             logger.error("[Bounties Cog] Error parsing single bounties from config map")
             raise TableDataImportException(table_name=self.single_bounties_table_name)
 
     def get_double_bounties(self):
-        self.double_bounties_df = self.hunt_bot.pull_table_data(table_name=self.double_bounties_table_name)
+        self.double_bounties_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
+                                                     table_name=self.double_bounties_table_name)
+
         if self.double_bounties_df.empty:
             logger.error("[Bounties Cog] Error parsing double bounties from config map")
             raise TableDataImportException(table_name=self.double_bounties_table_name)
@@ -152,7 +173,6 @@ class BountiesCog(commands.Cog):
             await team_one_channel.send(message)
         if team_two_channel:
             await team_two_channel.send(message)
-
 
     @tasks.loop(hours=6)  # Will override this interval after init
     async def start_bounties(self):
@@ -202,6 +222,7 @@ class BountiesCog(commands.Cog):
             self.message_id = self.embed_message.id
             await self.post_team_notif()
             await self.embed_message.pin()
+            await self.update_plugin_gdoc_passwords(password=single_password)
         except StopIteration:
             logger.info("[Bounties Cog] No more bounties left. Stopping task.")
             self.start_bounties.stop()
@@ -213,41 +234,43 @@ class BountiesCog(commands.Cog):
             logger.info(f"[Bounties Cog] Updating Bounties task interval to: {self.bounty_interval} hours")
             self.start_bounties.change_interval(hours=self.bounty_interval)
 
-    def is_valid_image_url(self, url: str) -> bool:
+    @staticmethod
+    def is_valid_image_url(url: str) -> bool:
         """Validates if a string is a valid image URL based on regex."""
         return bool(IMAGE_URL_PATTERN.fullmatch(url.strip()))
 
-    def extract_image_urls(self, text: str) -> list:
+    @staticmethod
+    def extract_image_urls(text: str) -> list:
         return IMAGE_URL_PATTERN.findall(text)
-    
+
     def create_embed_message(self) -> discord.Embed:
         embed = discord.Embed(title="New Bounty!", description=self.bounty_description)
         image_urls = self.extract_image_urls(self.bounty_description)
-        
+
         if image_urls:
             embed.set_image(url=image_urls[0])
-        
+
         return embed
-    
+
     async def update_embed_url(self, new_url: str) -> str:
         # Check we have a embed message in memory to update
         if not self.embed_message or not self.embed_message.embeds:
             logger.warning("[Bounties Cog] No Bounty Message in memory. Skipping.")
             response_message = "No bounty message found to update."
             return response_message
-        
+
         # Check new URL is accepted format
         if not self.is_valid_image_url(url=new_url):
             logger.info("[Bounties Cog] Invalid image URL provided")
             response_message = "Invalid image URL provided. Bounty image not updated."
             return response_message
-        
-        updated_embed = self.embed_message.embeds[0] # First (and usually only) embed
+
+        updated_embed = self.embed_message.embeds[0]  # First (and usually only) embed
         description = updated_embed.description or self.bounty_description
 
         # Get old URL
         old_urls = self.extract_image_urls(description)
-        
+
         if old_urls:
             old_url = old_urls[0]
             description = description.replace(old_url, new_url)
@@ -263,7 +286,7 @@ class BountiesCog(commands.Cog):
         await self.embed_message.edit(embed=updated_embed)
         logger.info("[Bounties Cog] Image link updated successfully")
         response_message = "Image link updated succesfully."
-        
+
         return response_message
 
     async def update_embed_description(self, new_desc: str) -> str:
@@ -287,11 +310,23 @@ class BountiesCog(commands.Cog):
         if not channel:
             logger.error("[Bounties Cog] Bounties Channel not found.")
             return
-        
+
         try:
-            clean_desc = self.bounty_description.replace("@everyone ", "") 
-            message = bounty_complete_template.substitute(team_name=team_name, placement=placement, description=clean_desc)
+            clean_desc = self.bounty_description.replace("@everyone ", "")
+            message = bounty_complete_template.substitute(team_name=team_name, placement=placement,
+                                                          description=clean_desc)
             await channel.send(message)
         except Exception as e:
             logger.error("[Bounties Cog] Error when posting bounty complete message", exc_info=e)
             return
+
+    async def update_plugin_gdoc_passwords(self, password: str) -> None:
+        bounty_pass_cell = "B10"
+        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        plugin_sheet_name = "Config"
+        try:
+            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                                cell=bounty_pass_cell, value=password)
+            logger.info(f"[Bounties Cog] Single cell write success (B11): {success_cell}")
+        except Exception as e:
+            logger.error(f"[Bounties Cog] Error updating bounty password cell in RL Plugin GDoc", exc_info=e)

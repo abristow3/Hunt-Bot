@@ -58,12 +58,14 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
             return
 
         try:
-            logger.info(f"[CreateTeamItemBounty Command] create command ran with: {item_name} {reward_amount} {time_limit_hours}")
+            logger.info(
+                f"[CreateTeamItemBounty Command] create command ran with: {item_name} {reward_amount} {time_limit_hours}")
             await cog.create_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
-                                              time_limit_hours=time_limit_hours)
+                                    time_limit_hours=time_limit_hours)
         except Exception as e:
             logger.error("[CreateTeamItemBounty Command] Error running create bounty command", exc_info=e)
-            await interaction.followup.send("Sorry, something went wrong while creating the team item bounty.", ephemeral=True)
+            await interaction.followup.send("Sorry, something went wrong while creating the team item bounty.",
+                                            ephemeral=True)
             return
 
     @tree.command(name="list_team_bounties", description="Lists all team bounties.")
@@ -94,7 +96,8 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
             await cog.list_bounties(interaction)
         except Exception as e:
             logger.error("[ListTeamItemBounty Command] Error running list team bounties command", exc_info=e)
-            await interaction.followup.send("Sorry, something went wrong while listing team item bounties.", ephemeral=True)
+            await interaction.followup.send("Sorry, something went wrong while listing team item bounties.",
+                                            ephemeral=True)
             return
 
     @tree.command(name="close_team_bounty", description="Close a bounty early.")
@@ -155,7 +158,8 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         Returns:
             None
         """
-        logger.info(f"[UpdateTeamItemBounty Command] update bounty command ran with {item_name} {reward_amount} {time_limit_hours}")
+        logger.info(
+            f"[UpdateTeamItemBounty Command] update bounty command ran with {item_name} {reward_amount} {time_limit_hours}")
 
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
                               cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
@@ -170,7 +174,7 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
 
         try:
             await cog.update_bounty(interaction, item_name=item_name, reward_amount=reward_amount,
-                                              time_limit_hours=time_limit_hours)
+                                    time_limit_hours=time_limit_hours)
         except Exception as e:
             logger.error("[UpdateTeamItemBounty Command] Error running update team bounty command", exc_info=e)
             await interaction.followup.send("Sorry, something went wrong while updating the bounty.", ephemeral=True)

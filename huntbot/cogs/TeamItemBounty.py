@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from discord.ext import commands
 from huntbot.HuntBot import HuntBot
 import logging
@@ -5,6 +7,7 @@ import discord
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
 
 class TeamItemBounty:
     def __init__(self, item_name: str, reward_amount: float, time_limit_hours: int = 48):
@@ -15,6 +18,7 @@ class TeamItemBounty:
         self.completed_by = ""
         self.start_time = datetime.utcnow()
         self.time_remaining = self.time_limit_hours
+
 
 class TeamItemBountyCog(commands.Cog):
     def __init__(self, hunt_bot: HuntBot):
@@ -159,7 +163,7 @@ class TeamItemBountyCog(commands.Cog):
         logger.info(f"[TeamItemBounty Cog] team two general channel id {self.hunt_bot.team_two_chat_channel_id}")
         if interaction.channel.id != self.hunt_bot.team_one_chat_channel_id and interaction.channel.id != self.hunt_bot.team_two_chat_channel_id:
             await interaction.followup.send("This command can only be ran in the team chat channels",
-                                                    ephemeral=True)
+                                            ephemeral=True)
             return False
         else:
             logger.info("[TeamItemBounty Cog] Chat channel check passed")
@@ -298,8 +302,9 @@ class TeamItemBountyCog(commands.Cog):
             await interaction.followup.send("Time limit must be greater than 0.", ephemeral=True)
             return
 
-        logger.info(f"[TeamItemBounty Cog] create bounty arguments validated: {item_name} {reward_val} {time_limit_hours}")
-       # Determine team and embed color
+        logger.info(
+            f"[TeamItemBounty Cog] create bounty arguments validated: {item_name} {reward_val} {time_limit_hours}")
+        # Determine team and embed color
         if interaction.channel_id == self.hunt_bot.team_one_chat_channel_id:
             team_name = self.hunt_bot.team_one_name
         elif interaction.channel_id == self.hunt_bot.team_two_chat_channel_id:
@@ -311,11 +316,12 @@ class TeamItemBountyCog(commands.Cog):
         # Check for duplicate bounty
         if self._is_duplicate_bounty(team_name=team_name, item_name=item_name):
             await interaction.followup.send("Error: Your team already has a bounty out for this item.",
-                                                    ephemeral=True)
+                                            ephemeral=True)
             return
 
         # Create and add bounty
-        new_bounty = TeamItemBounty(item_name=item_name.lower(), reward_amount=reward_val, time_limit_hours=time_limit_hours)
+        new_bounty = TeamItemBounty(item_name=item_name.lower(), reward_amount=reward_val,
+                                    time_limit_hours=time_limit_hours)
 
         if team_name not in self.active_bounties:
             self.active_bounties[team_name] = []
@@ -400,7 +406,6 @@ class TeamItemBountyCog(commands.Cog):
         # Generate table
         message = await self._create_bounty_table(team_name)
         await interaction.followup.send(f"```\n{message}\n```")
-
 
     async def close_bounty(self, interaction: discord.Interaction, item_name: str, completed_by: str):
         """
@@ -493,7 +498,7 @@ class TeamItemBountyCog(commands.Cog):
 
         if reward_amount == "" and time_limit_hours == -100:
             await interaction.followup.send("Error: You must update either the reward amount, or the time "
-                                                    "remaining.", ephemeral=True)
+                                            "remaining.", ephemeral=True)
             return
 
         reward_val = None
@@ -526,7 +531,7 @@ class TeamItemBountyCog(commands.Cog):
 
         if not updated:
             await interaction.followup.send(f"Error: Could not find bounty item '{item_name}' and update it.",
-                                                    ephemeral=True)
+                                            ephemeral=True)
             return
 
         await interaction.followup.send(f"Bounty for {item_name} updated successfully!", ephemeral=True)

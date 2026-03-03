@@ -42,9 +42,17 @@ def mock_bot():
 
 
 @pytest.fixture
-def mock_cog(mock_bot, mock_hunt_bot):
+def mock_gdoc():
+    gdoc = MagicMock()
+    gdoc.wait_until_ready = AsyncMock()
+    gdoc.get_channel = MagicMock()
+    return gdoc
+
+
+@pytest.fixture
+def mock_cog(mock_bot, mock_hunt_bot, mock_gdoc):
     # Create a real DailiesCog instance if available, else mock similar to your bounties example
-    cog = DailiesCog(mock_bot, mock_hunt_bot)
+    cog = DailiesCog(mock_bot, mock_hunt_bot, mock_gdoc)
 
     # Mock async methods to avoid real discord calls
     cog.update_embed_url = AsyncMock(return_value="Image updated")

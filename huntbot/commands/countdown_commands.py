@@ -15,17 +15,19 @@ countdown_template = Template("""
 The Hunt $action in: $hours Hours and $minutes Minutes
 """)
 
+
 async def current_countdown(interaction: discord.Interaction, hunt_bot: HuntBot, discord_bot: Bot) -> None:
     """Displays the current time until the Hunt begins or ends, stored in the Countdown Cog"""
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog", cog_type=CountdownCog)
+    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog",
+                          cog_type=CountdownCog)
     if cog is None:
         await interaction.response.send_message("CountdownCog is not available or misconfigured.", ephemeral=True)
         return
 
-    
     if hunt_bot.start_datetime.tzinfo is None:
         logger.warning("[Countdown Commands] Hunt start_datetime is naive (no timezone)")
-        await interaction.response.send_message("Countdown time is not properly configured. Yell at Druid.", ephemeral=True)
+        await interaction.response.send_message("Countdown time is not properly configured. Yell at Druid.",
+                                                ephemeral=True)
         return
 
     # Get current time in the same timezone as start_datetime
