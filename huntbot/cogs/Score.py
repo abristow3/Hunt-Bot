@@ -160,7 +160,7 @@ class ScoreCog(commands.Cog):
             try:
                 self.get_score()
             except TableDataImportException as e:
-                logger.error("[Score Cog] Failed to update score, skipping update cycle.")
+                logger.error("[Score Cog] Failed to update score, skipping update cycle.", exc_info=e)
                 return
 
             self.determine_lead()
