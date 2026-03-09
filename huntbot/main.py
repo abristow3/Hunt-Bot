@@ -28,8 +28,7 @@ logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S', format='%(a
 logger = logging.getLogger(__name__)
 
 # TODO REMOVE AFTER TESTING
-# TOKEN = os.getenv("DISCORD_TOKEN")
-TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.GoDv-H.RtgNSoUAWFDv5-6Ibo5RQWl4p9tKzHmo3an1Bc"
+TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
     logger.error("[Main Task Loop] No Discord API token found.")
