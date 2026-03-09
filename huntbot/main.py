@@ -23,33 +23,13 @@ from huntbot.commands.score_commands import register_score_commands
 from huntbot.commands.countdown_commands import register_countdown_commands
 from huntbot.commands.team_item_bounty_commands import register_team_item_bounty_commands
 
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)  # Capture all logs
-
-# Common formatter
-formatter = logging.Formatter(
-    '[%(asctime)s] [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-# Debug handler (everything goes here)
-debug_handler = logging.FileHandler('debug.log')
-debug_handler.setLevel(logging.DEBUG)
-debug_handler.setFormatter(formatter)
-
-# Info handler (INFO and up)
-info_handler = logging.FileHandler('app.log')
-info_handler.setLevel(logging.INFO)
-info_handler.setFormatter(formatter)
-
-# Add handlers to root logger
-logger.addHandler(debug_handler)
-logger.addHandler(info_handler)
-
-# Optional: Get logger for current module
+logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S', format='%(asctime)s - %(levelname)s - %(message)s',
+                    handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+# TODO REMOVE AFTER TESTING
+# TOKEN = os.getenv("DISCORD_TOKEN")
+TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.GoDv-H.RtgNSoUAWFDv5-6Ibo5RQWl4p9tKzHmo3an1Bc"
 
 if not TOKEN:
     logger.error("[Main Task Loop] No Discord API token found.")
@@ -86,9 +66,9 @@ async def check_start_time():
     logger.debug("[Main Task Loop] Checking start time task loop....")
 
     # load and start Countdown cog
-    if "CountdownCog" not in bot.cogs:
-        countdown_cog = CountdownCog(discord_bot=bot, hunt_bot=hunt_bot)
-        await bot.add_cog(countdown_cog)
+    # if "CountdownCog" not in bot.cogs:
+    #     countdown_cog = CountdownCog(discord_bot=bot, hunt_bot=hunt_bot)
+    #     await bot.add_cog(countdown_cog)
 
     try:
         # Get updated gdoc data rate is 300 reads /per minute
@@ -121,12 +101,12 @@ async def check_start_time():
             # If we made it this far then we are ready to start loading the cogs
             cogs_to_load = [
                 (BountiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
-                (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
-                (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                (TeamItemBountyCog, {'hunt_bot': hunt_bot})
+                # (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
+                # (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                # (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                # (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                # (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                # (TeamItemBountyCog, {'hunt_bot': hunt_bot})
             ]
 
             for cog_cls, params in cogs_to_load:
@@ -189,12 +169,12 @@ async def on_ready():
 
     logger.info("[Main Task Loop] Assets Loaded")
 
-    register_main_commands(bot.tree, gdoc, hunt_bot, state, bot)
+    register_main_commands(bot.tree, gdoc, hunt_bot, bot)
     register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
-    register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
-    register_team_item_bounty_commands(bot.tree, discord_bot=bot)
-    register_score_commands(bot.tree, bot)
-    register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
+    # register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
+    # register_team_item_bounty_commands(bot.tree, discord_bot=bot)
+    # register_score_commands(bot.tree, bot)
+    # register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
 
     # Sync and List all commands
     await sync_commands(test=True)
@@ -216,4 +196,18 @@ async def main():
 
 
 def run():
+    '''
+    TODO
+    - Test memories Cog & Commands
+    - Test Score Cog & Commands
+    - Test Bounties Cog & Commands
+    - Test Dailies Cog & Commands
+    - Update countdown cog to use same countdown logic has Bingo Event did
+    - Test Countdown Cog & Commands
+    - Test Memes Cog
+    - Test StarBoard Cog
+    - Test Bounties and Dailies Password Writes for RL Plugin Config
+    - Test all Commands and Cogs Basically
+    - Test Bingo stuff once done and merge in
+    '''
     asyncio.run(main())

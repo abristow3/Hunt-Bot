@@ -50,8 +50,7 @@ async def update_bounty_description(interaction: discord.Interaction, descriptio
     await interaction.response.send_message(response, ephemeral=True)
 
 
-async def complete_bounty(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot,
-                          team_color: str) -> None:
+async def complete_bounty(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot, team_color: str) -> None:
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
                           cog_type=BountiesCog)
     if cog is None:
@@ -63,11 +62,11 @@ async def complete_bounty(interaction: discord.Interaction, discord_bot: Bot, hu
     if not authorized:
         return
 
+    placement = "First"
     # Check if first place has been claimed yet
     if cog.first_place == "":
         # if it is empty, then it hasn't so associate team color with it
         cog.first_place = team_color
-        placement = "First"
     elif cog.first_place != "" and cog.second_place == "":
         # Otherwise it has been claimed so take second place instead
         cog.second_place = team_color
@@ -98,5 +97,5 @@ def register_bounties_commands(tree: app_commands.CommandTree, discord_bot: Bot,
 
     @tree.command(name="complete_bounty", description="Submits the bounty complete and place message for the team")
     @app_commands.describe(team_color="Team color that completed the bounty")
-    async def complete_bounty_cmd(interaction: discord.Interaction):
-        await complete_bounty(interaction, discord_bot=discord_bot, hunt_bot=hunt_bot)
+    async def complete_bounty_cmd(interaction: discord.Interaction, team_color: str):
+        await complete_bounty(interaction, discord_bot=discord_bot, hunt_bot=hunt_bot, team_color=team_color)
