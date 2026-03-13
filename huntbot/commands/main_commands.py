@@ -40,6 +40,8 @@ async def start_hunt(interaction: discord.Interaction, gdoc: GDoc, hunt_bot: Hun
     if not discord_bot.check_start_time.is_running():
         discord_bot.check_start_time.start()
 
+    await interaction.followup.send("Start Hunt command has been ran successfully! Happy Hunting!", ephemeral=True)
+
 
 async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str, config_table: str, gdoc: GDoc,
                 hunt_bot: HuntBot):
@@ -65,7 +67,8 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
     # Retrieve the configuration from the GDoc
     try:
         data = gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name)
-        hunt_bot.set_sheet_data(sheet_data=data)
+        df = gdoc.build_dataframe(data)
+        hunt_bot.set_sheet_data(sheet_data=df)
     except Exception as e:
         logger.error(f"[SHEET COMMAND] Error retrieving sheet data", exc_info=e)
         await interaction.followup.send("Error retrieving sheet data.")

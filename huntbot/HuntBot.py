@@ -180,3 +180,15 @@ class HuntBot:
         """
         self.wom_event_api_url = self.wom_event_api_url + str(self.wom_competition_id)
         self.wom_event_website_url = self.wom_event_website_url + str(self.wom_competition_id)
+
+    @staticmethod
+    def update_plugin_gdoc_master_password(password: str, gdoc) -> None:
+        master_pass_cell = "B9"
+        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        plugin_sheet_name = "Config"
+        try:
+            success_cell = gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                           cell=master_pass_cell, value=password)
+            logger.info(f"[Bounties Cog] Single cell write success (B11): {success_cell}")
+        except Exception as e:
+            logger.error(f"[Bounties Cog] Error updating bounty password cell in RL Plugin GDoc", exc_info=e)

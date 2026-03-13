@@ -37,7 +37,7 @@ class GDoc:
         except Exception as e:
             logger.error("[GDoc] Error during GDoc object setup", exc_info=e)
 
-    def get_data_from_sheet(self, spreadsheet_id: str, sheet_name: str, cell_range: str = None) -> list:
+    def get_data_from_sheet(self, spreadsheet_id: str, sheet_name: str, cell_range: str = None) -> pd.DataFrame:
         try:
             if not cell_range:
                 data = self.sheets.values().get(spreadsheetId=spreadsheet_id, range=sheet_name).execute()
@@ -45,10 +45,11 @@ class GDoc:
                 a1_range = self.a1notation_builder(sheet_name, cell_range)
                 data = self.sheets.values().get(spreadsheetId=spreadsheet_id, range=a1_range).execute()
 
-            return data.get('values', [])
+            values = data.get("values", [])
+            return self.build_dataframe(values)
         except Exception as e:
             logger.error("Unable to get data", exc_info=e)
-            return []
+            return pd.DataFrame()
 
     @staticmethod
     def a1notation_builder(sheet_name: str, cell_range: str) -> str:

@@ -95,7 +95,7 @@ def register_bounties_commands(tree: app_commands.CommandTree, discord_bot: Bot,
     async def update_bounty_description_cmd(interaction: discord.Interaction, new_description: str):
         await update_bounty_description(interaction, discord_bot=discord_bot, description=new_description)
 
-    @tree.command(name="complete_bounty", description="Submits the bounty complete and place message for the team")
-    @app_commands.describe(team_color="Team color that completed the bounty")
-    async def complete_bounty_cmd(interaction: discord.Interaction, team_color: str):
-        await complete_bounty(interaction, discord_bot=discord_bot, hunt_bot=hunt_bot, team_color=team_color)
+    # @tree.command(name="complete_bounty", description="Submits the bounty complete and place message for the team")
+    # @app_commands.describe(team_color="Team color that completed the bounty")
+    # async def complete_bounty_cmd(interaction: discord.Interaction, team_color: str):
+    #     await complete_bounty(interaction, discord_bot=discord_bot, hunt_bot=hunt_bot, team_color=team_color)

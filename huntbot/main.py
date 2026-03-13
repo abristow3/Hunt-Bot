@@ -47,6 +47,7 @@ state = State()
 
 async def generate_wom_messages() -> None:
     # Create WOM Messages for each team chat channel and pin them
+    hunt_bot.generate_wom_competition_urls()
     wom_message = (f"Link to Hunt {hunt_bot.hunt_edition} WiseOldMan Competition:\n"
                    f"{hunt_bot.wom_event_website_url}")
 
@@ -72,8 +73,11 @@ async def check_start_time():
     try:
         # Get updated gdoc data rate is 300 reads /per minute
         logger.info("[Main Task Loop] Retrieving GDoc data....")
-        hunt_bot.set_sheet_data(
-            sheet_data=gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name))
+        df = gdoc.get_data_from_sheet(
+            spreadsheet_id=hunt_bot.sheet_id,
+            sheet_name=hunt_bot.sheet_name
+        )
+        hunt_bot.set_sheet_data(sheet_data=df)
     except Exception as e:
         logger.error(e)
         logger.error("[Main Task Loop] Failed to retrieve GDoc data")
@@ -91,6 +95,7 @@ async def check_start_time():
         if hunt_bot.started:
             logger.info("[Main Task Loop] The Hunt has begun!")
             if channel:
+                hunt_bot.update_plugin_gdoc_master_password(password=hunt_bot.master_password, gdoc=gdoc)
                 await channel.send(
                     f"https://imgur.com/Of4zPcO \n@everyone Flux Hunt {hunt_bot.hunt_edition} has officially begun!\n"
                     f"The password is: {hunt_bot.master_password}")
@@ -99,7 +104,7 @@ async def check_start_time():
 
             # If we made it this far then we are ready to start loading the cogs
             cogs_to_load = [
-                (BountiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
+                (BountiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 # (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
                 # (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),

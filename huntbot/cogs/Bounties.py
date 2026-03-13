@@ -62,7 +62,8 @@ class BountiesCog(commands.Cog):
         self.bounties_per_day = 0
         self.bounty_channel_id = 0
         self.bounty_interval = 0
-        self.bounty_passwords: set[str] = set()
+        self.single_bounty_offset = 0
+        self.double_bounty_offset = 0
         self.single_bounties_df = pd.DataFrame()
         self.double_bounties_df = pd.DataFrame()
         self.single_bounties_table_name = "Single Bounties"
@@ -86,10 +87,11 @@ class BountiesCog(commands.Cog):
             self.get_bounty_channel()
             self.get_single_bounties()
             self.get_double_bounties()
-            self.save_bounty_passwords()
+            self.get_single_bounty_offset()
+            self.get_double_bounty_offset()
 
-            self.single_bounty_generator = self.yield_next_row(self.single_bounties_df)
-            self.double_bounty_generator = self.yield_next_row(self.double_bounties_df)
+            self.single_bounty_generator = self.yield_next_row(self.single_bounties_df, offset=self.single_bounty_offset)
+            self.double_bounty_generator = self.yield_next_row(self.double_bounties_df, offset=self.double_bounty_offset)
             self.configured = True
             self.start_bounties.start()
         except Exception as e:
@@ -117,20 +119,6 @@ class BountiesCog(commands.Cog):
             logger.error("[Bounties Cog] No BOUNTY_CHANNEL_ID data found in config")
             raise ConfigurationException(config_key='BOUNTY_CHANNEL_ID')
 
-    def save_bounty_passwords(self) -> None:
-        if self.single_bounties_df.empty:
-            self.bounty_passwords = set()
-            return
-
-        self.bounty_passwords = set(
-            self.single_bounties_df["Password"].dropna()
-        )
-
-        logger.info(
-            "[Bounties Cog] Loaded %d bounty passwords into memory",
-            len(self.bounty_passwords)
-        )
-
     def get_single_bounties(self):
         self.single_bounties_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
                                                      table_name=self.single_bounties_table_name)
@@ -147,9 +135,24 @@ class BountiesCog(commands.Cog):
             logger.error("[Bounties Cog] Error parsing double bounties from config map")
             raise TableDataImportException(table_name=self.double_bounties_table_name)
 
+    def get_single_bounty_offset(self):
+        self.single_bounty_offset = int(self.hunt_bot.config_map.get('SINGLE_BOUNTY_OFFSET', "-1"))
+        if self.single_bounty_offset == -1:
+            logger.error("[Bounties Cog] No SINGLE_BOUNTY_OFFSET data found in config")
+            raise ConfigurationException(config_key='SINGLE_BOUNTY_OFFSET')
+
+    def get_double_bounty_offset(self):
+        self.double_bounty_offset = int(self.hunt_bot.config_map.get('DOUBLE_BOUNTY_OFFSET', "-1"))
+        if self.double_bounty_offset == -1:
+            logger.error("[Bounties Cog] No DOUBLE_BOUNTY_OFFSET data found in config")
+            raise ConfigurationException(config_key='DOUBLE_BOUNTY_OFFSET')
+
     @staticmethod
-    def yield_next_row(df):
-        for _, row in df.iterrows():
+    def yield_next_row(df, offset: int = 0):
+        if offset < 0:
+            raise ValueError("[Bounties Cog] Offset cannot be negative")
+
+        for _, row in df.iloc[offset:].iterrows():
             yield row
 
     async def post_team_notif(self) -> None:
@@ -204,10 +207,7 @@ class BountiesCog(commands.Cog):
                 logger.info("[Bounties Cog] Bounty is a double bounty")
                 double_bounty = next(self.double_bounty_generator)
                 self.bounty_description = double_bounty_template.substitute(
-                    b1_task=single_task,
-                    b1_password=single_password,
-                    b2_task=double_bounty["Task"]
-                )
+                    b1_task=single_task, b1_password=single_password, b2_task=double_bounty["Task"])
 
             # Unpin the old message
             if self.embed_message:
@@ -297,8 +297,9 @@ class BountiesCog(commands.Cog):
 
             # Edit message
             await self.embed_message.edit(embed=updated_embed)
-            logger.info("[Bounties Cog] Bounty description update succesfully")
+            logger.info("[Bounties Cog] Bounty description update successfully")
             response_message = "Bounty description updated successfully."
+            self.bounty_description = new_desc
             return response_message
         else:
             logger.warning("[Bounties Cog] No Bounty Message in memory. Skipping.")
