@@ -14,7 +14,6 @@ from huntbot.cogs.Countdown import CountdownCog
 from huntbot.cogs.Memories import MemoriesCog
 from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
-from huntbot.State import State
 from huntbot.cogs.Memes import MemesCog
 from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
@@ -42,7 +41,6 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 gdoc = GDoc()
 hunt_bot = HuntBot()
-state = State()
 
 
 async def generate_wom_messages() -> None:
@@ -186,14 +184,6 @@ async def on_ready():
 
 
 async def main():
-    try:
-        await state.load_state()
-        logger.info("[Main Task Loop] State loaded successfully.")
-    except Exception as e:
-        logger.error(
-            "[Main Task Loop] Exception encountered when updating state during startup when loading existing state",
-            exc_info=e)
-
     await bot.start(TOKEN)
 
 
