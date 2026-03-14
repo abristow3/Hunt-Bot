@@ -112,7 +112,7 @@ class ScoreCog(commands.Cog):
             lead_points = int(self.team2_points) - int(self.team1_points)
             self.lead_message = f"Team {lead_team} is ahead by {lead_points} point{'s' if lead_points != 1 else ''}!"
         else:
-            self.lead_message = "It's a tie!"
+            self.lead_message = "It's tied!"
 
     async def update_plugin_gdoc_scores(self) -> None:
         team_1_score_cell = "B13"
