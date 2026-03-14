@@ -181,6 +181,6 @@ class HuntBot:
         try:
             success_cell = gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
                                            cell=master_pass_cell, value=password)
-            logger.info(f"[Bounties Cog] Single cell write success (B11): {success_cell}")
+            logger.info(f"[HuntBot] Single cell write success (B11): {success_cell}")
         except Exception as e:
-            logger.error(f"[Bounties Cog] Error updating bounty password cell in RL Plugin GDoc", exc_info=e)
+            logger.error(f"[HuntBot] Error updating bounty password cell in RL Plugin GDoc", exc_info=e)
