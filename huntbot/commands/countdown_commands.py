@@ -21,14 +21,13 @@ async def current_countdown(interaction: discord.Interaction, hunt_bot: HuntBot,
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog",
                           cog_type=CountdownCog)
     if cog is None:
-        await interaction.response.send_message("CountdownCog is not available or misconfigured.", ephemeral=True)
-        return
+        return None
 
     if hunt_bot.start_datetime.tzinfo is None:
         logger.warning("[Countdown Commands] Hunt start_datetime is naive (no timezone)")
         await interaction.response.send_message("Countdown time is not properly configured. Yell at Druid.",
                                                 ephemeral=True)
-        return
+        return None
 
     # Get current time in the same timezone as start_datetime
     current_time = datetime.now(hunt_bot.start_datetime.tzinfo)

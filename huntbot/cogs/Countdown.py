@@ -113,7 +113,6 @@ class CountdownCog(commands.Cog):
             logger.info(f"[Countdown Cog] Start and End messages completed.")
             self.start_countdown.stop()
 
-
     @start_countdown.before_loop
     async def before_start_countdown(self) -> None:
         await self.discord_bot.wait_until_ready()
@@ -128,7 +127,7 @@ class CountdownCog(commands.Cog):
             current_delta = self.hunt_bot.start_datetime - current_time
             hours_until_start = current_delta.total_seconds() / 3600
 
-            # Filter out intervals that are already passed using a for loop
+            # Filter out intervals that are already passed
             updated_intervals = []
             for interval in self.start_countdown_intervals:
                 if interval <= hours_until_start:
@@ -147,7 +146,7 @@ class CountdownCog(commands.Cog):
             current_delta = self.hunt_bot.end_datetime - current_time
             hours_until_end = current_delta.total_seconds() / 3600
 
-            # Filter out intervals that are already passed using a for loop
+            # Filter out intervals that are already passed
             updated_intervals = []
             for interval in self.end_countdown_intervals:
                 if interval <= hours_until_end:
@@ -156,4 +155,3 @@ class CountdownCog(commands.Cog):
             self.end_countdown_intervals = updated_intervals
 
             logger.info(f"[Countdown Cog] Filtered end intervals: {self.end_countdown_intervals}")
-

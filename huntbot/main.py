@@ -64,9 +64,9 @@ async def check_start_time():
     logger.debug("[Main Task Loop] Checking start time task loop....")
 
     # load and start Countdown cog
-    # if "CountdownCog" not in bot.cogs:
-    #     countdown_cog = CountdownCog(discord_bot=bot, hunt_bot=hunt_bot)
-    #     await bot.add_cog(countdown_cog)
+    if "CountdownCog" not in bot.cogs:
+        countdown_cog = CountdownCog(discord_bot=bot, hunt_bot=hunt_bot)
+        await bot.add_cog(countdown_cog)
 
     try:
         # Get updated gdoc data rate is 300 reads /per minute
@@ -174,7 +174,7 @@ async def on_ready():
     register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     # register_team_item_bounty_commands(bot.tree, discord_bot=bot)
     register_score_commands(bot.tree, discord_bot=bot)
-    # register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
+    register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
 
     # Sync and List all commands
     await sync_commands(test=True)
@@ -191,14 +191,8 @@ def run():
     '''
     TODO
     - Test memories Cog & Commands
-    - Test Score Cog & Commands
-    - Test Bounties Cog & Commands
-    - Test Dailies Cog & Commands
-    - Update countdown cog to use same countdown logic has Bingo Event did
-    - Test Countdown Cog & Commands
     - Test Memes Cog
     - Test StarBoard Cog
-    - Test Bounties and Dailies Password Writes for RL Plugin Config
     - Test all Commands and Cogs Basically
     - Test Bingo stuff once done and merge in
     '''
