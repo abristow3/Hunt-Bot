@@ -17,13 +17,13 @@ $description
 """)
 
 single_bounty_template = Template("""                                                           
-@everyone $task
+$task
 
 Password: $password
 """)
 
 double_bounty_template = Template("""                             
-@everyone $b1_task
+$b1_task
 
 Password: $b1_password
 
@@ -81,7 +81,6 @@ class BountiesCog(commands.Cog):
     async def cog_load(self):
         logger.info("[Bounties Cog] Loading cog and initializing.")
         try:
-            logger.info("[Bounties Cog] Retrieving Bounties data from GDoc config map")
             self.get_bounties_per_day()
             self.set_bounty_interval()
             self.get_bounty_channel()
@@ -218,7 +217,7 @@ class BountiesCog(commands.Cog):
 
             # Create the embed
             embed = self.create_embed_message()
-            self.embed_message = await channel.send(embed=embed)
+            self.embed_message = await channel.send(embed=embed, content="@everyone")
             self.message_id = self.embed_message.id
             await self.post_team_notif()
             await self.embed_message.pin()
@@ -322,6 +321,7 @@ class BountiesCog(commands.Cog):
             return
 
     async def update_plugin_gdoc_passwords(self, password: str) -> None:
+        # TODO make this not hardcoded
         bounty_pass_cell = "B10"
         plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
         plugin_sheet_name = "Config"

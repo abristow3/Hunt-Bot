@@ -17,13 +17,13 @@ $description
 """)
 
 single_daily_template = Template("""
-@everyone $task
+$task
 
 Password: $password
 """)
 
 double_daily_template = Template("""
-@everyone $b1_task
+$b1_task
 
 Password: $b1_password
 
@@ -62,6 +62,8 @@ class DailiesCog(commands.Cog):
 
         self.daily_channel_id = 0
         self.daily_interval = 24
+        self.single_daily_offset = 0
+        self.double_daily_offset = 0
         self.single_dailies_df = pd.DataFrame()
         self.double_dailies_df = pd.DataFrame()
         self.daily_passwords: set[str] = set()
@@ -85,9 +87,11 @@ class DailiesCog(commands.Cog):
             self.get_single_dailies()
             self.get_double_dailies()
             self.save_daily_passwords()
+            self.get_single_daily_offset()
+            self.get_double_daily_offset()
 
-            self.single_daily_generator = self.yield_next_row(self.single_dailies_df)
-            self.double_daily_generator = self.yield_next_row(self.double_dailies_df)
+            self.single_daily_generator = self.yield_next_row(self.single_dailies_df, offset=self.single_daily_offset)
+            self.double_daily_generator = self.yield_next_row(self.double_dailies_df, offset=self.double_daily_offset)
             self.configured = True
             self.start_dailies.start()
         except Exception as e:
@@ -136,9 +140,24 @@ class DailiesCog(commands.Cog):
             logger.error("[Dailies Cog] Error parsing double dailies data")
             raise TableDataImportException(table_name=self.double_dailies_table_name)
 
+    def get_single_daily_offset(self):
+        self.single_daily_offset = int(self.hunt_bot.config_map.get('SINGLE_DAILY_OFFSET', "-1"))
+        if self.single_daily_offset == -1:
+            logger.error("[Dailies Cog] No SINGLE_DAILY_OFFSET data found in config")
+            raise ConfigurationException(config_key='SINGLE_DAILY_OFFSET')
+
+    def get_double_daily_offset(self):
+        self.double_daily_offset = int(self.hunt_bot.config_map.get('DOUBLE_DAILY_OFFSET', "-1"))
+        if self.double_daily_offset == -1:
+            logger.error("[Dailies Cog] No DOUBLE_DAILY_OFFSET data found in config")
+            raise ConfigurationException(config_key='DOUBLE_DAILY_OFFSET')
+
     @staticmethod
-    def yield_next_row(df):
-        for _, row in df.iterrows():
+    def yield_next_row(df, offset: int = 0):
+        if offset < 0:
+            raise ValueError("[Dailies Cog] Offset cannot be negative")
+
+        for _, row in df.iloc[offset:].iterrows():
             yield row
 
     async def post_team_notif(self) -> None:
@@ -206,7 +225,7 @@ class DailiesCog(commands.Cog):
 
             # Create the embed
             embed = self.create_embed_message()
-            self.embed_message = await channel.send(embed=embed)
+            self.embed_message = await channel.send(embed=embed, content="@everyone")
             self.message_id = self.embed_message.id
             await self.post_team_notif()
             await self.embed_message.pin()
@@ -250,6 +269,7 @@ class DailiesCog(commands.Cog):
             await self.embed_message.edit(embed=updated_embed)
             logger.info("[Dailies Cog] Daily description update succesfully")
             response_message = "Daily description updated successfully."
+            self.daily_description = new_desc
             return response_message
         else:
             logger.warning("[Dailies Cog] No Daily Message in memory. Skipping.")
@@ -309,6 +329,7 @@ class DailiesCog(commands.Cog):
             return
 
     async def update_plugin_gdoc_passwords(self, password: str) -> None:
+        # TODO make this not hardcoded
         daily_pass_cell = "B11"
         plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
         plugin_sheet_name = "Config"

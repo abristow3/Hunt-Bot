@@ -48,7 +48,7 @@ state = State()
 async def generate_wom_messages() -> None:
     # Create WOM Messages for each team chat channel and pin them
     hunt_bot.generate_wom_competition_urls()
-    wom_message = (f"Link to Hunt {hunt_bot.hunt_edition} WiseOldMan Competition:\n"
+    wom_message = (f"Link to the Hunt WiseOldMan Competition:\n"
                    f"{hunt_bot.wom_event_website_url}")
 
     team_one_channel = bot.get_channel(hunt_bot.team_one_chat_channel_id)
@@ -97,15 +97,15 @@ async def check_start_time():
             if channel:
                 hunt_bot.update_plugin_gdoc_master_password(password=hunt_bot.master_password, gdoc=gdoc)
                 await channel.send(
-                    f"https://imgur.com/Of4zPcO \n@everyone Flux Hunt {hunt_bot.hunt_edition} has officially begun!\n"
-                    f"The password is: {hunt_bot.master_password}")
+                    f"{hunt_bot.start_message}"
+                    f"\nThe password is: {hunt_bot.master_password}")
 
             await generate_wom_messages()
 
             # If we made it this far then we are ready to start loading the cogs
             cogs_to_load = [
                 (BountiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
-                # (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot}),
+                (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 # (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
@@ -133,10 +133,8 @@ async def check_start_time():
         hunt_bot.check_end()
         if hunt_bot.ended:
             logger.info("[Main Task Loop] The Hunt has ended!")
-            await channel.send(
-                f"https://imgur.com/qdtYicb \n@everyone The {hunt_bot.hunt_edition} Hunt has officially concluded...results coming soon!")
+            await channel.send(hunt_bot.end_message)
             check_start_time.stop()
-
 
 bot.check_start_time = check_start_time
 
@@ -175,7 +173,7 @@ async def on_ready():
 
     register_main_commands(bot.tree, gdoc, hunt_bot, bot)
     register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
-    # register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
+    register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     # register_team_item_bounty_commands(bot.tree, discord_bot=bot)
     # register_score_commands(bot.tree, bot)
     # register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)

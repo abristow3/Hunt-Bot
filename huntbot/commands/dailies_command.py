@@ -92,6 +92,6 @@ def register_daily_commands(tree: app_commands.CommandTree, discord_bot, hunt_bo
     async def update_daily_description_cmd(interaction: discord.Interaction, new_description: str):
         await update_daily_description(interaction, discord_bot=discord_bot, description=new_description)
 
-    @tree.command(name="complete_daily", description="Submits the daily complete and place message for the team")
-    async def complete_daily_cmd(interaction: discord.Interaction):
-        await complete_daily(interaction, discord_bot=discord_bot, hunt_bot=hunt_bot)
+    # @tree.command(name="complete_daily", description="Submits the daily complete and place message for the team")
+    # async def complete_daily_cmd(interaction: discord.Interaction):
+    #     await complete_daily(interaction, discord_bot=discord_bot, hunt_bot=hunt_bot)

@@ -34,12 +34,13 @@ class HuntBot:
         self.team_two_name = ""
         self.team_one_chat_channel_id = 0
         self.team_two_chat_channel_id = 0
-        self.hunt_edition = ""
         self.wom_competition_id = 0
         self.wom_event_api_url = "https://api.wiseoldman.net/v2/competitions/"
         self.wom_event_website_url = "https://wiseoldman.net/competitions/"
         self.guild_id = 699971574689955850
         self.sheet_id = ""
+        self.start_message = ""
+        self.end_message = ""
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
@@ -85,8 +86,9 @@ class HuntBot:
             self.team_two_name = self.config_map.get("TEAM_TWO_NAME", "")
             self.team_one_chat_channel_id = int(self.config_map.get("TEAM_1_CHAT_CHANNEL_ID", "0"))
             self.team_two_chat_channel_id = int(self.config_map.get("TEAM_2_CHAT_CHANNEL_ID", "0"))
-            self.hunt_edition = self.config_map.get("HUNT_EDITION", "")
             self.wom_competition_id = self.config_map.get("WOM_COMPETITION_ID", "0")
+            self.start_message = self.config_map.get("START_MESSAGE", "")
+            self.end_message = self.config_map.get("END_MESSAGE", "")
         except ValueError as e:
             logger.exception("Invalid type in config values (expected integer for channel IDs).", exc_info=e)
             raise InvalidConfig("Invalid type in config values: expected integers for channel IDs.")
@@ -113,10 +115,12 @@ class HuntBot:
             missing_fields.append("TEAM_1_CHAT_CHANNEL_ID")
         if self.team_two_chat_channel_id == 0:
             missing_fields.append("TEAM_2_CHAT_CHANNEL_ID")
-        if not self.hunt_edition:
-            missing_fields.append("HUNT_EDITION")
-        if not self.hunt_edition:
+        if not self.wom_competition_id:
             missing_fields.append("WOM_COMPETITION_ID")
+        if not self.start_message:
+            missing_fields.append("START_MESSAGE")
+        if not self.end_message:
+            missing_fields.append("END_MESSAGE")
 
         if missing_fields:
             logger.error(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
@@ -134,7 +138,6 @@ class HuntBot:
 
         self.end_datetime = self.start_datetime + timedelta(days=9)
         self.configured = True
-        self.update_config_for_state()
 
     @staticmethod
     def get_current_gmt_time():
@@ -152,7 +155,6 @@ class HuntBot:
             return
         else:
             self.started = True
-            self.update_config_for_state()
 
     def check_end(self):
         ctime = self.get_current_gmt_time()
@@ -161,18 +163,8 @@ class HuntBot:
 
         if ctime >= self.end_datetime:
             self.ended = True
-            self.update_config_for_state()
         else:
             return
-
-    def update_config_for_state(self):
-        self.config_map['COMMAND_CHANNEL_ID'] = self.command_channel_id
-        self.config_map['CONFIGURED'] = self.configured
-        self.config_map['STARTED'] = self.started
-        self.config_map['END_DATETIME'] = self.end_datetime
-        self.config_map['BOUNTY_PASSWORD'] = self.bounty_password
-        self.config_map['DAILY_PASSWORD'] = self.daily_password
-        self.config_map['ENDED'] = self.ended
 
     def generate_wom_competition_urls(self) -> None:
         """
