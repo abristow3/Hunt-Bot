@@ -105,11 +105,11 @@ class ScoreCog(commands.Cog):
         # Calculate lead
         if self.team1_points > self.team2_points:
             lead_team = self.hunt_bot.team_one_name
-            lead_points = self.team1_points - self.team2_points
+            lead_points = int(self.team1_points) - int(self.team2_points)
             self.lead_message = f"Team {lead_team} is ahead by {lead_points} point{'s' if lead_points != 1 else ''}!"
         elif self.team2_points > self.team1_points:
             lead_team = self.hunt_bot.team_two_name
-            lead_points = self.team2_points - self.team1_points
+            lead_points = int(self.team2_points) - int(self.team1_points)
             self.lead_message = f"Team {lead_team} is ahead by {lead_points} point{'s' if lead_points != 1 else ''}!"
         else:
             self.lead_message = "It's a tie!"
@@ -130,7 +130,7 @@ class ScoreCog(commands.Cog):
             logger.info(f"[Score Cog] Single cell write success ({self.team2_points}): {success_cell}")
 
         except Exception as e:
-            logger.error(f"[Score Cog] Error updating daily password cell in RL Plugin GDoc", exc_info=e)
+            logger.error(f"[Score Cog] Error updating team scores in RL Plugin GDoc", exc_info=e)
 
     @tasks.loop(seconds=10)
     async def start_scores(self) -> None:
@@ -185,4 +185,4 @@ class ScoreCog(commands.Cog):
         Returns:
             None
         """
-        await self.discord_bot.wait_until_ready()  # Ensures bot is logged in before starting
+        await self.discord_bot.wait_until_ready()

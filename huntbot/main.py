@@ -104,7 +104,7 @@ async def check_start_time():
             cogs_to_load = [
                 (BountiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
-                # (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 # (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
@@ -173,7 +173,7 @@ async def on_ready():
     register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     # register_team_item_bounty_commands(bot.tree, discord_bot=bot)
-    # register_score_commands(bot.tree, bot)
+    register_score_commands(bot.tree, discord_bot=bot)
     # register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
 
     # Sync and List all commands
