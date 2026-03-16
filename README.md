@@ -2,7 +2,7 @@
 A Discord bot to help automate The Hunt
 
 ## Slash Commands
-### Hunt Participants
+### All Hunt Participants
 Commands available to anyone participating in the hunt.
 
 - `/bounty` — Shows the current active bounty and its description.
@@ -14,7 +14,7 @@ Commands available to anyone participating in the hunt.
 - `/passwords` — Displays the current hunt passwords.
 
 ### Hunt Captains
-Commands available to the Hunt Captains
+Commands available to the Hunt Captains.
 
 - `/create_team_bounty item_name:<name> reward_amount:<amount> time_limit_hours:<hours>` — Creates a new team item bounty with an optional time limit.
 - `/close_team_bounty item_name:<name> completed_by:<user>` — Closes a team item bounty early and records who completed it.
