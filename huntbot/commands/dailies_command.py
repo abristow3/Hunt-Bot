@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> None:
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     message = cog.daily_description or "No daily currently available"
@@ -22,6 +23,7 @@ async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> N
 async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot, url: str) -> None:
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     authorized_roles = ["admin", "helper", "staff"]
@@ -36,6 +38,7 @@ async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot,
 async def update_daily_description(interaction: discord.Interaction, description: str, discord_bot: Bot):
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     authorized_roles = ["admin"]
@@ -51,6 +54,7 @@ async def complete_daily(interaction: discord.Interaction, discord_bot: Bot, hun
                          team_color: str) -> None:
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",

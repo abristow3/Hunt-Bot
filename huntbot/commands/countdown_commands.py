@@ -20,8 +20,10 @@ async def current_countdown(interaction: discord.Interaction, hunt_bot: HuntBot,
     """Displays the current time until the Hunt begins or ends, stored in the Countdown Cog"""
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog",
                           cog_type=CountdownCog)
+
     if cog is None:
-        return None
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
+        return
 
     if hunt_bot.start_datetime.tzinfo is None:
         logger.warning("[Countdown Commands] Hunt start_datetime is naive (no timezone)")

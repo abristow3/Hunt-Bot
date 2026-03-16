@@ -25,6 +25,7 @@ async def current_score(interaction: discord.Interaction, discord_bot: Bot) -> N
     """
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="ScoreCog", cog_type=ScoreCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     message = getattr(cog, 'score_message', None)

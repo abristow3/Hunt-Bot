@@ -4,11 +4,12 @@ import logging
 from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
 from huntbot.commands.command_utils import fetch_cog, check_user_roles
 from discord.ext.commands import Bot
+from huntbot import HuntBot
 
 logger = logging.getLogger(__name__)
 
 
-def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_bot: Bot) -> None:
+def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_bot: Bot, hunt_bot: HuntBot) -> None:
     """
     Registers slash commands related to team item bounties with the given command tree.
 
@@ -21,6 +22,7 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
     Args:
         tree (app_commands.CommandTree): The command tree to register the commands on.
         discord_bot (Bot): The discord.ext.commands.Bot instance to fetch cogs from.
+        :param hunt_bot:
 
     Returns:
         None
@@ -46,20 +48,23 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         Returns:
             None
         """
-        authorized_roles = ["admin", "staff", "helper", "Team Leader"]
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[CreateTeamItemBounty Command] Failed to defer interaction: already expired")
+            return
+
+        authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",
+                            "admin", "Sheet helper"]
         authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
         if not authorized:
             return
 
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
                               cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
-        if cog is None:
-            return
 
-        try:
-            await interaction.response.defer()
-        except discord.NotFound:
-            logger.error("[CreateTeamItemBounty Command] Failed to defer interaction: already expired")
+        if cog is None:
+            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:
@@ -86,15 +91,17 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         """
         logger.info(f"[ListTeamItemBounty Command] list command ran")
 
-        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
-                              cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
-        if cog is None:
-            return
-
         try:
             await interaction.response.defer()
         except discord.NotFound:
             logger.error("[ListTeamItemBounty Command] Failed to defer interaction: already expired")
+            return
+
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
+                              cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
+
+        if cog is None:
+            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:
@@ -124,20 +131,23 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         """
         logger.info(f"[CloseTeamItemBounty Command] close bounty command ran with {item_name} {completed_by}")
 
-        authorized_roles = ["admin", "staff", "helper", "Team Leader"]
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[CloseTeamItemBounty Command] Failed to defer interaction: already expired")
+            return
+
+        authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",
+                            "admin", "Sheet helper"]
         authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
         if not authorized:
             return
 
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
                               cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
-        if cog is None:
-            return
 
-        try:
-            await interaction.response.defer()
-        except discord.NotFound:
-            logger.error("[CloseTeamItemBounty Command] Failed to defer interaction: already expired")
+        if cog is None:
+            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:
@@ -171,20 +181,23 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         logger.info(
             f"[UpdateTeamItemBounty Command] update bounty command ran with {item_name} {reward_amount} {time_limit_hours}")
 
-        authorized_roles = ["admin", "staff", "helper", "Team Leader"]
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[UpdateTeamItemBounty Command] Failed to defer interaction: already expired")
+            return
+
+        authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",
+                            "admin", "Sheet helper"]
         authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
         if not authorized:
             return
 
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
                               cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
-        if cog is None:
-            return
 
-        try:
-            await interaction.response.defer()
-        except discord.NotFound:
-            logger.error("[UpdateTeamItemBounty Command] Failed to defer interaction: already expired")
+        if cog is None:
+            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:

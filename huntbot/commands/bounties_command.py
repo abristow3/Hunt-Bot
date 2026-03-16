@@ -13,6 +13,7 @@ async def current_bounty(interaction: discord.Interaction, discord_bot: Bot) -> 
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
                           cog_type=BountiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     message = cog.bounty_description or "No bounty currently available"
@@ -24,6 +25,7 @@ async def update_bounty_image(interaction: discord.Interaction, discord_bot: Bot
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
                           cog_type=BountiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     authorized_roles = ["admin", "staff", "helper"]
@@ -39,6 +41,7 @@ async def update_bounty_description(interaction: discord.Interaction, descriptio
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
                           cog_type=BountiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     authorized_roles = ["admin"]
@@ -54,6 +57,7 @@ async def complete_bounty(interaction: discord.Interaction, discord_bot: Bot, hu
     cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
                           cog_type=BountiesCog)
     if cog is None:
+        await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
     authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",

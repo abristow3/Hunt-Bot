@@ -172,7 +172,7 @@ async def on_ready():
     register_main_commands(bot.tree, gdoc, hunt_bot, bot)
     register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
-    # register_team_item_bounty_commands(bot.tree, discord_bot=bot)
+    register_team_item_bounty_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     register_score_commands(bot.tree, discord_bot=bot)
     register_countdown_commands(tree=bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
 

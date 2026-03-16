@@ -14,7 +14,7 @@ async def beep(interaction: discord.Interaction):
     await interaction.response.send_message("Boop")
 
 
-async def start_hunt(interaction: discord.Interaction, gdoc: GDoc, hunt_bot: HuntBot, discord_bot: Bot):
+async def start_hunt(interaction: discord.Interaction, hunt_bot: HuntBot, discord_bot: Bot):
     try:
         await interaction.response.defer()
     except discord.NotFound:
@@ -119,7 +119,7 @@ def register_main_commands(tree: app_commands.CommandTree, gdoc: GDoc, hunt_bot:
 
     @tree.command(name="start-hunt", description="Starts the Hunt Bot on the pre-configured date and time")
     async def start_cmd(interaction: discord.Interaction):
-        await start_hunt(interaction=interaction, gdoc=gdoc, hunt_bot=hunt_bot, discord_bot=discord_bot)
+        await start_hunt(interaction=interaction, hunt_bot=hunt_bot, discord_bot=discord_bot)
 
     @tree.command(name="sheet", description="Updates the GDoc sheet ID that the Hunt Bot references")
     @app_commands.describe(sheet_id="The GDoc sheet ID", sheet_name="The name of the sheet in the GDoc",
