@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 import logging
 from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
-from huntbot.commands.command_utils import fetch_cog
+from huntbot.commands.command_utils import fetch_cog, check_user_roles
 from discord.ext.commands import Bot
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,11 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         Returns:
             None
         """
+        authorized_roles = ["admin", "staff", "helper", "Team Leader"]
+        authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
+        if not authorized:
+            return
+
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
                               cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
         if cog is None:
@@ -119,6 +124,11 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         """
         logger.info(f"[CloseTeamItemBounty Command] close bounty command ran with {item_name} {completed_by}")
 
+        authorized_roles = ["admin", "staff", "helper", "Team Leader"]
+        authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
+        if not authorized:
+            return
+
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
                               cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
         if cog is None:
@@ -160,6 +170,11 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         """
         logger.info(
             f"[UpdateTeamItemBounty Command] update bounty command ran with {item_name} {reward_amount} {time_limit_hours}")
+
+        authorized_roles = ["admin", "staff", "helper", "Team Leader"]
+        authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
+        if not authorized:
+            return
 
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
                               cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)

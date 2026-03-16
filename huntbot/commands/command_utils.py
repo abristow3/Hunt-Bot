@@ -26,6 +26,9 @@ async def check_user_roles(interaction: discord.Interaction, authorized_roles: l
 
     if any(role in user_roles for role in authorized_roles):
         return True
+        # Suffix match (e.g. "Red Team Leader" ends with "Team Leader")
+    elif any(user_role.endswith(auth_role) for user_role in user_roles for auth_role in authorized_roles):
+        return True
     else:
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
         return False

@@ -35,8 +35,7 @@ def mock_cog(mock_bot, mock_gdoc):
     mock_hunt_bot.team_one_name = "Red"
     mock_hunt_bot.team_two_name = "Blue"
     mock_hunt_bot.config_map = {
-        'POINTS_CHANNEL_ID': '1234567890',
-        'ALERT_CHANNEL_ID': '0987654321'
+        'POINTS_CHANNEL_ID': '1234567890'
     }
     cog = ScoreCog(discord_bot=mock_bot, hunt_bot=mock_hunt_bot, gdoc=mock_gdoc)
 

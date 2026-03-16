@@ -1,13 +1,31 @@
 # Hunt-Bot
 A Discord bot to help automate The Hunt
 
-## Commands
+## Slash Commands
+### Hunt Participants
+Commands available to anyone participating in the hunt.
 
-- `/beep` - Health check, should respond back with boop if the bot is online and healthy
-- `/sheet` - Used to supply the hunt bot with a GDoc sheet ID, optionally can also set the sheet_name and config_table name.
-If they are not provided then the sheet_name will default to "BotConfig" and the config_table will default to "Discord Conf"
-- `/start-hunt` - Starts the hunt process. The bot will wait until the start date and time to begin posting daileis, bounties,
-score. The starboard plugin will be available as soon as the command is run.
+- `/bounty` — Shows the current active bounty and its description.
+- `/daily` — Shows the current active daily challenge.
+- `/countdown` — Displays the time remaining until the hunt begins or ends.
+- `/score` — Displays the current hunt score.
+- `/list_team_bounties` — Lists all currently active team item bounties.
+- `/beep` — Test command that replies with “Boop”.
+- `/passwords` — Displays the current hunt passwords.
 
+### Hunt Captains
+Commands available to the Hunt Captains
 
+- `/create_team_bounty item_name:<name> reward_amount:<amount> time_limit_hours:<hours>` — Creates a new team item bounty with an optional time limit.
+- `/close_team_bounty item_name:<name> completed_by:<user>` — Closes a team item bounty early and records who completed it.
+- `/update_team_bounty item_name:<name> reward_amount:<amount> time_limit_hours:<hours>` — Updates the reward amount and/or time limit for an existing team item bounty.
 
+### Hunt Staff
+Commands that require staff/admin permissions.
+
+- `/sheet sheet_id:<id>` — Configures the bot with the Google Sheet ID and configuration tables used for the hunt.
+- `/start-hunt` — Starts the hunt bot and begins the hunt logic loop at the configured start time.
+- `/update_bounty_image image_url:<url>` — Updates the embedded image in the current bounty message.
+- `/update_bounty_description new_description:<text>` — Updates the description in the current bounty message.
+- `/update_daily_image image_url:<url>` — Updates the embedded image in the current daily message.
+- `/update_daily_description new_description:<text>` — Updates the description in the current daily message.
