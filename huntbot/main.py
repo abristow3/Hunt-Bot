@@ -106,7 +106,7 @@ async def check_start_time():
                 (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                # (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (TeamItemBountyCog, {'hunt_bot': hunt_bot})
             ]
