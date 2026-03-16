@@ -121,14 +121,20 @@ class ScoreCog(commands.Cog):
         plugin_sheet_name = "Config"
 
         try:
-            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
-                                                cell=team_1_score_cell, value=self.team1_points)
-            logger.info(f"[Score Cog] Single cell write success ({self.team1_points}): {success_cell}")
+            t1_written = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                              cell=team_1_score_cell, value=self.team1_points)
 
-            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
-                                                cell=team_2_score_cell, value=self.team2_points)
-            logger.info(f"[Score Cog] Single cell write success ({self.team2_points}): {success_cell}")
-
+            t2_written = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                              cell=team_2_score_cell, value=self.team2_points)
+            if t1_written and t2_written:
+                logger.info(
+                    f"[Score Cog] Single cell write success..."
+                    f"Team 1 Points:{self.team1_points}"
+                    f"Team 2 Points:{self.team2_points}")
+            else:
+                logger.error(f"[Score Cog] Error writing scores to RuneLite Plugin GDoc..."
+                             f"Team 1 Write: {t1_written}"
+                             f"Team 2 Write: {t2_written}")
         except Exception as e:
             logger.error(f"[Score Cog] Error updating team scores in RL Plugin GDoc", exc_info=e)
 

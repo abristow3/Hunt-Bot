@@ -9,11 +9,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 begins_template = Template("""
-The Hunt begins in $num_hours hours!
+The Hunt begins in $num_hours hours! ($druid_minutes Druid Minutes)
 """)
 
 ends_template = Template("""
-The Hunt ends in $num_hours hours!
+The Hunt ends in $num_hours hours! ($druid_minutes Druid Minutes)
 """)
 
 
@@ -54,18 +54,25 @@ class CountdownCog(commands.Cog):
             raise ConfigurationException(config_key='ANNOUNCEMENTS_CHANNEL_ID')
 
     @staticmethod
+    def hours_to_druid_minutes(hours: int) -> int:
+        # hours times 60 dvidied by 6?
+        # 10 hours = 600 minutes = 100 druid minutes
+        druid_minutes = int((hours * 60) / 6)
+        return druid_minutes
+
+    @staticmethod
     def get_current_gmt_time() -> datetime:
         gmt_timezone = pytz.timezone('Europe/London')
         return datetime.now(gmt_timezone)
 
-    @tasks.loop(seconds=30) 
+    @tasks.loop(seconds=30)
     async def start_countdown(self) -> None:
         if not self.configured:
             logger.warning("[Countdown Cog] Cog not configured, skipping countdown.")
             return
-        
+
         channel = self.discord_bot.get_channel(self.announcements_channel_id)
-        
+
         if not channel:
             logger.error("[Countdown Cog] Announcements Channel not found.")
             return
@@ -78,11 +85,12 @@ class CountdownCog(commands.Cog):
             if self.start_countdown_intervals:
                 next_interval = self.start_countdown_intervals[0]
                 target_time = self.hunt_bot.start_datetime - timedelta(hours=next_interval)
-                
+
                 if current_time >= target_time:
                     # Post message
                     logger.info(f"[Countdown Cog] Posting Countdown start message for interval: {next_interval} hours.")
-                    self.message = begins_template.safe_substitute(num_hours=next_interval)
+                    druid_minutes = self.hours_to_druid_minutes(next_interval)
+                    self.message = begins_template.safe_substitute(num_hours=next_interval, druid_minutes=druid_minutes)
                     await channel.send(self.message)
                     self.start_countdown_intervals.pop(0)
 
@@ -96,18 +104,19 @@ class CountdownCog(commands.Cog):
             if self.end_countdown_intervals:
                 next_interval = self.end_countdown_intervals[0]
                 target_time = self.hunt_bot.end_datetime - timedelta(hours=next_interval)
-                
+
                 if current_time >= target_time:
                     # Post message
                     logger.info(f"[Countdown Cog] Posting Countdown end message for interval: {next_interval} hours.")
-                    self.message = ends_template.safe_substitute(num_hours=next_interval)
+                    druid_minutes = self.hours_to_druid_minutes(next_interval)
+                    self.message = ends_template.safe_substitute(num_hours=next_interval, druid_minutes=druid_minutes)
                     await channel.send(self.message)
                     self.end_countdown_intervals.pop(0)
-            
+
             if not self.end_countdown_intervals:
                 logger.info(f"[Countdown Cog] End messages completed.")
                 self.end_completed = True
-        
+
         # Countdown completed logic
         if self.start_completed and self.end_completed:
             logger.info(f"[Countdown Cog] Start and End messages completed.")

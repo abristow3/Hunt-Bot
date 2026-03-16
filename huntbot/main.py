@@ -105,9 +105,9 @@ async def check_start_time():
                 (BountiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
-                # (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                # (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 # (TeamItemBountyCog, {'hunt_bot': hunt_bot})
             ]
 
@@ -190,7 +190,6 @@ async def main():
 def run():
     '''
     TODO
-    - Test memories Cog & Commands
     - Test Memes Cog
     - Test StarBoard Cog
     - Test all Commands and Cogs Basically
