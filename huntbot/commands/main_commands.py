@@ -103,12 +103,15 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
 
 
 async def passwords(interaction: discord.Interaction, hunt_bot: HuntBot):
-    response = (
-        "**===== CURRENT PASSWORDS =====**\n\n"
-        f"**MASTER:** {hunt_bot.master_password}\n"
-        f"**DAILY:** {hunt_bot.daily_password}\n"
-        f"**BOUNTY:** {hunt_bot.bounty_password}"
-    )
+    if not hunt_bot.started:
+        response = "Password will be available once the Hunt begins!"
+    else:
+        response = (
+            "**===== CURRENT PASSWORDS =====**\n\n"
+            f"**MASTER:** {hunt_bot.master_password}\n"
+            f"**DAILY:** {hunt_bot.daily_password}\n"
+            f"**BOUNTY:** {hunt_bot.bounty_password}"
+        )
     await interaction.response.send_message(response)
 
 
