@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # TODO REMOVE AFTER TESTING
 TOKEN = os.getenv("DISCORD_TOKEN")
-TOKEN = "MTM1MTUzMDI5MjA2MTUzNjI5Nw.GOfmsD.r7kqhNjW80nO6HE1YM0vmsJ0D-zRVQepXNrqzk"
+
 if not TOKEN:
     logger.error("[Main Task Loop] No Discord API token found.")
     exit()
