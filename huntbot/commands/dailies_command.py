@@ -10,8 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog",
+                              cog_type=DailiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Dailies Commands] Error when finding dailies cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
@@ -21,8 +26,13 @@ async def current_daily(interaction: discord.Interaction, discord_bot: Bot) -> N
 
 
 async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot, url: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog",
+                              cog_type=DailiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Dailies Commands] Error when finding dailies cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
@@ -36,8 +46,13 @@ async def update_daily_image(interaction: discord.Interaction, discord_bot: Bot,
 
 
 async def update_daily_description(interaction: discord.Interaction, description: str, discord_bot: Bot):
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog",
+                              cog_type=DailiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Dailies Commands] Error when finding dailies cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
@@ -52,8 +67,13 @@ async def update_daily_description(interaction: discord.Interaction, description
 
 async def complete_daily(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot,
                          team_color: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog", cog_type=DailiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="DailiesCog",
+                              cog_type=DailiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Dailies Commands] Error when finding dailies cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 

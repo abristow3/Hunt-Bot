@@ -18,10 +18,13 @@ The Hunt $action in: $hours Hours and $minutes Minutes
 
 async def current_countdown(interaction: discord.Interaction, hunt_bot: HuntBot, discord_bot: Bot) -> None:
     """Displays the current time until the Hunt begins or ends, stored in the Countdown Cog"""
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog",
-                          cog_type=CountdownCog)
-
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog",
+                              cog_type=CountdownCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Countdown Commands] Error when finding countdown cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 

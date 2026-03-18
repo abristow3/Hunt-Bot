@@ -246,7 +246,7 @@ async def test_start_message_posted_when_time_matches_interval():
     # Simulate the current time being exactly the interval
     def fake_current_time():
         return hunt_start_time - timedelta(hours=6)
-    cog.get_current_gmt_time = fake_current_time
+    cog.get_current_utc_time = fake_current_time
 
     # Act
     await cog.start_countdown()
@@ -289,7 +289,7 @@ async def test_end_message_posted_when_time_matches_interval():
     # Simulate current time being exactly the interval before hunt ends
     def fake_current_time():
         return hunt_end_time - timedelta(hours=6)
-    cog.get_current_gmt_time = fake_current_time
+    cog.get_current_utc_time = fake_current_time
 
     # Act
     await cog.start_countdown()

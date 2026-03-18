@@ -71,10 +71,7 @@ async def check_start_time():
     try:
         # Get updated gdoc data rate is 300 reads /per minute
         logger.info("[Main Task Loop] Retrieving GDoc data....")
-        df = gdoc.get_data_from_sheet(
-            spreadsheet_id=hunt_bot.sheet_id,
-            sheet_name=hunt_bot.sheet_name
-        )
+        df = gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name)
         hunt_bot.set_sheet_data(sheet_data=df)
     except Exception as e:
         logger.error(e)

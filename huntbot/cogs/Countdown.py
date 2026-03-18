@@ -61,9 +61,10 @@ class CountdownCog(commands.Cog):
         return druid_minutes
 
     @staticmethod
-    def get_current_gmt_time() -> datetime:
-        gmt_timezone = pytz.timezone('Europe/London')
-        return datetime.now(gmt_timezone)
+    def get_current_utc_time():
+        utc_timezone = pytz.utc
+        utc_time = datetime.now(utc_timezone)
+        return utc_time
 
     @tasks.loop(seconds=30)
     async def start_countdown(self) -> None:
@@ -77,7 +78,7 @@ class CountdownCog(commands.Cog):
             logger.error("[Countdown Cog] Announcements Channel not found.")
             return
 
-        current_time = self.get_current_gmt_time()
+        current_time = self.get_current_utc_time()
 
         # Post a countdown start message logic
         if not self.start_completed and not self.end_completed:
@@ -132,7 +133,7 @@ class CountdownCog(commands.Cog):
         removing any intervals that have already passed to ensure correct countdown behavior.
         '''
         if not self.hunt_bot.started:
-            current_time = self.get_current_gmt_time()
+            current_time = self.get_current_utc_time()
             current_delta = self.hunt_bot.start_datetime - current_time
             hours_until_start = current_delta.total_seconds() / 3600
 
@@ -151,7 +152,7 @@ class CountdownCog(commands.Cog):
             # Set countdown start_complete to True so it bypasses it in task loop
             self.start_completed = True
 
-            current_time = self.get_current_gmt_time()
+            current_time = self.get_current_utc_time()
             current_delta = self.hunt_bot.end_datetime - current_time
             hours_until_end = current_delta.total_seconds() / 3600
 

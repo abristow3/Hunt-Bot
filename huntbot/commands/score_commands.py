@@ -23,8 +23,13 @@ async def current_score(interaction: discord.Interaction, discord_bot: Bot) -> N
     Returns:
         None
     """
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="ScoreCog", cog_type=ScoreCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="ScoreCog",
+                              cog_type=ScoreCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Score Commands] Error when finding score cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 

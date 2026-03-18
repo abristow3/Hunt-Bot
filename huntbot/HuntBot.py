@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytz
 import pandas as pd
 import logging
@@ -77,7 +77,7 @@ class HuntBot:
 
         try:
             self.start_date = self.config_map.get("HUNT_START_DATE", "")
-            self.start_time = self.config_map.get("HUNT_START_TIME_GMT", "")
+            self.start_time = self.config_map.get("HUNT_START_TIME_UTC", "")
             self.master_password = self.config_map.get("MASTER_PASSWORD", "")
             self.announcements_channel_id = int(self.config_map.get('ANNOUNCEMENTS_CHANNEL_ID', "0"))
             self.general_channel_id = int(self.config_map.get('GENERAL_CHANNEL_ID', "0"))
@@ -104,7 +104,7 @@ class HuntBot:
         if not self.start_date:
             missing_fields.append("HUNT_START_DATE")
         if not self.start_time:
-            missing_fields.append("HUNT_START_TIME_GMT")
+            missing_fields.append("HUNT_START_TIME_UTC")
         if not self.master_password:
             missing_fields.append("MASTER_PASSWORD")
         if not self.team_one_name:
@@ -130,24 +130,24 @@ class HuntBot:
         start_datetime_str = f"{self.start_date} {self.start_time}"
 
         try:
-            self.start_datetime = datetime.strptime(start_datetime_str, "%d/%m/%Y %H:%M")
-            self.start_datetime = pytz.timezone('Europe/London').localize(self.start_datetime)
+            self.start_datetime = datetime.strptime(start_datetime_str, "%d/%m/%Y %H:%M").replace(tzinfo=timezone.utc)
         except ValueError:
             logger.exception(f"Invalid date/time format: {start_datetime_str}")
             raise InvalidConfig("Invalid date/time format. Expected format: DD/MM/YYYY HH:MM")
 
         self.end_datetime = self.start_datetime + timedelta(days=9)
+        logger.info(f"START TIME: {self.start_datetime}")
+        logger.info(f"END TIME: {self.end_datetime}")
         self.configured = True
 
     @staticmethod
-    def get_current_gmt_time():
-        # Convert local time to GMT
-        gmt_timezone = pytz.timezone('Europe/London')
-        gmt_time = datetime.now(gmt_timezone)
-        return gmt_time
+    def get_current_utc_time():
+        utc_timezone = pytz.utc
+        utc_time = datetime.now(utc_timezone)
+        return utc_time
 
     def check_start(self):
-        ctime = self.get_current_gmt_time()
+        ctime = self.get_current_utc_time()
 
         logger.info(f"Current time is: {ctime}, Hunt Start Date time is: {self.start_datetime}")
 
@@ -157,7 +157,7 @@ class HuntBot:
             self.started = True
 
     def check_end(self):
-        ctime = self.get_current_gmt_time()
+        ctime = self.get_current_utc_time()
 
         logger.info(f"Current time is: {ctime}, Hunt End date time is: {self.end_datetime}")
 

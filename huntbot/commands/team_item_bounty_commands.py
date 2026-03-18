@@ -48,23 +48,26 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         Returns:
             None
         """
-        try:
-            await interaction.response.defer()
-        except discord.NotFound:
-            logger.error("[CreateTeamItemBounty Command] Failed to defer interaction: already expired")
-            return
-
         authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",
                             "admin", "Sheet helper"]
         authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
         if not authorized:
             return
 
-        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
-                              cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[CreateTeamItemBounty Command] Failed to defer interaction: already expired")
+            return
 
-        if cog is None:
-            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
+        try:
+            cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="TeamItemBountyCog",
+                                  cog_type=TeamItemBountyCog)
+            if cog is None:
+                return
+        except Exception as e:
+            logger.error(f"[TeamItemBounty Commands] Error when finding TeamItemBounty cog.", exc_info=e)
+            await interaction.followup.send("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:
@@ -92,16 +95,19 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         logger.info(f"[ListTeamItemBounty Command] list command ran")
 
         try:
+            cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="TeamItemBountyCog",
+                                  cog_type=TeamItemBountyCog)
+            if cog is None:
+                return
+        except Exception as e:
+            logger.error(f"[TeamItemBounty Commands] Error when finding TeamItemBounty cog.", exc_info=e)
+            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
+            return
+
+        try:
             await interaction.response.defer()
         except discord.NotFound:
             logger.error("[ListTeamItemBounty Command] Failed to defer interaction: already expired")
-            return
-
-        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
-                              cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
-
-        if cog is None:
-            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:
@@ -131,23 +137,26 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         """
         logger.info(f"[CloseTeamItemBounty Command] close bounty command ran with {item_name} {completed_by}")
 
-        try:
-            await interaction.response.defer()
-        except discord.NotFound:
-            logger.error("[CloseTeamItemBounty Command] Failed to defer interaction: already expired")
-            return
-
         authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",
                             "admin", "Sheet helper"]
         authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
         if not authorized:
             return
 
-        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
-                              cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[CreateTeamItemBounty Command] Failed to defer interaction: already expired")
+            return
 
-        if cog is None:
-            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
+        try:
+            cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="TeamItemBountyCog",
+                                  cog_type=TeamItemBountyCog)
+            if cog is None:
+                return
+        except Exception as e:
+            logger.error(f"[TeamItemBounty Commands] Error when finding TeamItemBounty cog.", exc_info=e)
+            await interaction.followup.send("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:
@@ -181,23 +190,26 @@ def register_team_item_bounty_commands(tree: app_commands.CommandTree, discord_b
         logger.info(
             f"[UpdateTeamItemBounty Command] update bounty command ran with {item_name} {reward_amount} {time_limit_hours}")
 
-        try:
-            await interaction.response.defer()
-        except discord.NotFound:
-            logger.error("[UpdateTeamItemBounty Command] Failed to defer interaction: already expired")
-            return
-
         authorized_roles = ["staff", f"{hunt_bot.team_one_name}_team_leader", f"{hunt_bot.team_two_name}_team_leader",
                             "admin", "Sheet helper"]
         authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
         if not authorized:
             return
 
-        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot,
-                              cog_name="TeamItemBountyCog", cog_type=TeamItemBountyCog)
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            logger.error("[CreateTeamItemBounty Command] Failed to defer interaction: already expired")
+            return
 
-        if cog is None:
-            await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
+        try:
+            cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="TeamItemBountyCog",
+                                  cog_type=TeamItemBountyCog)
+            if cog is None:
+                return
+        except Exception as e:
+            logger.error(f"[TeamItemBounty Commands] Error when finding TeamItemBounty cog.", exc_info=e)
+            await interaction.followup.send("Command not available until the Hunt begins.", ephemeral=True)
             return
 
         try:

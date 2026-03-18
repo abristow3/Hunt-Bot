@@ -15,18 +15,17 @@ async def beep(interaction: discord.Interaction):
 
 
 async def start_hunt(interaction: discord.Interaction, hunt_bot: HuntBot, discord_bot: Bot):
-    try:
-        await interaction.response.defer()
-    except discord.NotFound:
-        logger.error("Failed to defer interaction: already expired")
-        return
-
+    logger.info(f"/start-hunt command ran")
     authorized_roles = ["admin"]
     authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
     if not authorized:
         return
 
-    logger.info(f"/start-hunt command ran")
+    try:
+        await interaction.response.defer()
+    except discord.NotFound:
+        logger.error("Failed to defer interaction: already expired")
+        return
 
     if hunt_bot.sheet_id == "":
         await interaction.followup.send("No GDoc sheet ID set. Use the command '/sheet' to set one.")
@@ -45,18 +44,17 @@ async def start_hunt(interaction: discord.Interaction, hunt_bot: HuntBot, discor
 
 async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str, config_table: str, gdoc: GDoc,
                 hunt_bot: HuntBot):
-    try:
-        await interaction.response.defer()
-    except discord.NotFound:
-        logger.error("[SHEET COMMAND] Failed to defer interaction: already expired")
-        return
-
+    logger.info(f"/sheet command ran")
     authorized_roles = ["admin"]
     authorized = await check_user_roles(interaction=interaction, authorized_roles=authorized_roles)
     if not authorized:
         return
 
-    logger.info(f"/sheet command ran")
+    try:
+        await interaction.response.defer()
+    except discord.NotFound:
+        logger.error("[SHEET COMMAND] Failed to defer interaction: already expired")
+        return
 
     hunt_bot.set_sheet_id(sheet_id=sheet_id)
     hunt_bot.set_sheet_name(sheet_name=sheet_name)

@@ -10,9 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 async def current_bounty(interaction: discord.Interaction, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
-                          cog_type=BountiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
+                              cog_type=BountiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Bounties Commands] Error when finding bounties cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
@@ -22,9 +26,13 @@ async def current_bounty(interaction: discord.Interaction, discord_bot: Bot) -> 
 
 
 async def update_bounty_image(interaction: discord.Interaction, discord_bot: Bot, url: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
-                          cog_type=BountiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
+                              cog_type=BountiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Bounties Commands] Error when finding bounties cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
@@ -38,9 +46,13 @@ async def update_bounty_image(interaction: discord.Interaction, discord_bot: Bot
 
 
 async def update_bounty_description(interaction: discord.Interaction, description: str, discord_bot: Bot) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
-                          cog_type=BountiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
+                              cog_type=BountiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Bounties Commands] Error when finding bounties cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
@@ -54,9 +66,13 @@ async def update_bounty_description(interaction: discord.Interaction, descriptio
 
 
 async def complete_bounty(interaction: discord.Interaction, discord_bot: Bot, hunt_bot: HuntBot, team_color: str) -> None:
-    cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
-                          cog_type=BountiesCog)
-    if cog is None:
+    try:
+        cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="BountiesCog",
+                              cog_type=BountiesCog)
+        if cog is None:
+            return
+    except Exception as e:
+        logger.error(f"[Bounties Commands] Error when finding bounties cog.", exc_info=e)
         await interaction.response.send_message("Command not available until the Hunt begins.", ephemeral=True)
         return
 
