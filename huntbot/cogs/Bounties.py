@@ -1,3 +1,5 @@
+import asyncio
+
 from discord.ext import commands, tasks
 import pandas as pd
 from string import Template
@@ -7,6 +9,7 @@ from huntbot.GDoc import GDoc
 import logging
 import re
 import discord
+from huntbot.cogs.TotalBountyItemCounter import TotalBountyItemCounterCog
 
 logger = logging.getLogger(__name__)
 
@@ -97,28 +100,28 @@ class BountiesCog(commands.Cog):
             logger.error(f"[Bounties Cog] Initialization failed: {e}")
             self.configured = False
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         logger.info("[Bounties Cog] Unloading cog.")
         if self.start_bounties.is_running():
             self.start_bounties.stop()
 
-    def get_bounties_per_day(self):
+    def get_bounties_per_day(self) -> None:
         self.bounties_per_day = int(self.hunt_bot.config_map.get('BOUNTIES_PER_DAY', "0"))
         if self.bounties_per_day == 0:
             logger.error("[Bounties Cog] No BOUNTIES_PER_DAY data found in config")
             raise ConfigurationException(config_key='BOUNTIES_PER_DAY')
 
-    def set_bounty_interval(self):
+    def set_bounty_interval(self) -> None:
         self.bounty_interval = 24 / self.bounties_per_day
         logger.info(f"[Bounties Cog] Bounties interval set to {self.bounty_interval}")
 
-    def get_bounty_channel(self):
+    def get_bounty_channel(self) -> None:
         self.bounty_channel_id = int(self.hunt_bot.config_map.get('BOUNTY_CHANNEL_ID', "0"))
         if self.bounty_channel_id == 0:
             logger.error("[Bounties Cog] No BOUNTY_CHANNEL_ID data found in config")
             raise ConfigurationException(config_key='BOUNTY_CHANNEL_ID')
 
-    def get_single_bounties(self):
+    def get_single_bounties(self) -> None:
         self.single_bounties_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
                                                      table_name=self.single_bounties_table_name)
 
@@ -126,7 +129,7 @@ class BountiesCog(commands.Cog):
             logger.error("[Bounties Cog] Error parsing single bounties from config map")
             raise TableDataImportException(table_name=self.single_bounties_table_name)
 
-    def get_double_bounties(self):
+    def get_double_bounties(self) -> None:
         self.double_bounties_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
                                                      table_name=self.double_bounties_table_name)
 
@@ -134,13 +137,13 @@ class BountiesCog(commands.Cog):
             logger.error("[Bounties Cog] Error parsing double bounties from config map")
             raise TableDataImportException(table_name=self.double_bounties_table_name)
 
-    def get_single_bounty_offset(self):
+    def get_single_bounty_offset(self) -> None:
         self.single_bounty_offset = int(self.hunt_bot.config_map.get('SINGLE_BOUNTY_OFFSET', "-1"))
         if self.single_bounty_offset == -1:
             logger.error("[Bounties Cog] No SINGLE_BOUNTY_OFFSET data found in config")
             raise ConfigurationException(config_key='SINGLE_BOUNTY_OFFSET')
 
-    def get_double_bounty_offset(self):
+    def get_double_bounty_offset(self) -> None:
         self.double_bounty_offset = int(self.hunt_bot.config_map.get('DOUBLE_BOUNTY_OFFSET', "-1"))
         if self.double_bounty_offset == -1:
             logger.error("[Bounties Cog] No DOUBLE_BOUNTY_OFFSET data found in config")
@@ -177,7 +180,7 @@ class BountiesCog(commands.Cog):
             await team_two_channel.send(message)
 
     @tasks.loop(hours=6)  # Will override this interval after init
-    async def start_bounties(self):
+    async def start_bounties(self) -> None:
         if not self.configured:
             logger.warning("[Bounties Cog] Cog not configured, skipping bounties.")
             return
@@ -193,11 +196,25 @@ class BountiesCog(commands.Cog):
 
         try:
             logger.info("[Bounties Cog] Attempting to serve bounty")
+
+            counter_cog = self.bot.get_cog("TotalBountyItemCounterCog")
+
+            if not isinstance(counter_cog, TotalBountyItemCounterCog):
+                logger.error("[Bounties Cog] TotalBountyItemCounterCog not loaded.")
+                return
+
+            # If process is still running, go ahead and end it before next continuing
+            if counter_cog.active:
+                logger.info("[Bounties Cog] Total drop challenge over. Stopping TotalBountyItemCounter Cog.")
+                await counter_cog.stop_counter()
+                await asyncio.sleep(1)  # small async buffer (optional but safer)
+
             single_bounty = next(self.single_bounty_generator)
             single_task = single_bounty["Task"]
             single_password = single_bounty["Password"]
             self.hunt_bot.bounty_password = single_password
             is_double = not pd.isna(single_bounty.get("Double", None))
+            is_total = not pd.isna(single_bounty.get("Total Drop", None))
 
             if not is_double:
                 logger.info("[Bounties Cog] Bounty is a single bounty")
@@ -205,6 +222,10 @@ class BountiesCog(commands.Cog):
             else:
                 logger.info("[Bounties Cog] Bounty is a double bounty")
                 double_bounty = next(self.double_bounty_generator)
+                # Assumes there will never be two total drop challenges for a double
+                if not is_total:
+                    is_total = not pd.isna(double_bounty.get("Total Drop", None))
+
                 self.bounty_description = double_bounty_template.substitute(
                     b1_task=single_task, b1_password=single_password, b2_task=double_bounty["Task"])
 
@@ -222,12 +243,21 @@ class BountiesCog(commands.Cog):
             await self.post_team_notif()
             await self.embed_message.pin()
             await self.update_plugin_gdoc_passwords(password=single_password)
+
+            if is_total:
+                logger.info("[Bounties Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")
+                if isinstance(counter_cog, TotalBountyItemCounterCog):
+                    # There is a total item challenge, so we start the counter cog process
+                    await counter_cog.start_counter(start_msg_id=self.message_id, drop_channel_id=self.bounty_channel_id)
+                else:
+                    logger.error("[Bounties Cog] Tried to start counter but cog missing.")
+
         except StopIteration:
             logger.info("[Bounties Cog] No more bounties left. Stopping task.")
             self.start_bounties.stop()
 
     @start_bounties.before_loop
-    async def before_bounties(self):
+    async def before_bounties(self) -> None:
         await self.bot.wait_until_ready()
         if self.bounty_interval > 0:
             logger.info(f"[Bounties Cog] Updating Bounties task interval to: {self.bounty_interval} hours")

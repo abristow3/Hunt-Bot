@@ -1,3 +1,5 @@
+import asyncio
+
 from discord.ext import commands, tasks
 import pandas as pd
 from string import Template
@@ -7,6 +9,7 @@ from huntbot.GDoc import GDoc
 import logging
 import re
 import discord
+from huntbot.cogs.TotalDailyItemCounter import TotalDailyItemCounterCog
 
 logger = logging.getLogger(__name__)
 
@@ -115,14 +118,8 @@ class DailiesCog(commands.Cog):
             self.daily_passwords = set()
             return
 
-        self.daily_passwords = set(
-            self.single_dailies_df["Password"].dropna()
-        )
-
-        logger.info(
-            "[Dailies Cog] Loaded %d bounty passwords into memory",
-            len(self.daily_passwords)
-        )
+        self.daily_passwords = set(self.single_dailies_df["Password"].dropna())
+        logger.info("[Dailies Cog] Loaded %d bounty passwords into memory", len(self.daily_passwords))
 
     def get_single_dailies(self) -> None:
         self.single_dailies_df = GDoc.extract_table(df=self.hunt_bot.sheet_data, table_map=self.hunt_bot.table_map,
@@ -140,13 +137,13 @@ class DailiesCog(commands.Cog):
             logger.error("[Dailies Cog] Error parsing double dailies data")
             raise TableDataImportException(table_name=self.double_dailies_table_name)
 
-    def get_single_daily_offset(self):
+    def get_single_daily_offset(self) -> None:
         self.single_daily_offset = int(self.hunt_bot.config_map.get('SINGLE_DAILY_OFFSET', "-1"))
         if self.single_daily_offset == -1:
             logger.error("[Dailies Cog] No SINGLE_DAILY_OFFSET data found in config")
             raise ConfigurationException(config_key='SINGLE_DAILY_OFFSET')
 
-    def get_double_daily_offset(self):
+    def get_double_daily_offset(self) -> None:
         self.double_daily_offset = int(self.hunt_bot.config_map.get('DOUBLE_DAILY_OFFSET', "-1"))
         if self.double_daily_offset == -1:
             logger.error("[Dailies Cog] No DOUBLE_DAILY_OFFSET data found in config")
@@ -182,8 +179,8 @@ class DailiesCog(commands.Cog):
         if team_two_channel:
             await team_two_channel.send(message)
 
-    @tasks.loop(hours=1)
-    async def start_dailies(self):
+    @tasks.loop(hours=24)
+    async def start_dailies(self) -> None:
         if not self.configured:
             logger.warning("[Dailies Cog] Cog not configured, skipping dailies.")
             return
@@ -199,11 +196,24 @@ class DailiesCog(commands.Cog):
 
         try:
             logger.info("[Dailies Cog] Attempting to serve daily")
+            counter_cog = self.bot.get_cog("TotalDailyItemCounterCog")
+
+            if not counter_cog:
+                logger.error("[Dailies Cog] TotalDailyItemCounterCog not loaded.")
+                return
+
+            # If process is still running, go ahead and end it before next continuing
+            if counter_cog.active:
+                logger.info("[Dailies Cog] Total drop challenge over. Stopping TotalDailyItemCounter Cog.")
+                await counter_cog.stop_counter()
+                await asyncio.sleep(1)  # small async buffer (optional but safer)
+
             single_daily = next(self.single_daily_generator)
             single_task = single_daily["Task"]
             single_password = single_daily["Password"]
             self.hunt_bot.daily_password = single_password
             is_double = not pd.isna(single_daily.get("Double", None))
+            is_total = not pd.isna(single_daily.get("Total Drop", None))
 
             if not is_double:
                 logger.info("[Dailies Cog] Serving single daily")
@@ -211,11 +221,14 @@ class DailiesCog(commands.Cog):
             else:
                 logger.info("[Dailies Cog] Serving double daily")
                 double_daily = next(self.double_daily_generator)
-                self.daily_description = double_daily_template.substitute(
-                    b1_task=single_task,
-                    b1_password=single_password,
-                    b2_task=double_daily["Task"]
-                )
+
+                # Assumes there will never be two total drop challenges for a double
+                if not is_total:
+                    is_total = not pd.isna(double_daily.get("Total Drop", None))
+
+                self.daily_description = double_daily_template.substitute(b1_task=single_task,
+                                                                          b1_password=single_password,
+                                                                          b2_task=double_daily["Task"])
 
             if self.embed_message:
                 try:
@@ -230,12 +243,21 @@ class DailiesCog(commands.Cog):
             await self.post_team_notif()
             await self.embed_message.pin()
             await self.update_plugin_gdoc_passwords(password=single_password)
+
+            if is_total:
+                logger.info("[Dailies Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")
+                if isinstance(counter_cog, TotalDailyItemCounterCog):
+                    # There is a total item challenge, so we start the counter cog process
+                    await counter_cog.start_counter(start_msg_id=self.message_id, drop_channel_id=self.daily_channel_id)
+                else:
+                    logger.error("[Dailies Cog] Tried to start counter but cog missing.")
+
         except StopIteration:
             logger.info("[Dailies Cog] No more dailies left. Stopping task")
             self.start_dailies.stop()
 
     @start_dailies.before_loop
-    async def before_dailies(self):
+    async def before_dailies(self) -> None:
         await self.bot.wait_until_ready()
         if self.daily_interval > 0:
             logger.info(f"[Dailies Cog] Dailies interval changed to: {self.daily_interval} hours")

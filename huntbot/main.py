@@ -15,6 +15,8 @@ from huntbot.cogs.Memories import MemoriesCog
 from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
 from huntbot.cogs.Memes import MemesCog
+from huntbot.cogs.TotalBountyItemCounter import TotalBountyItemCounterCog
+from huntbot.cogs.TotalDailyItemCounter import TotalDailyItemCounterCog
 from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
@@ -22,7 +24,7 @@ from huntbot.commands.score_commands import register_score_commands
 from huntbot.commands.countdown_commands import register_countdown_commands
 from huntbot.commands.team_item_bounty_commands import register_team_item_bounty_commands
 
-logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S', format='%(asctime)s - %(levelname)s - %(message)s',
+logging.basicConfig(level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S', format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
@@ -108,7 +110,9 @@ async def check_start_time():
                 (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                (TeamItemBountyCog, {'hunt_bot': hunt_bot})
+                (TeamItemBountyCog, {'hunt_bot': hunt_bot}),
+                (TotalDailyItemCounterCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (TotalBountyItemCounterCog, {'discord_bot': bot, 'hunt_bot': hunt_bot})
             ]
 
             for cog_cls, params in cogs_to_load:
