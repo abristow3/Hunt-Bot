@@ -22,6 +22,7 @@ async def current_countdown(interaction: discord.Interaction, hunt_bot: HuntBot,
         cog = await fetch_cog(interaction=interaction, discord_bot=discord_bot, cog_name="CountdownCog",
                               cog_type=CountdownCog)
         if cog is None:
+            await interaction.response.send_message( "CountdownCog is not available or misconfigured.", ephemeral=True)
             return
     except Exception as e:
         logger.error(f"[Countdown Commands] Error when finding countdown cog.", exc_info=e)

@@ -5,6 +5,8 @@ from huntbot.HuntBot import HuntBot
 from huntbot.exceptions import ConfigurationException
 import logging
 from string import Template
+from datetime import timedelta
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ class MemesCog(commands.Cog):
         self.hunt_bot = hunt_bot
         self.meme_channel_id = 0
         self.message_reactions = {}
+        self.scoreboard_posted = False
 
     async def cog_load(self) -> None:
         # Called when the cog is fully loaded and the bot is ready
@@ -69,13 +72,10 @@ class MemesCog(commands.Cog):
         if message.channel.id != self.meme_channel_id:
             return
 
-        # Hunt hasn't started yet so ignore
-        if not self.hunt_bot.started:
-            return
-
         # The hunt has ended, so ignore
-        # TODO possibly here where we put the logic to post the top ranking memes?
-        if self.hunt_bot.ended:
+        if self.hunt_bot.ended and not self.scoreboard_posted:
+            await self.post_top_memes_scoreboard()
+            self.scoreboard_posted = True
             return
 
         # Made it to here the hunt has started, has not ended, and this is the correct text channel
@@ -126,18 +126,21 @@ class MemesCog(commands.Cog):
         Args:
             payload (RawReactionActionEvent): Raw reaction add event data.
         """
-        # Check event occurred in the meme channel
         if payload.channel_id != self.meme_channel_id:
             return
 
-        # Check the message that got the reaction is one of the memes we are tracking, if not then return
         if payload.message_id not in self.message_reactions:
             return
 
-        # Since it was, and this is a reaction add, we increment the value for the message_id key by 1
-        logger.info(f"[Memes Cog] Reaction added to meme {payload.message_id}, updating total")
-        self.message_reactions[payload.message_id] += 1
-        return
+        channel = self.bot.get_channel(payload.channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            return
+
+        message = await channel.fetch_message(payload.message_id)
+        total_reactions = sum(r.count - 1 if r.me else r.count for r in message.reactions)
+        self.message_reactions[payload.message_id] = total_reactions
+
+        logger.info(f"[Memes Cog] Updated count: {self.message_reactions}")
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent) -> None:
@@ -147,20 +150,21 @@ class MemesCog(commands.Cog):
         Args:
             payload (RawReactionActionEvent): Raw reaction remove event data.
         """
-        # Check event occured in the meme channel
         if payload.channel_id != self.meme_channel_id:
             return
 
-        # Check the message that got the reaction is one of the memes we are tracking, if not then return
         if payload.message_id not in self.message_reactions:
             return
 
-        # Since it was, and this is a reaction add, we decriment the value for the message_id key by 1
-        logger.info(f"[Memes Cog] Reaction removed from meme {payload.message_id}, updating total")
-        if self.message_reactions[payload.message_id] > 0:
-            self.message_reactions[payload.message_id] -= 1
+        channel = self.bot.get_channel(payload.channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            return
 
-        return
+        message = await channel.fetch_message(payload.message_id)
+        total_reactions = sum(r.count - 1 if r.me else r.count for r in message.reactions)
+        self.message_reactions[payload.message_id] = total_reactions
+
+        logger.info(f"[Memes Cog] Updated count: {self.message_reactions}")
 
     @staticmethod
     def validate_attachments(message: discord.Message) -> bool:
@@ -188,6 +192,7 @@ class MemesCog(commands.Cog):
                 ))
                 for att in message.attachments
         ):
+            logger.info(f"[Memes Cog] Invalid Attachments on message: {message.id}")
             return False
 
         else:
@@ -211,7 +216,7 @@ class MemesCog(commands.Cog):
             return
 
         # Only check messages that were posted after the hunt start date and time
-        after_time = self.hunt_bot.start_datetime
+        after_time = self.hunt_bot.start_datetime - timedelta(days=7)
         logger.info(f"[Memes Cog] Retrieving message history after {after_time}")
 
         # Loop through messages in the meme channel after the hunt start time
@@ -220,7 +225,16 @@ class MemesCog(commands.Cog):
                 continue
 
             # Sum reactions on meme
-            total_reactions = sum(reaction.count for reaction in message.reactions)
+            total_reactions = 0
+
+            for reaction in message.reactions:
+                count = reaction.count
+
+                # Subtract bot's own reaction if present
+                if reaction.me:
+                    count -= 1
+
+                total_reactions += max(count, 0)
 
             # Update in memory
             self.message_reactions[message.id] = total_reactions

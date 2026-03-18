@@ -55,12 +55,12 @@ async def test_initialize_meme_messages(cog):
 
     message1 = MagicMock()
     message1.attachments = [MagicMock(content_type="image/png")]
-    message1.reactions = [MagicMock(count=3)]
+    message1.reactions = [MagicMock(count=3, me=False)]
     message1.id = 101
 
     message2 = MagicMock()
     message2.attachments = [MagicMock(content_type="video/mp4")]
-    message2.reactions = [MagicMock(count=2)]
+    message2.reactions = [MagicMock(count=2, me=False)]
     message2.id = 102
 
     mock_channel.history = MagicMock(return_value=AsyncMessageHistory([message1, message2]))
@@ -76,30 +76,67 @@ async def test_initialize_meme_messages(cog):
 @pytest.mark.asyncio
 async def test_on_raw_reaction_add(cog):
     message_id = 12345
-    cog.message_reactions[message_id] = 1
+    # Initialize reactions count to 0
+    cog.message_reactions[message_id] = 0
     cog.meme_channel_id = 67890
 
+    # Mock payload
     payload = MagicMock()
     payload.channel_id = cog.meme_channel_id
     payload.message_id = message_id
 
+    # Mock fetch_message to return a message with one reaction, me=False
+    mock_message = MagicMock()
+    mock_reaction = MagicMock()
+    mock_reaction.count = 1
+    mock_reaction.me = False
+    mock_message.reactions = [mock_reaction]
+
+    mock_channel = MagicMock(spec=discord.TextChannel)
+    mock_channel.fetch_message = AsyncMock(return_value=mock_message)
+    cog.bot.get_channel = MagicMock(return_value=mock_channel)
+
+    # Call the method
     await cog.on_raw_reaction_add(payload)
 
-    assert cog.message_reactions[message_id] == 2
+    # After adding, the count should be 1
+    assert cog.message_reactions[message_id] == 1
 
 
 @pytest.mark.asyncio
 async def test_on_raw_reaction_remove(cog):
     message_id = 12345
-    cog.message_reactions[message_id] = 2
     cog.meme_channel_id = 67890
 
+    # Prepare payload for the raw reaction remove event
     payload = MagicMock()
     payload.channel_id = cog.meme_channel_id
     payload.message_id = message_id
 
+    # Mock the message reactions
+    reaction_bot = MagicMock()
+    reaction_bot.count = 1
+    reaction_bot.me = True  # Bot's own reaction should be ignored
+
+    reaction_user = MagicMock()
+    reaction_user.count = 1
+    reaction_user.me = False  # Real user's reaction counts
+
+    mock_message = MagicMock()
+    mock_message.reactions = [reaction_bot, reaction_user]
+
+    # Mock channel fetch
+    mock_channel = MagicMock(spec=discord.TextChannel)
+    mock_channel.fetch_message = AsyncMock(return_value=mock_message)
+    cog.bot.get_channel = MagicMock(return_value=mock_channel)
+
+    # Initialize the message_reactions dict (any value works, it's recalculated)
+    cog.message_reactions[message_id] = 0
+
+    # Call the event listener
     await cog.on_raw_reaction_remove(payload)
 
+    # Only the non-bot reaction counts
     assert cog.message_reactions[message_id] == 1
 
 
@@ -229,23 +266,6 @@ async def test_on_message_mixed_attachments(cog):
 
 
 @pytest.mark.asyncio
-async def test_on_message_ignores_if_hunt_not_started_or_ended(cog):
-    for started, ended in [(False, False), (True, True), (False, True)]:
-        message = MagicMock()
-        message.channel.id = cog.meme_channel_id
-        message.attachments = [MagicMock(content_type="image/png")]
-        message.author.bot = False
-        message.id = 5555
-
-        cog.hunt_bot.started = started
-        cog.hunt_bot.ended = ended
-        cog.message_reactions.clear()
-
-        await cog.on_message(message)
-        assert 5555 not in cog.message_reactions
-
-
-@pytest.mark.asyncio
 async def test_on_message_attachment_no_content_type_valid_filename(cog):
     message = MagicMock()
     attachment = MagicMock()
@@ -292,7 +312,6 @@ async def test_get_meme_channel_raises_config_exception():
         await cog.cog_load()
 
     assert "MEME_CHANNEL_ID" in str(excinfo.value)
-
 
 
 @pytest.mark.asyncio

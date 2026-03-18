@@ -20,6 +20,7 @@ def mock_interaction():
     interaction.followup = AsyncMock()
     return interaction
 
+
 @pytest.fixture
 def mock_hunt_bot():
     hunt_bot = MagicMock(spec=HuntBot)
@@ -35,12 +36,14 @@ def mock_hunt_bot():
     hunt_bot.team_two_name = "Blue"
     return hunt_bot
 
+
 @pytest.fixture
 def mock_bot():
     bot = MagicMock()
     bot.get_channel.return_value = MagicMock()
     bot.wait_until_ready = AsyncMock()
     return bot
+
 
 @pytest.fixture
 def mock_cog(mock_hunt_bot):
@@ -50,6 +53,7 @@ def mock_cog(mock_hunt_bot):
     cog.close_bounty = AsyncMock()
     cog.update_bounty = AsyncMock()
     return cog
+
 
 @pytest.fixture(autouse=True)
 def patch_bot_get_cog(mock_bot, mock_cog):

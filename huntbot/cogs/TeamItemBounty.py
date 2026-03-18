@@ -4,13 +4,14 @@ from discord.ext import commands
 from huntbot.HuntBot import HuntBot
 import logging
 import discord
+import re
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
 class TeamItemBounty:
-    def __init__(self, item_name: str, reward_amount: float, time_limit_hours: int = 48):
+    def __init__(self, item_name: str, reward_amount: str, time_limit_hours: int = 48):
         self.item_name = item_name
         self.reward_amount = reward_amount
         self.time_limit_hours = time_limit_hours
@@ -170,35 +171,23 @@ class TeamItemBountyCog(commands.Cog):
             return True
 
     @staticmethod
-    async def _parse_reward_amount(interaction: discord.Interaction, reward_amount: str) -> float | None:
+    async def _parse_reward_amount(interaction: discord.Interaction, reward_amount: str) -> str | None:
         """
         Parses a reward amount string, allowing 'K' (thousand) and 'M' (million) suffixes.
         Returns the numeric value as float, or None if invalid input (after sending an error response).
         """
         reward_str = reward_amount.strip()
-        multiplier = 1
+        if not reward_str:
+            return None
 
-        if reward_str.lower().endswith('k'):
-            multiplier = 1_000
-            reward_str = reward_str[:-1]
-        elif reward_str.lower().endswith('m'):
-            multiplier = 1_000_000
-            reward_str = reward_str[:-1]
-
-        try:
-            reward_val = float(reward_str) * multiplier
-            if reward_val < 0:
-                await interaction.followup.send(
-                    "Reward amount cannot be negative.", ephemeral=True
-                )
-                return None
-            return reward_val
-        except ValueError:
+        if not re.fullmatch(r"\d+(\.\d+)?[kKmM]?", reward_str):
             await interaction.followup.send(
                 "Reward amount must be a number (optionally with 'K' for thousand or 'M' for million).",
                 ephemeral=True
             )
             return None
+
+        return reward_str  # Keep as string
 
     async def _create_bounty_table(self, team_name: str) -> str:
         """
@@ -246,7 +235,7 @@ class TeamItemBountyCog(commands.Cog):
         for b in sorted_bounties:
             status = "Active" if b.active else "Inactive"
             time_left = f"{b.time_remaining:.1f}h" if b.active else "Expired"
-            reward = f"{int(b.reward_amount):,}" if b.reward_amount else "N/A"
+            reward = b.reward_amount if b.reward_amount else "N/A"
             completed_by = b.completed_by or "N/A"
 
             row = "| " + " | ".join([
@@ -346,7 +335,7 @@ class TeamItemBountyCog(commands.Cog):
         # Bounty details
         status = "Active"
         time_left = f"{new_bounty.time_remaining:.1f}h"
-        reward = f"{int(new_bounty.reward_amount):,}" if new_bounty.reward_amount else "N/A"
+        reward = new_bounty.reward_amount if new_bounty.reward_amount else "N/A"
         completed_by = "N/A"
 
         row = "| " + " | ".join([
@@ -518,7 +507,7 @@ class TeamItemBountyCog(commands.Cog):
         for bounty in self.active_bounties[team_name]:
             if bounty.item_name.lower() == item_name:
                 if reward_val is not None:
-                    bounty.reward_amount = reward_amount
+                    bounty.reward_amount = reward_val
                 if time_limit_hours > 0:
                     bounty.time_limit_hours = time_limit_hours
                     bounty.start_time = datetime.utcnow()  # Reset the timer

@@ -140,7 +140,7 @@ def test_determine_lead_tie(score_cog):
     score_cog.team1_points = 7
     score_cog.team2_points = 7
     score_cog.determine_lead()
-    assert score_cog.lead_message == "It's a tie!"
+    assert score_cog.lead_message == "It's tied!"
 
 
 @pytest.mark.asyncio

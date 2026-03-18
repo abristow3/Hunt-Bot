@@ -68,6 +68,10 @@ async def check_start_time():
         countdown_cog = CountdownCog(discord_bot=bot, hunt_bot=hunt_bot)
         await bot.add_cog(countdown_cog)
 
+    if "MemesCog" not in bot.cogs:
+        memes_cog = MemesCog(bot=bot, hunt_bot=hunt_bot)
+        await bot.add_cog(memes_cog)
+
     try:
         # Get updated gdoc data rate is 300 reads /per minute
         logger.info("[Main Task Loop] Retrieving GDoc data....")
@@ -103,9 +107,8 @@ async def check_start_time():
                 (DailiesCog, {'bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (ScoreCog, {'discord_bot': bot, 'hunt_bot': hunt_bot, 'gdoc': gdoc}),
                 (MemoriesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                (MemesCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                # (TeamItemBountyCog, {'hunt_bot': hunt_bot})
+                (TeamItemBountyCog, {'hunt_bot': hunt_bot})
             ]
 
             for cog_cls, params in cogs_to_load:
@@ -185,11 +188,4 @@ async def main():
 
 
 def run():
-    '''
-    TODO
-    - Test Memes Cog
-    - Test StarBoard Cog
-    - Test all Commands and Cogs Basically
-    - Test Bingo stuff once done and merge in
-    '''
     asyncio.run(main())
