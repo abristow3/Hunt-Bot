@@ -24,7 +24,7 @@ from huntbot.commands.score_commands import register_score_commands
 from huntbot.commands.countdown_commands import register_countdown_commands
 from huntbot.commands.team_item_bounty_commands import register_team_item_bounty_commands
 
-logging.basicConfig(level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S', format='%(asctime)s - %(levelname)s - %(message)s',
+logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S', format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
