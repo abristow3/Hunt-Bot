@@ -65,8 +65,7 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
     # Retrieve the configuration from the GDoc
     try:
         data = gdoc.get_data_from_sheet(spreadsheet_id=hunt_bot.sheet_id, sheet_name=hunt_bot.sheet_name)
-        df = gdoc.build_dataframe(data)
-        hunt_bot.set_sheet_data(sheet_data=df)
+        hunt_bot.set_sheet_data(sheet_data=data)
     except Exception as e:
         logger.error(f"[SHEET COMMAND] Error retrieving sheet data", exc_info=e)
         await interaction.followup.send("Error retrieving sheet data.")
@@ -92,9 +91,14 @@ async def sheet(interaction: discord.Interaction, sheet_id: str, sheet_name: str
         await interaction.followup.send("Failed to configure hunt bot.")
         return
 
+    start_str = hunt_bot.start_datetime.strftime("%d %b %Y %H:%M %Z")
+    end_str = hunt_bot.end_datetime.strftime("%d %b %Y %H:%M %Z")
+
     await interaction.followup.send(
-        f"Hunt Bot successfully configured! The hunt will start on {hunt_bot.start_datetime}. Next, if you want to "
-        f"start the hunt, run the /start-hunt command"
+        f"Hunt Bot successfully configured!\n"
+        f"• Hunt starts: {start_str}\n"
+        f"• Hunt ends:   {end_str}\n\n"
+        f"Next, if you want to start the hunt, run the /start-hunt command."
     )
 
 
