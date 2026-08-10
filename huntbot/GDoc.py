@@ -20,8 +20,8 @@ class GDoc:
     def on_startup(self) -> None:
         try:
             # Load the service account credentials from the JSON file
-            # self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "")
-            self.creds_path = "huntbot/google_auth.json"
+            self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "")
+            # self.creds_path = "huntbot/google_auth.json"
 
             logger.info(f"[GDoc] GOOGLE CREDS PATH: {self.creds_path}")
 
