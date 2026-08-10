@@ -356,31 +356,24 @@ class BountiesCog(commands.Cog):
             return
 
     async def update_plugin_gdoc_passwords(self, password: str) -> None:
-        # TODO make this not hardcoded
-        bounty_pass_cell = "B10"
         plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
         plugin_sheet_name = "Config"
-        try:
-            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
-                                                cell=bounty_pass_cell, value=password)
-            logger.info(f"[Bounties Cog] Single cell write success ({bounty_pass_cell}): {success_cell}")
-        except Exception as e:
-            logger.error(f"[Bounties Cog] Error updating bounty password cell in RL Plugin GDoc", exc_info=e)
+        key = "HUNT_BOUNTY_PASSWORD"  # must match the text in column A next to B10 today
+
+        success = self.gdoc.write_cell_by_key(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                              key=key, value=password)
+        logger.info(f"[Bounties Cog] Cell write success for key '{key}': {success}")
 
     async def write_bounty_challenge_to_plugin_gdoc(self, bounty_description: str) -> None:
-        # TODO make this not hardcoded
-        bounty_description_cell = "B18"
         plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
         plugin_sheet_name = "Config"
+        key = "HUNT_BOUNTY_DESCRIPTION"
 
         bounty_description = self.format_bounty_for_gdoc(rendered=bounty_description)
 
-        try:
-            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
-                                                cell=bounty_description_cell, value=bounty_description)
-            logger.info(f"[Bounties Cog] Single cell write success ({bounty_description_cell}): {success_cell}")
-        except Exception as e:
-            logger.error(f"[Bounties Cog] Error updating bounty description cell in RL Plugin GDoc", exc_info=e)
+        success = self.gdoc.write_cell_by_key(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                              key=key, value=bounty_description)
+        logger.info(f"[Bounties Cog] Cell write success for key '{key}': {success}")
 
     def format_bounty_for_gdoc(self, rendered: str) -> str:
         """
