@@ -333,7 +333,7 @@ class DailiesCog(commands.Cog):
         # Edit message
         await self.embed_message.edit(embed=updated_embed)
         logger.info("[Dailies Cog] Image link updated successfully")
-        response_message = "Image link updated succesfully."
+        response_message = "Image link updated successfully."
 
         return response_message
 
@@ -353,27 +353,25 @@ class DailiesCog(commands.Cog):
             return
 
     async def update_plugin_gdoc_passwords(self, password: str) -> None:
-        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
-        plugin_sheet_name = "Config"
         key = "HUNT_DAILY_PASSWORD"
 
         try:
-            success_cell = self.gdoc.write_cell_by_key(spreadsheet_id=plugin_spreadsheet_id,
-                                                       sheet_name=plugin_sheet_name, key=key, value=password)
+            success_cell = self.gdoc.write_cell_by_key(spreadsheet_id=self.gdoc.plugin_spreadsheet_id,
+                                                       sheet_name=self.gdoc.plugin_config_sheet_name, key=key,
+                                                       value=password)
             logger.info(f"[Dailies Cog] Cell write success for key '{key}': {success_cell}")
         except Exception as e:
             logger.error(f"[Dailies Cog] Error updating daily password cell in RL Plugin GDoc", exc_info=e)
 
     async def write_daily_challenge_to_plugin_gdoc(self, daily_description: str) -> None:
-        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
-        plugin_sheet_name = "Config"
         key = "HUNT_DAILY_DESCRIPTION"
 
         daily_description = self.format_daily_for_gdoc(rendered=daily_description)
 
         try:
-            success_cell = self.gdoc.write_cell_by_key(spreadsheet_id=plugin_spreadsheet_id,
-                                                       sheet_name=plugin_sheet_name, key=key, value=daily_description)
+            success_cell = self.gdoc.write_cell_by_key(spreadsheet_id=self.gdoc.plugin_spreadsheet_id,
+                                                       sheet_name=self.gdoc.plugin_config_sheet_name, key=key,
+                                                       value=daily_description)
             logger.info(f"[Dailies Cog] Cell write success for key '{key}': {success_cell}")
         except Exception as e:
             logger.error(f"[Dailies Cog] Error updating daily description cell in RL Plugin GDoc", exc_info=e)

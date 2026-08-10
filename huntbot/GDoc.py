@@ -15,6 +15,10 @@ class GDoc:
         self.credentials = ""
         self.command_channel_id = 0
 
+        # TODO move these to plugin class once its refactored
+        self.plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        self.plugin_config_sheet_name = "Config"
+
         self.on_startup()
 
     def on_startup(self) -> None:
