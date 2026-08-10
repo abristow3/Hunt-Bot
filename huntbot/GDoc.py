@@ -20,8 +20,8 @@ class GDoc:
     def on_startup(self) -> None:
         try:
             # Load the service account credentials from the JSON file
-            self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "")
-            # self.creds_path = "huntbot/google_auth.json"
+            # self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "")
+            self.creds_path = "huntbot/google_auth.json"
 
             logger.info(f"[GDoc] GOOGLE CREDS PATH: {self.creds_path}")
 
@@ -184,6 +184,12 @@ class GDoc:
         table_df = table_df.drop(index=0).reset_index(drop=True)
 
         return table_df
+
+    @staticmethod
+    def clean_to_oneliner(text: str, sep: str = " | ") -> str:
+        lines = [line.strip() for line in text.splitlines()]
+        lines = [line for line in lines if line]  # drop empty lines
+        return sep.join(lines)
 
 
 if __name__ == "__main__":

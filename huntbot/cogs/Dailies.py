@@ -12,6 +12,7 @@ import discord
 from huntbot.cogs.TotalDailyItemCounter import TotalDailyItemCounterCog
 
 logger = logging.getLogger(__name__)
+DOUBLE_DAILY_DELIM = "@@@ DOUBLE DAILY @@@"
 
 daily_complete_template = Template("""
 $team_name Team $placement Place Daily!
@@ -25,12 +26,12 @@ $task
 Password: $password
 """)
 
-double_daily_template = Template("""
+double_daily_template = Template(f"""
 $b1_task
 
 Password: $b1_password
 
-@@@ DOUBLE DAILY @@@
+{DOUBLE_DAILY_DELIM}
 
 $b2_task
 
@@ -243,6 +244,7 @@ class DailiesCog(commands.Cog):
             await self.post_team_notif()
             await self.embed_message.pin()
             await self.update_plugin_gdoc_passwords(password=single_password)
+            await self.write_daily_challenge_to_plugin_gdoc(daily_description=self.daily_description)
 
             if is_total:
                 logger.info("[Dailies Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")
@@ -358,6 +360,35 @@ class DailiesCog(commands.Cog):
         try:
             success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
                                                 cell=daily_pass_cell, value=password)
-            logger.info(f"[Dailies Cog] Single cell write success (B11): {success_cell}")
+            logger.info(f"[Dailies Cog] Single cell write success ({daily_pass_cell}): {success_cell}")
         except Exception as e:
             logger.error(f"[Dailies Cog] Error updating daily password cell in RL Plugin GDoc", exc_info=e)
+
+    async def write_daily_challenge_to_plugin_gdoc(self, daily_description: str) -> None:
+        # TODO make this not hardcoded
+        daily_description_cell = "B19"
+        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        plugin_sheet_name = "Config"
+
+        daily_description = self.format_daily_for_gdoc(rendered=daily_description)
+
+        try:
+            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                                cell=daily_description_cell, value=daily_description)
+            logger.info(f"[Dailies Cog] Single cell write success ({daily_description_cell}): {success_cell}")
+        except Exception as e:
+            logger.error(f"[Dailies Cog] Error updating daily description cell in RL Plugin GDoc", exc_info=e)
+
+    def format_daily_for_gdoc(self, rendered: str) -> str:
+        """
+        Cleans a rendered daily_description string for writing to the plugin GDoc.
+        Single dailies collapse to one line. Double dailies collapse each half
+        to one line, with the delimiter preserved on its own line between them.
+        """
+        if DOUBLE_DAILY_DELIM in rendered:
+            top, bottom = rendered.split(DOUBLE_DAILY_DELIM, 1)
+            top = self.gdoc.clean_to_oneliner(text=top)
+            bottom = self.gdoc.clean_to_oneliner(text=bottom)
+            return f"{top}\n{DOUBLE_DAILY_DELIM}\n{bottom}"
+        else:
+            return self.gdoc.clean_to_oneliner(text=rendered)

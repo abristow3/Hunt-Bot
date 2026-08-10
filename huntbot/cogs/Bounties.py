@@ -12,6 +12,7 @@ import discord
 from huntbot.cogs.TotalBountyItemCounter import TotalBountyItemCounterCog
 
 logger = logging.getLogger(__name__)
+DOUBLE_BOUNTY_DELIM = "@@@ DOUBLE BOUNTY @@@"
 
 bounty_complete_template = Template("""
 $team_name Team $placement Place Bounty!
@@ -25,12 +26,12 @@ $task
 Password: $password
 """)
 
-double_bounty_template = Template("""                             
+double_bounty_template = Template(f"""                             
 $b1_task
 
 Password: $b1_password
 
-@@@ DOUBLE BOUNTY @@@
+{DOUBLE_BOUNTY_DELIM}
 
 $b2_task
 """)
@@ -92,8 +93,10 @@ class BountiesCog(commands.Cog):
             self.get_single_bounty_offset()
             self.get_double_bounty_offset()
 
-            self.single_bounty_generator = self.yield_next_row(self.single_bounties_df, offset=self.single_bounty_offset)
-            self.double_bounty_generator = self.yield_next_row(self.double_bounties_df, offset=self.double_bounty_offset)
+            self.single_bounty_generator = self.yield_next_row(self.single_bounties_df,
+                                                               offset=self.single_bounty_offset)
+            self.double_bounty_generator = self.yield_next_row(self.double_bounties_df,
+                                                               offset=self.double_bounty_offset)
             self.configured = True
             self.start_bounties.start()
         except Exception as e:
@@ -243,12 +246,14 @@ class BountiesCog(commands.Cog):
             await self.post_team_notif()
             await self.embed_message.pin()
             await self.update_plugin_gdoc_passwords(password=single_password)
+            await self.write_bounty_challenge_to_plugin_gdoc(bounty_description=self.bounty_description)
 
             if is_total:
                 logger.info("[Bounties Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")
                 if isinstance(counter_cog, TotalBountyItemCounterCog):
                     # There is a total item challenge, so we start the counter cog process
-                    await counter_cog.start_counter(start_msg_id=self.message_id, drop_channel_id=self.bounty_channel_id)
+                    await counter_cog.start_counter(start_msg_id=self.message_id,
+                                                    drop_channel_id=self.bounty_channel_id)
                 else:
                     logger.error("[Bounties Cog] Tried to start counter but cog missing.")
 
@@ -358,6 +363,35 @@ class BountiesCog(commands.Cog):
         try:
             success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
                                                 cell=bounty_pass_cell, value=password)
-            logger.info(f"[Bounties Cog] Single cell write success (B11): {success_cell}")
+            logger.info(f"[Bounties Cog] Single cell write success ({bounty_pass_cell}): {success_cell}")
         except Exception as e:
             logger.error(f"[Bounties Cog] Error updating bounty password cell in RL Plugin GDoc", exc_info=e)
+
+    async def write_bounty_challenge_to_plugin_gdoc(self, bounty_description: str) -> None:
+        # TODO make this not hardcoded
+        bounty_description_cell = "B18"
+        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        plugin_sheet_name = "Config"
+
+        bounty_description = self.format_bounty_for_gdoc(rendered=bounty_description)
+
+        try:
+            success_cell = self.gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
+                                                cell=bounty_description_cell, value=bounty_description)
+            logger.info(f"[Bounties Cog] Single cell write success ({bounty_description_cell}): {success_cell}")
+        except Exception as e:
+            logger.error(f"[Bounties Cog] Error updating bounty description cell in RL Plugin GDoc", exc_info=e)
+
+    def format_bounty_for_gdoc(self, rendered: str) -> str:
+        """
+        Cleans a rendered bounty_description string for writing to the plugin GDoc.
+        Single bounties collapse to one line. Double bounties collapse each half
+        to one line, with the delimiter preserved on its own line between them.
+        """
+        if DOUBLE_BOUNTY_DELIM in rendered:
+            top, bottom = rendered.split(DOUBLE_BOUNTY_DELIM, 1)
+            top = self.gdoc.clean_to_oneliner(text=top)
+            bottom = self.gdoc.clean_to_oneliner(text=bottom)
+            return f"{top}\n{DOUBLE_BOUNTY_DELIM}\n{bottom}"
+        else:
+            return self.gdoc.clean_to_oneliner(text=rendered)
