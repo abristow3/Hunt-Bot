@@ -19,6 +19,11 @@ $meme
 
 class MemesCog(commands.Cog):
     """
+    ============================================
+    =======   D E P R E C A T E D    ===========
+    ============================================
+
+
     A Discord Cog responsible for tracking and ranking meme submissions
     during an active hunt. Memes are ranked based on the number of reactions received.
     """

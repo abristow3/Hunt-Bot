@@ -14,7 +14,6 @@ from huntbot.cogs.Countdown import CountdownCog
 from huntbot.cogs.Memories import MemoriesCog
 from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
-from huntbot.cogs.Memes import MemesCog
 from huntbot.cogs.TotalBountyItemCounter import TotalBountyItemCounterCog
 from huntbot.cogs.TotalDailyItemCounter import TotalDailyItemCounterCog
 from huntbot.commands.main_commands import register_main_commands
@@ -69,10 +68,6 @@ async def check_start_time():
     if "CountdownCog" not in bot.cogs:
         countdown_cog = CountdownCog(discord_bot=bot, hunt_bot=hunt_bot)
         await bot.add_cog(countdown_cog)
-
-    if "MemesCog" not in bot.cogs:
-        memes_cog = MemesCog(bot=bot, hunt_bot=hunt_bot)
-        await bot.add_cog(memes_cog)
 
     try:
         # Get updated gdoc data rate is 300 reads /per minute
