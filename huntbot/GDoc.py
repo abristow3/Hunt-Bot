@@ -15,6 +15,10 @@ class GDoc:
         self.credentials = ""
         self.command_channel_id = 0
 
+        # TODO move these to plugin class once its refactored
+        self.plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
+        self.plugin_config_sheet_name = "Config"
+
         self.on_startup()
 
     def on_startup(self) -> None:
@@ -185,43 +189,47 @@ class GDoc:
 
         return table_df
 
+    @staticmethod
+    def clean_to_oneliner(text: str, sep: str = " | ") -> str:
+        lines = [line.strip() for line in text.splitlines()]
+        lines = [line for line in lines if line]  # drop empty lines
+        return sep.join(lines)
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    def read_column(self, spreadsheet_id: str, sheet_name: str, column: str = "A") -> list:
+        """
+        Reads all values from a single column (e.g. "A") and returns them as a flat list of strings.
+        """
+        try:
+            a1_range = self.a1notation_builder(sheet_name, f"{column}:{column}")
+            data = self.sheets.values().get(spreadsheetId=spreadsheet_id, range=a1_range).execute()
+            values = data.get("values", [])
+            return [row[0] if row else "" for row in values]
+        except Exception as e:
+            logger.error("[GDoc] Unable to read column", exc_info=e)
+            return []
 
-    SPREADSHEET_ID = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
-    SHEET_NAME = "Hunt"
+    def write_cell_by_key(self, spreadsheet_id: str, sheet_name: str, key: str, value, key_column: str = "A",
+                          value_column: str = "B") -> bool:
+        """
+        Finds `key` in `key_column` and writes `value` into the same row in `value_column`.
 
-    gdoc = GDoc()
-    raw_data = gdoc.get_data_from_sheet(SPREADSHEET_ID, SHEET_NAME)
-    df = GDoc.build_dataframe(raw_data)
-    table_map = GDoc.build_table_map(df)
+        Example:
+            key_column="A" contains "Bounty Description" in row 18
+            value_column="B"
+        Will write:
+            B18 = value
+        """
+        column_values = self.read_column(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, column=key_column)
 
-    hunt_table = GDoc.extract_table(df, table_map, "Plugin Config")
-    print(hunt_table.values)
-    print(f"{table_map}")
+        row_number = None
+        for i, cell_value in enumerate(column_values, start=1):
+            if cell_value.strip() == key:
+                row_number = i
+                break
 
-    # ------------------------
-    # Test 1: Write list to column F starting at F1
-    # ------------------------
-    # test_list = ["apple", "banana", "cherry"]
-    # success_list = gdoc.write_column(
-    #     spreadsheet_id=SPREADSHEET_ID,
-    #     sheet_name=SHEET_NAME,
-    #     start_cell="F1",
-    #     values=test_list,
-    # )
-    #
-    # print(f"Column F write success: {success_list}")
-    #
-    # # ------------------------
-    # # Test 3: Write single cell
-    # # ------------------------
-    # success_cell = gdoc.write_cell(
-    #     spreadsheet_id=SPREADSHEET_ID,
-    #     sheet_name=SHEET_NAME,
-    #     cell="H1",
-    #     value="Single Cell Test"
-    # )
-    #
-    # print(f"Single cell write success (J1): {success_cell}")
+        if row_number is None:
+            logger.error(f"[GDoc] Key '{key}' not found in column {key_column} of sheet '{sheet_name}'")
+            return False
+
+        target_cell = f"{value_column}{row_number}"
+        return self.write_cell(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, cell=target_cell, value=value)
