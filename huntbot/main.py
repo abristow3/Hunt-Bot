@@ -16,7 +16,7 @@ from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
 from huntbot.cogs.TotalBountyItemCounter import TotalBountyItemCounterCog
 from huntbot.cogs.TotalDailyItemCounter import TotalDailyItemCounterCog
-from huntbot.cogs.WebbhookCleanup import WebhookCleanupCog
+from huntbot.cogs.WebhookCleanup import WebhookCleanupCog
 from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
