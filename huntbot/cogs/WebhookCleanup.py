@@ -39,7 +39,7 @@ class WebhookCleanupCog(commands.Cog):
             self.start_webhook_cleanup.stop()
 
     @staticmethod
-    async def delete_webhooks(webhooks: list) -> None:
+    async def delete_webhooks(webhooks: list[discord.Webhook]) -> None:
         """
         Asynchronously deletes the webhooks in the webhook list
 
@@ -47,6 +47,7 @@ class WebhookCleanupCog(commands.Cog):
             None
         """
         for webhook in webhooks:
+            logger.info(f"[WebhookCleanup Cog] Deleting webhook: {webhook.name}")
             await webhook.delete(reason=f"Cleared by Hunt Bot")
 
     @tasks.loop(seconds=10)
@@ -58,6 +59,7 @@ class WebhookCleanupCog(commands.Cog):
             None
         """
         if self.hunt_bot.ended:
+            logger.info(msg="[WebhookCleanup Cog] Webhook cleanup process has begun")
             # get list of channels
             try:
                 # get list of channels, check if TextChannel, check if has webhooks, delete if so
@@ -70,6 +72,9 @@ class WebhookCleanupCog(commands.Cog):
 
             except Exception as e:
                 logger.error(msg="[WebhookCleanup Cog] Error when deleting webhooks", exc_info=e)
+
+            logger.info("[WebhookCleanup Cog] Done cleaning up webhook. Stopping cog.")
+            self.start_webhook_cleanup.stop()
 
     @start_webhook_cleanup.before_loop
     async def before_start_webhook_cleanup(self) -> None:
