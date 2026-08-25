@@ -16,6 +16,7 @@ from huntbot.cogs.StarBoard import StarBoardCog
 from huntbot.cogs.TeamItemBounty import TeamItemBountyCog
 from huntbot.cogs.TotalBountyItemCounter import TotalBountyItemCounterCog
 from huntbot.cogs.TotalDailyItemCounter import TotalDailyItemCounterCog
+from huntbot.cogs.WebbhookCleanup import WebhookCleanupCog
 from huntbot.commands.main_commands import register_main_commands
 from huntbot.commands.dailies_command import register_daily_commands
 from huntbot.commands.bounties_command import register_bounties_commands
@@ -107,7 +108,8 @@ async def check_start_time():
                 (StarBoardCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
                 (TeamItemBountyCog, {'hunt_bot': hunt_bot}),
                 (TotalDailyItemCounterCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
-                (TotalBountyItemCounterCog, {'discord_bot': bot, 'hunt_bot': hunt_bot})
+                (TotalBountyItemCounterCog, {'discord_bot': bot, 'hunt_bot': hunt_bot}),
+                (WebhookCleanupCog, {'discord_bot': bot, 'hunt_bot': hunt_bot})
             ]
 
             for cog_cls, params in cogs_to_load:
