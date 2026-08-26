@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import pytz
 import pandas as pd
 import logging
+import GDoc
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class HuntBot:
         self.sheet_id = ""
         self.start_message = ""
         self.end_message = ""
+        self.hunt_point_sheet_url = ""
 
         # TODO hardcode these for now
         self.general_channel_id = 699971574689955853
@@ -89,6 +91,7 @@ class HuntBot:
             self.wom_competition_id = self.config_map.get("WOM_COMPETITION_ID", "0")
             self.start_message = self.config_map.get("START_MESSAGE", "")
             self.end_message = self.config_map.get("END_MESSAGE", "")
+            self.hunt_point_sheet_url = self.config_map.get("HUNT_POINT_SHEET_URL", "")
         except ValueError as e:
             logger.exception("Invalid type in config values (expected integer for channel IDs).", exc_info=e)
             raise InvalidConfig("Invalid type in config values: expected integers for channel IDs.")
@@ -121,6 +124,8 @@ class HuntBot:
             missing_fields.append("START_MESSAGE")
         if not self.end_message:
             missing_fields.append("END_MESSAGE")
+        if not self.hunt_point_sheet_url:
+            missing_fields.append("HUNT_POINT_SHEET_URL")
 
         if missing_fields:
             logger.error(f"Missing or invalid configuration fields: {', '.join(missing_fields)}")
@@ -174,13 +179,17 @@ class HuntBot:
         self.wom_event_website_url = self.wom_event_website_url + str(self.wom_competition_id)
 
     @staticmethod
-    def update_plugin_gdoc_master_password(password: str, gdoc) -> None:
-        master_pass_cell = "B9"
-        plugin_spreadsheet_id = "1qqkjx4YjuQ9FIBDgAGzSpmoKcDow3yEa9lYFmc-JeDA"
-        plugin_sheet_name = "Config"
-        try:
-            success_cell = gdoc.write_cell(spreadsheet_id=plugin_spreadsheet_id, sheet_name=plugin_sheet_name,
-                                           cell=master_pass_cell, value=password)
-            logger.info(f"[HuntBot] Single cell write success (B11): {success_cell}")
-        except Exception as e:
-            logger.error(f"[HuntBot] Error updating bounty password cell in RL Plugin GDoc", exc_info=e)
+    def update_plugin_gdoc_master_password(password: str, gdoc: GDoc) -> None:
+        key = "HUNT_MASTER_PASSWORD"
+        success = gdoc.write_cell_by_key(spreadsheet_id=gdoc.plugin_spreadsheet_id,
+                                         sheet_name=gdoc.plugin_config_sheet_name, key=key, value=password)
+
+        logger.info(f"[HuntBot] Cell write success for key '{key}': {success}")
+
+    @staticmethod
+    def update_plugin_gdoc_point_sheet_url(url: str, gdoc: GDoc) -> None:
+        key = "HUNT_GDOC_URL"
+        success = gdoc.write_cell_by_key(spreadsheet_id=gdoc.plugin_spreadsheet_id,
+                                         sheet_name=gdoc.plugin_config_sheet_name, key=key, value=url)
+
+        logger.info(f"[HuntBot] Cell write success for key '{key}': {success}")

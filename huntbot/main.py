@@ -93,6 +93,7 @@ async def check_start_time():
             logger.info("[Main Task Loop] The Hunt has begun!")
             if channel:
                 hunt_bot.update_plugin_gdoc_master_password(password=hunt_bot.master_password, gdoc=gdoc)
+                hunt_bot.update_plugin_gdoc_point_sheet_url(url=hunt_bot.hunt_point_sheet_url, gdoc=gdoc)
                 await channel.send(
                     f"{hunt_bot.start_message}"
                     f"\nThe password is: {hunt_bot.master_password}")
