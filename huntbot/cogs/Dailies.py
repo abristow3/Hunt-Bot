@@ -244,7 +244,7 @@ class DailiesCog(commands.Cog):
             await self.post_team_notif()
             await self.embed_message.pin()
             await self.update_plugin_gdoc_passwords(password=single_password)
-            await self.write_daily_challenge_to_plugin_gdoc(daily_description=self.daily_description)
+            # await self.write_daily_challenge_to_plugin_gdoc(daily_description=self.daily_description)
 
             if is_total:
                 logger.info("[Dailies Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")

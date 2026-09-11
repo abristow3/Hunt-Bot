@@ -246,7 +246,7 @@ class BountiesCog(commands.Cog):
             await self.post_team_notif()
             await self.embed_message.pin()
             await self.update_plugin_gdoc_passwords(password=single_password)
-            await self.write_bounty_challenge_to_plugin_gdoc(bounty_description=self.bounty_description)
+            # await self.write_bounty_challenge_to_plugin_gdoc(bounty_description=self.bounty_description)
 
             if is_total:
                 logger.info("[Bounties Cog] Total drop challenge detected. Starting TotalItemCounter Cog.")
