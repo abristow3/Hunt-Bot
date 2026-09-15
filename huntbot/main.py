@@ -171,6 +171,13 @@ async def on_ready():
 
     logger.info("[Main Task Loop] Assets Loaded")
 
+    channel = bot.get_channel(699971574689955853)
+    if channel:
+        await channel.send("Wagwan")
+    else:
+        logger.warning("[Main Task Loop] Could not find announcements channel to send startup message.")
+
+
     register_main_commands(bot.tree, gdoc, hunt_bot, bot)
     register_bounties_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
     register_daily_commands(bot.tree, discord_bot=bot, hunt_bot=hunt_bot)
