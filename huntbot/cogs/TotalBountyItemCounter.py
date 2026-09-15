@@ -71,7 +71,7 @@ class TotalBountyItemCounterCog(commands.Cog):
 
         self.message_list = []
         # Fetch all messages after start_msg_id, oldest first
-        async for m in drop_channel.history(after=discord.Object(id=self.start_msg_id), oldest_first=True):
+        async for m in drop_channel.history(after=discord.Object(id=self.start_msg_id), oldest_first=True, limit=1000):
             self.message_list.append(m)
 
         logger.debug(f"[Counter] Retrieved {len(self.message_list)} messages from channel.")
