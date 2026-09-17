@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import pytz
 import pandas as pd
 import logging
-import GDoc
+from huntbot import GDoc
 
 logger = logging.getLogger(__name__)
 
